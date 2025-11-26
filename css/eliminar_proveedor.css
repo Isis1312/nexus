@@ -1,0 +1,162 @@
+/* Estilos específicos para eliminar proveedor */
+.confirm-container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 15px;
+    border: 1px solid rgba(0, 139, 139, 0.2);
+    box-shadow: 0 8px 25px rgba(0, 139, 139, 0.1);
+    text-align: center;
+}
+
+.warning-box {
+    background: rgba(255, 152, 0, 0.1);
+    border: 1px solid rgba(255, 152, 0, 0.3);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: left;
+}
+
+.danger-box {
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: left;
+}
+
+.proveedor-info {
+    background: rgba(0, 139, 139, 0.05);
+    border: 1px solid rgba(0, 139, 139, 0.2);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: left;
+}
+
+.proveedor-info h3 {
+    color: #008B8B;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.proveedor-info p {
+    margin: 8px 0;
+    color: #334155;
+}
+
+.confirm-input {
+    width: 200px;
+    padding: 12px 15px;
+    border: 2px solid rgba(244, 67, 54, 0.3);
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 1em;
+    text-align: center;
+    text-transform: uppercase;
+    margin: 10px 0;
+    transition: all 0.3s ease;
+}
+
+.confirm-input:focus {
+    outline: none;
+    border-color: #f44336;
+    box-shadow: 0 0 10px rgba(244, 67, 54, 0.2);
+}
+
+.confirm-input:valid {
+    border-color: #4CAF50;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    color: #ffffff;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    font-size: 1em;
+}
+
+.btn-danger:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+}
+
+.btn-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0, 139, 139, 0.1);
+}
+
+.estado-activo {
+    color: #008B8B;
+    font-weight: bold;
+}
+
+.estado-inactivo {
+    color: #FF6B6B;
+    font-weight: bold;
+}
+
+.alert {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.alert-error {
+    background: rgba(244, 67, 54, 0.1);
+    color: #d32f2f;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .confirm-container {
+        padding: 20px;
+        margin: 0 10px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .warning-box,
+    .danger-box,
+    .proveedor-info {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .confirm-container {
+        padding: 15px;
+    }
+    
+    .confirm-input {
+        width: 100%;
+        max-width: 200px;
+    }
+}

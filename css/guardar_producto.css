@@ -1,0 +1,329 @@
+/* Estilos para mensajes de guardado de productos */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid rgba(0, 139, 139, 0.2);
+}
+
+.page-title {
+    color: #008B8B;
+    font-size: 2.2em;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 139, 139, 0.1);
+}
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1001;
+    max-width: 400px;
+}
+
+.notification {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-weight: 500;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.success {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+}
+
+.notification.error {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+}
+
+.notification.warning {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+}
+
+/* Estilos para formularios de productos */
+.product-form-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 15px;
+    border: 1px solid rgba(0, 139, 139, 0.2);
+    box-shadow: 0 8px 25px rgba(0, 139, 139, 0.1);
+}
+
+.form-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(0, 139, 139, 0.1);
+}
+
+.form-section-title {
+    color: #008B8B;
+    font-size: 1.2em;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgba(0, 139, 139, 0.2);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #008B8B;
+    font-weight: 600;
+    font-size: 1em;
+}
+
+.form-group label.required::after {
+    content: " *";
+    color: #f44336;
+}
+
+.form-input, .form-select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid rgba(0, 139, 139, 0.3);
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #008B8B;
+    box-shadow: 0 0 10px rgba(0, 139, 139, 0.2);
+}
+
+.form-input[readonly] {
+    background: rgba(0, 139, 139, 0.05);
+    color: #666;
+    cursor: not-allowed;
+}
+
+/* Input con símbolo de moneda */
+.input-with-symbol {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.currency-symbol {
+    position: absolute;
+    left: 12px;
+    color: #008B8B;
+    font-weight: 600;
+    z-index: 1;
+}
+
+.form-input.with-symbol {
+    padding-left: 35px;
+}
+
+/* Información de tasa */
+.tasa-info {
+    display: block;
+    margin-top: 5px;
+    color: #666;
+    font-size: 0.85em;
+    font-style: italic;
+}
+
+/* Checkbox y radio buttons */
+.checkbox-group, .radio-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.checkbox-group input[type="checkbox"],
+.radio-group input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #008B8B;
+}
+
+.checkbox-group label,
+.radio-group label {
+    margin: 0;
+    font-weight: normal;
+    color: #334155;
+}
+
+/* Acciones del formulario */
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0, 139, 139, 0.1);
+}
+
+.btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    font-size: 1em;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #008B8B, #006666);
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(0, 139, 139, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 139, 139, 0.4);
+}
+
+.btn-secondary {
+    background: rgba(51, 65, 85, 0.1);
+    color: #334155;
+    border: 1px solid rgba(51, 65, 85, 0.3);
+}
+
+.btn-secondary:hover {
+    background: rgba(51, 65, 85, 0.2);
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: rgba(244, 67, 54, 0.1);
+    color: #d32f2f;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.btn-danger:hover {
+    background: rgba(244, 67, 54, 0.2);
+    transform: translateY(-1px);
+}
+
+/* Estados de validación */
+.form-input.valid {
+    border-color: #4CAF50;
+}
+
+.form-input.invalid {
+    border-color: #f44336;
+}
+
+.validation-message {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.85em;
+}
+
+.validation-message.valid {
+    color: #4CAF50;
+}
+
+.validation-message.invalid {
+    color: #f44336;
+}
+
+/* Loading states */
+.btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn.loading::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-left: -10px;
+    margin-top: -10px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .product-form-container {
+        padding: 20px;
+        margin: 0 10px;
+    }
+    
+    .form-section {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .product-form-container {
+        padding: 15px;
+    }
+    
+    .form-input, .form-select {
+        padding: 10px 12px;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.9em;
+    }
+    
+    .notification-container {
+        left: 10px;
+        right: 10px;
+        max-width: none;
+    }
+    
+    .notification {
+        padding: 12px 15px;
+        font-size: 0.9em;
+    }
+}

@@ -1,0 +1,274 @@
+* {
+    box-sizing: border-box;
+    margin: 0;  
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #E0FFFF 0%, #B0E0E6 50%, #87CEEB 100%);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.contenedor {
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+    flex: 1;
+}
+
+.contenedor-6 {
+    background-color: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 139, 139, 0.2);
+    padding: 40px;
+    width: 100%;
+    max-width: 500px;
+    border: 1px solid rgba(0, 139, 139, 0.1);
+}
+
+/* Título "Iniciar sesión" */
+.mensaje {
+    background: linear-gradient(135deg, #008B8B, #006666);
+    border-radius: 12px;
+    margin-bottom: 30px;
+    width: 100%;
+    margin: 0 auto 30px;
+    text-align: center;
+}
+
+.mensaje h3 {
+    text-align: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 1.4rem; 
+    margin: 0;
+    padding: 15px; 
+    color: white;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.contenedor-6 form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.contenedor-6 label {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #008B8B;
+    font-size: 0.95rem;
+}
+
+.contenedor-6 input {
+    padding: 14px 16px;
+    border: 2px solid rgba(0, 139, 139, 0.3);
+    border-radius: 8px;
+    width: 100%;
+    font-size: 1rem;
+    background: #ffffff;
+    color: #334155;
+    transition: all 0.3s ease;
+}
+
+.contenedor-6 input:focus {
+    outline: none;
+    border-color: #008B8B;
+    box-shadow: 0 0 10px rgba(0, 139, 139, 0.2);
+    background: #ffffff;
+}
+
+.contenedor-6 input::placeholder {
+    color: rgba(51, 65, 85, 0.5);
+}
+
+button {
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #008B8B, #006666);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 139, 139, 0.3);
+    width: 50%;
+    padding: 14px;
+    margin: 20px auto 0;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    letter-spacing: 0.5px;
+}
+
+button:hover {
+    background: linear-gradient(135deg, #006666, #008B8B);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 139, 139, 0.4);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+
+.error-mensaje {
+    color: #FF6B6B;
+    text-align: center;
+    margin-top: 15px;
+    padding: 12px;
+    background: rgba(255, 107, 107, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    font-weight: 500;
+}
+
+.mensaje-exito {
+    color: #008B8B;
+    text-align: center;
+    margin-top: 15px;
+    padding: 12px;
+    background: rgba(0, 139, 139, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 139, 139, 0.3);
+    font-weight: 500;
+}
+
+.version-badge {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background-color: #ffffff;
+    color: #008B8B;
+    padding: 10px 18px;
+    border-radius: 24px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 3px 12px rgba(0, 139, 139, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+    border: 1px solid rgba(0, 139, 139, 0.1);
+    transition: all 0.3s ease;
+}
+
+
+
+.version-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 139, 139, 0.3);
+    background: rgba(0, 139, 139, 0.05);
+}
+
+
+button:disabled {
+    background: rgba(0, 139, 139, 0.5);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 139, 139, 0.2);
+}
+
+button:disabled:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 139, 139, 0.2);
+}
+
+
+.contenedor-6 input:focus-visible {
+    outline: 2px solid #008B8B;
+    outline-offset: 2px;
+}
+
+button:focus-visible {
+    outline: 2px solid #008B8B;
+    outline-offset: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .contenedor-6 {
+        padding: 30px 25px;
+        margin: 10px;
+    }
+
+    button {
+        width: 70%;
+        padding: 12px;
+    }
+
+    .logo1 {
+        width: 220px; 
+    }
+    
+    .mensaje h3 {
+        font-size: 1.3rem;
+        padding: 12px;
+    }
+    
+    .contenedor-6 input {
+        padding: 12px 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .contenedor-6 {
+        padding: 25px 20px;
+    }
+
+    button {
+        width: 80%;
+        padding: 12px;
+    }
+
+    .mensaje h3 {
+        font-size: 1.2rem; 
+        padding: 10px;
+    }
+    
+    
+    .version-badge {
+        bottom: 15px;
+        right: 15px;
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
+}
+
+/* Animaciones suaves */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.contenedor-6 {
+    animation: fadeIn 0.6s ease-out;
+}
+
+/* Mejoras de accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+    .contenedor-6,
+    .logo-container {
+        animation: none;
+    }
+    
+    button:hover {
+        transform: none;
+    }
+    
+    .version-badge:hover {
+        transform: none;
+    }
+}
