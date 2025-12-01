@@ -97,16 +97,9 @@ function obtenerUltimoCache() {
     
     // Si no hay cache, usar valores por defecto
     return [
-        'dolar' => '36.50',
-        'euro' => '39.80',
-        'dolar_anterior' => '36.45',
-        'euro_anterior' => '39.75',
-        'porcentaje_dolar' => 0.14,
-        'porcentaje_euro' => 0.13,
-        'fecha_actualizacion' => date('Y-m-d H:i:s'),
-        'fuente' => 'Sistema',
-        'tendencia_dolar' => 'sube',
-        'tendencia_euro' => 'sube'
+        'dolar' => '0.00',
+        'euro' => '0.00'
+        
     ];
 }
 
@@ -169,8 +162,8 @@ function obtenerTasasAnteriores() {
     }
     
     return [
-        'dolar' => '36.45',
-        'euro' => '39.75'
+        'dolar' => '0.00',
+        'euro' => '0.00'
     ];
 }
 
