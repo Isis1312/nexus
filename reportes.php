@@ -25,28 +25,31 @@ if (!$sistemaPermisos->puedeVer('reportes')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reportes y Métricas</title>
-    <link rel="stylesheet" href="css/resportes.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/reportes.css">
+
 </head>
 <body>
     <?php require_once 'menu.php'; ?>
     
+
+     <!-- TODO DEBE ESTAR DENTRO DEL MAIN -->
     <main class="main-content">
         <div class="content-wrapper">
             <!-- Header de la página -->
             <div class="page-header">
                 <h1 class="page-title">Reportes y Métricas</h1>
-                
+                <div class="reporte-fecha">
+                    <?= date('d/m/Y') ?>
+                </div>
             </div>
 
             <!-- Submenú de Reportes - BOTONES HORIZONTALES -->
             <div class="submenu-reportes">
                 <div class="submenu-botones">
-                     <!-- AQUI VAN LOS BOTONESSS -->
-                </div>
-            </div>
+                 <!--AQUI ADENTO VAN LOS Submenú de Reportes - BOTONES HORIZONTALES -->
+        </div>
+    </main>
 
-           
-                       
+   
 </body>
 </html>
