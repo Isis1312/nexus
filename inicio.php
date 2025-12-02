@@ -422,7 +422,6 @@ require_once 'menu.php';
             if (document.querySelector('.eur .previous-rate')) {
                 document.querySelector('.eur .previous-rate').textContent = `Anterior: Bs. ${tasas.euro_anterior}`;
             }
-            //pruebaaa
             // Actualizar tendencias dólar
             const trendDolar = document.querySelector('.usd .trend-indicator');
             if (trendDolar) {
