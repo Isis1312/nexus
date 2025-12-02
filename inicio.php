@@ -27,6 +27,7 @@ function obtenerTasasBCV() {
     return actualizarTasasDesdeAPI();
 }
 
+
 // Función para actualizar tasas desde API
 function actualizarTasasDesdeAPI() {
     $urls = [
