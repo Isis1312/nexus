@@ -1,11 +1,11 @@
 {
-    "dolar": "247.41",
-    "euro": "287.35",
-    "dolar_anterior": "247.41",
-    "euro_anterior": "287.35",
+    "dolar": "249.20",
+    "euro": "289.43",
+    "dolar_anterior": "249.20",
+    "euro_anterior": "289.43",
     "porcentaje_dolar": 0,
     "porcentaje_euro": 0,
-    "fecha_actualizacion": "2025-12-03 00:59:00",
+    "fecha_actualizacion": "2025-12-03 05:18:17",
     "fuente": "BCV",
     "tendencia_dolar": "sube",
     "tendencia_euro": "sube"
