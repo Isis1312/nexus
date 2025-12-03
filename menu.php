@@ -78,7 +78,7 @@ if (!isset($current_page)) {
                 <!-- Reportes - Solo si puede ver -->
                 <?php if ($sistemaPermisos->puedeVer('reportes')): ?>
                 <li>
-                    <a href="reportes.php" class="menu-item <?php echo $current_page == 'analisis_estadistico.php' ? 'active' : ''; ?>">
+                    <a href="reportes.php" class="menu-item <?php echo $current_page == 'reportes.php' ? 'active' : ''; ?>">
                         <span class="menu-icon">📈</span>
                         <span class="menu-text">Reportes</span>
                     </a>

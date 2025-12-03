@@ -47,6 +47,7 @@ if (!$sistemaPermisos->puedeVer('reportes')) {
             <div class="submenu-reportes">
                 <div class="submenu-botones">
                  <!--AQUI ADENTO VAN LOS Submenú de Reportes - BOTONES HORIZONTALES -->
+                    <button class="btn-reporte" onclick="location.href='analisis_estadistico.php'">Análisis Estadístico</button>
         </div>
     </main>
 
