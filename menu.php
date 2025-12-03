@@ -96,14 +96,24 @@ if (!isset($current_page)) {
                 <?php endif; ?>
 
                 <!-- Ventas - Solo si puede ver -->
-                <!--<?php if ($sistemaPermisos->puedeVer('ventas')): ?>
+                <?php if ($sistemaPermisos->puedeVer('ventas')): ?>
                 <li>
                     <a href="venta.php" class="menu-item <?php echo $current_page == 'venta.php' ? 'active' : ''; ?>">
                         <span class="menu-icon">🛒</span>
                         <span class="menu-text">Ventas</span>
                     </a>
                 </li>
-                <?php endif; ?>-->
+                <?php endif; ?>
+
+
+                <li>
+                    <a href="clientes_factura.php" class="menu-item <?php echo $current_page == 'clientes_factura.php' ? 'active' : ''; ?>">
+                        <span class="menu-icon">💵</span>
+                        <span class="menu-text">Facturas</span>
+                    </a>
+                </li>
+              
+
 
                 <div class="menu-separator"></div>
                 

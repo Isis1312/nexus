@@ -299,3 +299,55 @@ tr:hover {
   border: 1px solid rgba(51, 65, 85, 0.3);
   padding: 12px 25px; 
   }
+
+  .alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+}
+.alert-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+}
+
+.table-container {
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th, td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+}
+
+tr:hover {
+  background-color: #f9f9f9;
+}
+
+.acciones-container {
+  display: flex;
+  gap: 5px;
+}
+
+.btn-action {
+  padding: 5px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}

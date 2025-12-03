@@ -28,6 +28,16 @@ function mostrarSubcategoria(categoria) {
     }
 }
 
+function mostrarModalError(mensaje) {
+    document.getElementById('mensajeErrorTexto').textContent = mensaje;
+    document.getElementById('modalError').style.display = 'block';
+}
+
+function cerrarModalError() {
+    document.getElementById('modalError').style.display = 'none';
+}
+
+
 // Calcular precio de venta (42% de ganancia)
 function calcularPrecioVenta(precioBase) {
     if (precioBase) {

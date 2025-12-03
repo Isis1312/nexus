@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Location: productos_proveedores.php');
     exit();
 } else {
-    header('Location: productos_proveedores.php');
-    exit();
+    header("Location: productos_proveedores.php?error_categoria=La categoría 'alcohol' ya existe");
+exit();
 }
 ?>

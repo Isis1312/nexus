@@ -80,6 +80,20 @@ $total_productos = count($result);
 <body>
    <main class="main-content">
         <div class="content-wrapper">
+
+             <?php if (isset($_SESSION['mensaje'])): ?>
+      <div class="alert alert-success">
+        <?= $_SESSION['mensaje']; unset($_SESSION['mensaje']); ?>
+      </div>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['error'])): ?>
+      <div class="alert alert-error">
+        <?= $_SESSION['error']; unset($_SESSION['error']); ?>
+      </div>
+
+    <?php endif; ?>
+
             <div class="container">
                 <div class="header">
                     <h1>🏭 <?php echo $titulo; ?></h1>
@@ -275,6 +289,13 @@ $total_productos = count($result);
                             <div class="checkbox-group">
                                 <input type="checkbox" id="agregar_subcategoria" name="agregar_subcategoria" value="1" onchange="toggleSubcategoriaNueva()">
                                 <label for="agregar_subcategoria">Sí, agregar subcategoría a esta categoría</label>
+                            <?php if (isset($_SESSION['error'])): ?>
+      <div class="mensaje-error-modal">
+        <?= $_SESSION['error']; unset($_SESSION['error']); ?>
+      </div>
+    <?php endif; ?>
+
+                            
                             </div>
                         </div>
                     </div>
@@ -390,6 +411,11 @@ $total_productos = count($result);
                         </div>
                     </div>
 
+
+
+
+
+                    
                     <div class="form-row">
                         <div class="form-group">
                             <label for="cantidad_empaques" class="required">Cantidad de Empaques</label>
@@ -462,6 +488,15 @@ $total_productos = count($result);
     </div>
 
     <script>
+      <?php if (isset($_SESSION['error'])): ?>
+    document.addEventListener('DOMContentLoaded', function () {
+      const modal = document.getElementById('modalAgregarCategoria');
+      if (modal) {
+        modal.style.display = 'block'; // o usa tu función para abrir el modal
+      }
+    });
+  <?php endif; ?>
+
     function abrirModalCompra(idProducto, nombreProducto, unidadMedida) {
         document.getElementById('compra_id_producto').value = idProducto;
         document.getElementById('compra_nombre_producto').value = nombreProducto;

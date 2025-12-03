@@ -1,70 +1,30 @@
 <?php
 session_start();
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    header('Location: login.php');
-    exit();
-}
-
-// Incluir la conexión a la base de datos
 require_once 'conexion.php';
 
-// Inicializar sistema de permisos
-require_once 'permisos.php';
-$sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
+// Obtener clientes
+$stmt = $pdo->query("SELECT id, nombre, cedula, telefono, direccion FROM clientes ORDER BY nombre ASC");
+$clientes = $stmt->fetchAll();
+?>
+<?php
+session_start();
+require_once 'conexion.php';
 
-// Verificar si puede ver este módulo 
-if (!$sistemaPermisos->puedeVer('gestion_usuario')) {
-    header('Location: inicio.php');
-    exit();
-}
-
-// Procesar búsqueda
-$busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
-$where = '';
-$params = [];
-
+$busqueda = $_GET['busqueda'] ?? '';
+$sql = "SELECT * FROM clientes";
 if (!empty($busqueda)) {
-    $where = "WHERE cedula LIKE ? OR nombre LIKE ?";
-    $searchTerm = "%$busqueda%";
-    $params = [$searchTerm, $searchTerm];
+  $sql .= " WHERE cedula LIKE '%$busqueda%'";
 }
-
-// Obtener clientes de la base de datos
-try {
-    $sql = "SELECT id, nombre, cedula, telefono, direccion FROM clientes $where ORDER BY nombre";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $totalClientes = count($clientes);
-} catch (PDOException $e) {
-    $clientes = [];
-    $totalClientes = 0;
-    $error = "Error al cargar los clientes: " . $e->getMessage();
-}
-
-// Procesar eliminación de cliente
-if (isset($_POST['eliminar_id'])) {
-    $id_eliminar = $_POST['eliminar_id'];
-    try {
-        $sql = "DELETE FROM clientes WHERE id = ?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$id_eliminar]);
-        $_SESSION['mensaje'] = "Cliente eliminado correctamente";
-        header('Location: clientes.php');
-        exit();
-    } catch (PDOException $e) {
-        $error = "Error al eliminar el cliente: " . $e->getMessage();
-    }
-}
-
-require_once 'menu.php';
+$stmt = $pdo->query($sql);
+$clientes = $stmt->fetchAll();
+$totalClientes = count($clientes);
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Gestión de Clientes</title>
+  <title>Gestión de Facturación</title>
   <link rel="stylesheet" href="css/inventario.css">
   <link rel="stylesheet" href="css/clientes.css">
   <link rel="stylesheet" href="css/modales.css">
@@ -76,7 +36,7 @@ require_once 'menu.php';
 
     <!-- Header -->
     <div class="page-header">
-      <h1 class="page-title">Gestión de Clientes</h1>
+      <h1 class="page-title">Gestión de Facturación</h1>
     </div>
 
     <!-- Mostrar mensajes -->
@@ -104,7 +64,7 @@ require_once 'menu.php';
             <input type="text" name="busqueda" class="search-input" placeholder="Buscar por cédula..." value="<?= htmlspecialchars($busqueda) ?>">
             <button type="submit" class="btn-buscar">Buscar</button>
             <?php if (!empty($busqueda)): ?>
-                <a href="clientes.php" class="clear-search">Limpiar</a>
+                <a href="clientes_factura.php" class="clear-search">Limpiar</a>
             <?php endif; ?>
           </div>
         </form>
@@ -142,6 +102,7 @@ require_once 'menu.php';
                     <td><?= htmlspecialchars($cliente['direccion']) ?></td>
                     <td>
                         <div class="acciones-container">
+                            <a href="crear_factura.php?cliente_id=<?= $cliente['id'] ?>" class="btn-action btn-factura">🧾 Factura</a>
                             <button class="btn-action btn-editar" onclick="abrirModalEditar(<?= $cliente['id'] ?>, '<?= addslashes($cliente['nombre']) ?>', '<?= addslashes($cliente['telefono']) ?>')">Editar</button>
                             <button class="btn-action btn-eliminar" onclick="confirmarEliminar(<?= $cliente['id'] ?>, '<?= addslashes($cliente['nombre']) ?>')">Eliminar</button>
                         </div>
@@ -157,7 +118,7 @@ require_once 'menu.php';
   </div>
 </main>
 
-<!-- Modal Agregar Cliente -->
+<!-- Modales (idénticos a clientes.php) -->
 <div id="modalAgregar" class="modal">
   <div class="modal-content">
     <div class="modal-header">
@@ -195,7 +156,6 @@ require_once 'menu.php';
   </div>
 </div>
 
-<!-- Modal Editar Cliente -->
 <div id="modalEditar" class="modal">
   <div class="modal-content">
     <div class="modal-header">
@@ -224,7 +184,6 @@ require_once 'menu.php';
   </div>
 </div>
 
-<!-- Modal Confirmar Eliminación -->
 <div id="modalEliminar" class="modal">
   <div class="modal-content">
     <div class="modal-header">
@@ -249,42 +208,18 @@ require_once 'menu.php';
 function abrirModalAgregar() {
   document.getElementById('modalAgregar').style.display = 'block';
 }
-
 function cerrarModalAgregar() {
   document.getElementById('modalAgregar').style.display = 'none';
 }
-
 function abrirModalEditar(id, nombre, telefono) {
   document.getElementById('editar_id').value = id;
   document.getElementById('editar_nombre').value = nombre;
   document.getElementById('editar_telefono').value = telefono;
   document.getElementById('modalEditar').style.display = 'block';
 }
-
 function cerrarModalEditar() {
   document.getElementById('modalEditar').style.display = 'none';
 }
-
 function confirmarEliminar(id, nombre) {
   document.getElementById('eliminar_id').value = id;
-  document.getElementById('clienteEliminarNombre').textContent = nombre;
-  document.getElementById('modalEliminar').style.display = 'block';
-}
-
-function cerrarModalEliminar() {
-  document.getElementById('modalEliminar').style.display = 'none';
-}
-
-// Cerrar modal al hacer clic fuera
-window.onclick = function(event) {
-  const modals = document.getElementsByClassName('modal');
-  for (let modal of modals) {
-    if (event.target == modal) {
-      modal.style.display = 'none';
-    }
-  }
-}
-</script>
-
-</body>
-</html>
+  document.getElementById('clienteEliminar
