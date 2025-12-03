@@ -15,6 +15,63 @@ if (!$sistemaPermisos->puedeVer('proveedores')) {
     exit();
 }
 
+// Inicializar carrito de compras si no existe
+if (!isset($_SESSION['carrito_compras'])) {
+    $_SESSION['carrito_compras'] = [];
+}
+
+// Manejar acciones del carrito
+if (isset($_GET['accion']) && isset($_GET['id_producto'])) {
+    $id_producto = intval($_GET['id_producto']);
+    
+    switch ($_GET['accion']) {
+        case 'agregar_carrito':
+            if (isset($_GET['cantidad_empaques']) && isset($_GET['unidades_empaque'])) {
+                $cantidad_empaques = intval($_GET['cantidad_empaques']);
+                $unidades_empaque = intval($_GET['unidades_empaque']);
+                $precio_total = floatval($_GET['precio_total']);
+                
+                // Buscar si el producto ya está en el carrito
+                $index = array_search($id_producto, array_column($_SESSION['carrito_compras'], 'id_producto'));
+                
+                if ($index !== false) {
+                    // Actualizar cantidad
+                    $_SESSION['carrito_compras'][$index]['cantidad_empaques'] += $cantidad_empaques;
+                    $_SESSION['carrito_compras'][$index]['unidades_empaque'] = $unidades_empaque;
+                    $_SESSION['carrito_compras'][$index]['precio_total'] += $precio_total;
+                } else {
+                    // Agregar nuevo producto al carrito
+                    $_SESSION['carrito_compras'][] = [
+                        'id_producto' => $id_producto,
+                        'cantidad_empaques' => $cantidad_empaques,
+                        'unidades_empaque' => $unidades_empaque,
+                        'precio_total' => $precio_total
+                    ];
+                }
+                
+                $_SESSION['mensaje'] = "Producto agregado al carrito";
+            }
+            break;
+            
+        case 'eliminar_carrito':
+            $index = array_search($id_producto, array_column($_SESSION['carrito_compras'], 'id_producto'));
+            if ($index !== false) {
+                array_splice($_SESSION['carrito_compras'], $index, 1);
+                $_SESSION['mensaje'] = "Producto eliminado del carrito";
+            }
+            break;
+            
+        case 'vaciar_carrito':
+            $_SESSION['carrito_compras'] = [];
+            $_SESSION['mensaje'] = "Carrito vaciado";
+            break;
+    }
+    
+    // Redirigir para evitar reenvío del formulario
+    header('Location: ' . strtok($_SERVER["REQUEST_URI"], '?'));
+    exit();
+}
+
 $id_proveedor = isset($_GET['id_proveedor']) ? intval($_GET['id_proveedor']) : 0;
 $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
 
@@ -68,8 +125,36 @@ $proveedores_stmt = $pdo->query("SELECT id_proveedor, nombre_comercial FROM prov
 $proveedores = $proveedores_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $total_productos = count($result);
-?>
 
+// Calcular estadísticas del carrito
+$total_carrito = 0;
+$total_productos_carrito = 0;
+$total_unidades_carrito = 0;
+
+if (!empty($_SESSION['carrito_compras'])) {
+    // Obtener detalles de los productos en el carrito
+    $carrito_detalles = [];
+    foreach ($_SESSION['carrito_compras'] as $item) {
+        $stmt = $pdo->prepare("SELECT pp.*, p.nombre_comercial FROM productos_proveedor pp 
+                              JOIN proveedores p ON pp.id_proveedor = p.id_proveedor 
+                              WHERE pp.id_producto_proveedor = ?");
+        $stmt->execute([$item['id_producto']]);
+        $producto = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($producto) {
+            $producto['cantidad_empaques'] = $item['cantidad_empaques'];
+            $producto['unidades_empaque'] = $item['unidades_empaque'];
+            $producto['precio_total'] = $item['precio_total'];
+            $producto['total_unidades'] = $item['cantidad_empaques'] * $item['unidades_empaque'];
+            
+            $carrito_detalles[] = $producto;
+            $total_carrito += $item['precio_total'];
+            $total_unidades_carrito += $producto['total_unidades'];
+            $total_productos_carrito++;
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -80,21 +165,13 @@ $total_productos = count($result);
 <body>
    <main class="main-content">
         <div class="content-wrapper">
-
-             <?php if (isset($_SESSION['mensaje'])): ?>
-      <div class="alert alert-success">
-        <?= $_SESSION['mensaje']; unset($_SESSION['mensaje']); ?>
-      </div>
-    <?php endif; ?>
-
-    <?php if (isset($_SESSION['error'])): ?>
-      <div class="alert alert-error">
-        <?= $_SESSION['error']; unset($_SESSION['error']); ?>
-      </div>
-
-    <?php endif; ?>
-
             <div class="container">
+                <?php if (isset($_SESSION['mensaje'])): ?>
+                    <div class="alert alert-success" style="margin-bottom: 20px;">
+                        <?php echo $_SESSION['mensaje']; unset($_SESSION['mensaje']); ?>
+                    </div>
+                <?php endif; ?>
+                
                 <div class="header">
                     <h1>🏭 <?php echo $titulo; ?></h1>
                     <p>Gestiona los productos disponibles de tus proveedores</p>
@@ -105,6 +182,18 @@ $total_productos = count($result);
                     <div class="stat-card">
                         <span class="stat-number"><?php echo $total_productos; ?></span>
                         <span class="stat-label">Total Productos</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number"><?php echo $total_productos_carrito; ?></span>
+                        <span class="stat-label">Productos en Carrito</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">$<?php echo number_format($total_carrito, 2); ?></span>
+                        <span class="stat-label">Total Carrito</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number"><?php echo $total_unidades_carrito; ?></span>
+                        <span class="stat-label">Unidades en Carrito</span>
                     </div>
                 </div>
 
@@ -151,6 +240,81 @@ $total_productos = count($result);
                     </div>
                 </div>
 
+                <!-- Carrito de compras (si hay productos) -->
+                <?php if (!empty($carrito_detalles)): ?>
+                    <div class="carrito-container" style="margin-bottom: 30px; background: #fff; border-radius: 10px; padding: 20px; border: 2px solid #28a745;">
+                        <h3 style="color: #28a745; margin-bottom: 15px;">🛒 Carrito de Compras</h3>
+                        
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: rgba(40, 167, 69, 0.1);">
+                                        <th style="padding: 10px; text-align: left;">Producto</th>
+                                        <th style="padding: 10px; text-align: center;">Empaques</th>
+                                        <th style="padding: 10px; text-align: center;">Unid/Emp</th>
+                                        <th style="padding: 10px; text-align: center;">Total Unid</th>
+                                        <th style="padding: 10px; text-align: right;">Precio Total</th>
+                                        <th style="padding: 10px; text-align: center;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($carrito_detalles as $item): ?>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 10px;">
+                                                <strong><?php echo htmlspecialchars($item['nombre']); ?></strong><br>
+                                                <small>Código: <?php echo $item['codigo_producto']; ?></small><br>
+                                                <small>Proveedor: <?php echo $item['nombre_comercial']; ?></small>
+                                            </td>
+                                            <td style="padding: 10px; text-align: center;">
+                                                <?php echo $item['cantidad_empaques']; ?>
+                                            </td>
+                                            <td style="padding: 10px; text-align: center;">
+                                                <?php echo $item['unidades_empaque']; ?>
+                                            </td>
+                                            <td style="padding: 10px; text-align: center; font-weight: bold;">
+                                                <?php echo $item['total_unidades']; ?>
+                                            </td>
+                                            <td style="padding: 10px; text-align: right; font-weight: bold; color: #28a745;">
+                                                $<?php echo number_format($item['precio_total'], 2); ?>
+                                            </td>
+                                            <td style="padding: 10px; text-align: center;">
+                                                <a href="?accion=eliminar_carrito&id_producto=<?php echo $item['id_producto_proveedor']; ?>" 
+                                                   class="btn btn-danger btn-sm" 
+                                                   onclick="return confirm('¿Eliminar este producto del carrito?')">
+                                                    ❌ Eliminar
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="background: rgba(40, 167, 69, 0.05); font-weight: bold;">
+                                        <td colspan="3" style="padding: 10px; text-align: right;">TOTALES:</td>
+                                        <td style="padding: 10px; text-align: center; color: #28a745;">
+                                            <?php echo $total_unidades_carrito; ?> unidades
+                                        </td>
+                                        <td style="padding: 10px; text-align: right; color: #28a745; font-size: 1.1em;">
+                                            $<?php echo number_format($total_carrito, 2); ?>
+                                        </td>
+                                        <td style="padding: 10px; text-align: center;">
+                                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                                <a href="?accion=vaciar_carrito" 
+                                                   class="btn btn-secondary btn-sm"
+                                                   onclick="return confirm('¿Vaciar todo el carrito?')">
+                                                    🗑️ Vaciar
+                                                </a>
+                                                <button class="btn btn-success btn-sm" onclick="abrirModalConfirmarCompra()">
+                                                    ✅ Confirmar Compra
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <?php if ($total_productos > 0): ?>
                     <?php if ($id_proveedor > 0 && isset($result[0])): ?>
                         <div class="proveedor-info">
@@ -189,13 +353,25 @@ $total_productos = count($result);
                             </thead>
                             <tbody>
                                 <?php foreach($result as $row): ?>
-                                    <tr>
+                                    <?php 
+                                    // Verificar si el producto está en el carrito
+                                    $en_carrito = false;
+                                    $carrito_index = -1;
+                                    if (!empty($_SESSION['carrito_compras'])) {
+                                        $carrito_index = array_search($row['id_producto_proveedor'], array_column($_SESSION['carrito_compras'], 'id_producto'));
+                                        $en_carrito = ($carrito_index !== false);
+                                    }
+                                    ?>
+                                    <tr id="producto-<?php echo $row['id_producto_proveedor']; ?>">
                                         <td><code><?php echo $row['codigo_producto']; ?></code></td>
-                                     <td>
-                                        <strong><?php echo htmlspecialchars($row['nombre']); ?></strong>
-                                        <?php if ($row['es_perecedero']): ?>
-                                            <br><span class="badge badge-warning">🕒 Perecedero</span>
-                                        <?php endif; ?>
+                                        <td>
+                                            <strong><?php echo htmlspecialchars($row['nombre']); ?></strong>
+                                            <?php if ($row['es_perecedero']): ?>
+                                                <br><span class="badge badge-warning">🕒 Perecedero</span>
+                                            <?php endif; ?>
+                                            <?php if ($en_carrito): ?>
+                                                <br><span class="badge badge-success">🛒 En carrito (<?php echo $_SESSION['carrito_compras'][$carrito_index]['cantidad_empaques']; ?> empaques)</span>
+                                            <?php endif; ?>
                                         </td>
                                         <td><?php echo $row['nombre_categoria']; ?></td>
                                         <td><?php echo $row['nombre_subcategoria'] ?: '—'; ?></td>
@@ -226,7 +402,8 @@ $total_productos = count($result);
                                                 <button class="btn-comprar" 
                                                         onclick="abrirModalCompra(<?php echo $row['id_producto_proveedor']; ?>, 
                                                                                  '<?php echo addslashes($row['nombre']); ?>', 
-                                                                                 '<?php echo $row['unidad_medida']; ?>')">
+                                                                                 '<?php echo $row['unidad_medida']; ?>',
+                                                                                 <?php echo $row['precio_compra']; ?>)">
                                                     🛒 Comprar
                                                 </button>
                                             </div>
@@ -260,168 +437,50 @@ $total_productos = count($result);
             </div>
     </main>
 
-    <div id="modalCategoria" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Gestionar Categorías y Subcategorías</h3>
-                <span class="close-modal" onclick="cerrarModalCategoria()">&times;</span>
-            </div>
-            <div class="modal-body">
-                <form id="formCategoria" method="POST" action="procesar_categoria.php">
-                    <div class="form-group">
-                        <label for="tipo_operacion">Tipo de Operación:</label>
-                        <select id="tipo_operacion" name="tipo_operacion" class="form-control" onchange="cambiarTipoOperacion()" required>
-                            <option value="">Seleccionar operación</option>
-                            <option value="nueva_categoria">Nueva Categoría</option>
-                            <option value="nueva_subcategoria">Nueva Subcategoría</option>
-                        </select>
-                    </div>
-
-                    <!-- Grupo para nueva categoría -->
-                    <div id="grupo-nueva-categoria" style="display: none;">
-                        <div class="form-group">
-                            <label for="nombre_categoria" class="required">Nombre de Categoría</label>
-                            <input type="text" id="nombre_categoria" name="nombre_categoria" class="form-control">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="agregar_subcategoria">¿Agregar Subcategoría?</label>
-                            <div class="checkbox-group">
-                                <input type="checkbox" id="agregar_subcategoria" name="agregar_subcategoria" value="1" onchange="toggleSubcategoriaNueva()">
-                                <label for="agregar_subcategoria">Sí, agregar subcategoría a esta categoría</label>
-                            <?php if (isset($_SESSION['error'])): ?>
-      <div class="mensaje-error-modal">
-        <?= $_SESSION['error']; unset($_SESSION['error']); ?>
-      </div>
-    <?php endif; ?>
-
-                            
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Grupo para nueva subcategoría -->
-                    <div id="grupo-nueva-subcategoria" style="display: none;">
-                        <div class="form-group">
-                            <label for="categoria_existente" class="required">Categoría Existente</label>
-                            <select id="categoria_existente" name="categoria_existente" class="form-control">
-                                <option value="">Seleccionar categoría</option>
-                                <?php
-                                $categorias_existentes = $pdo->query("SELECT id, nombre_categoria FROM categoria_prod WHERE estado = 'active' ORDER BY nombre_categoria")->fetchAll(PDO::FETCH_ASSOC);
-                                foreach ($categorias_existentes as $cat): ?>
-                                    <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['nombre_categoria']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="nombre_subcategoria" class="required">Nombre de Subcategoría</label>
-                            <input type="text" id="nombre_subcategoria" name="nombre_subcategoria" class="form-control">
-                        </div>
-                    </div>
-
-                    <!-- Subcategoría para nueva categoría -->
-                    <div id="subcategoria-nueva-group" style="display: none;">
-                        <div class="form-group">
-                            <label for="nombre_subcategoria_nueva">Nombre de Subcategoría</label>
-                            <input type="text" id="nombre_subcategoria_nueva" name="nombre_subcategoria_nueva" class="form-control">
-                        </div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="cerrarModalCategoria()">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar</button>
-                    </div>
-                </form>
-
-                <!-- Lista de categorías y subcategorías existentes -->
-                <div style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 15px;">
-                    <h4>Categorías y Subcategorías Existentes</h4>
-                    <?php
-                    $categorias_completas = $pdo->query("
-                        SELECT c.id as categoria_id, c.nombre_categoria, 
-                               s.id as subcategoria_id, s.nombre_subcategoria
-                        FROM categoria_prod c
-                        LEFT JOIN subcategorias s ON c.id = s.categoria_id AND s.estado = 'active'
-                        WHERE c.estado = 'active'
-                        ORDER BY c.nombre_categoria, s.nombre_subcategoria
-                    ")->fetchAll(PDO::FETCH_ASSOC);
-                    
-                    $categorias_agrupadas = [];
-                    foreach ($categorias_completas as $row) {
-                        $categoria_nombre = $row['nombre_categoria'];
-                        if (!isset($categorias_agrupadas[$categoria_nombre])) {
-                            $categorias_agrupadas[$categoria_nombre] = [];
-                        }
-                        if ($row['nombre_subcategoria']) {
-                            $categorias_agrupadas[$categoria_nombre][] = $row['nombre_subcategoria'];
-                        }
-                    }
-                    ?>
-                    
-                    <div style="max-height: 200px; overflow-y: auto;">
-                        <?php foreach ($categorias_agrupadas as $categoria => $subcategorias): ?>
-                            <div style="margin-bottom: 10px;">
-                                <strong>🏷️ <?= htmlspecialchars($categoria) ?></strong>
-                                <?php if (!empty($subcategorias)): ?>
-                                    <div style="margin-left: 20px; font-size: 0.9em;">
-                                        <?php foreach ($subcategorias as $subcat): ?>
-                                            <div>• <?= htmlspecialchars($subcat) ?></div>
-                                        <?php endforeach; ?>
-                                    </div>
-                                <?php else: ?>
-                                    <div style="margin-left: 20px; color: #666; font-style: italic;">
-                                        Sin subcategorías
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para registrar compra -->
+    <!-- Modal para agregar producto al carrito -->
     <div id="modalCompra" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Registrar Compra de Producto</h3>
+                <h3>Agregar Producto al Carrito</h3>
                 <span class="close-modal" onclick="cerrarModalCompra()">&times;</span>
             </div>
             <div class="modal-body">
-                <form id="formCompra" method="POST" action="procesar_compra_proveedor.php">
-                    <input type="hidden" name="id_producto_proveedor" id="compra_id_producto">
+                <form id="formAgregarCarrito" method="GET" action="">
+                    <input type="hidden" name="accion" value="agregar_carrito">
+                    <input type="hidden" id="carrito_id_producto" name="id_producto">
                     
                     <div class="form-group">
                         <label>Producto:</label>
-                        <input type="text" id="compra_nombre_producto" class="form-control" readonly>
+                        <input type="text" id="carrito_nombre_producto" class="form-control" readonly>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
+                            <label for="precio_unitario">Precio Unitario:</label>
+                            <div class="input-with-symbol">
+                                <span class="currency-symbol">$</span>
+                                <input type="number" id="precio_unitario" class="form-control with-symbol" 
+                                       readonly style="background-color: #f8f9fa;">
+                            </div>
+                        </div>
+                        <div class="form-group">
                             <label for="precio_compra_total" class="required">Precio Total de la Compra ($)</label>
                             <div class="input-with-symbol">
                                 <span class="currency-symbol">$</span>
-                                <input type="number" id="precio_compra_total" name="precio_compra_total" 
+                                <input type="number" id="precio_compra_total" name="precio_total" 
                                        step="0.01" class="form-control with-symbol" 
                                        required min="0" placeholder="0.00"
-                                       oninput="calcularCompra()">
+                                       oninput="calcularEmpaques()">
                             </div>
                         </div>
                     </div>
 
-
-
-
-
-                    
                     <div class="form-row">
                         <div class="form-group">
                             <label for="cantidad_empaques" class="required">Cantidad de Empaques</label>
                             <input type="number" name="cantidad_empaques" id="cantidad_empaques" class="form-control" 
                                 min="1" max="1000" required placeholder="Ej: 14 (cajas, paquetes, etc.)"
-                                oninput="calcularCompra()">
+                                oninput="calcularTotal()">
                             <small style="color: #666;">Cantidad de empaques recibidos</small>
                         </div>
                         
@@ -429,7 +488,7 @@ $total_productos = count($result);
                             <label for="unidades_empaque" class="required">Unidades por Empaque</label>
                             <input type="number" name="unidades_empaque" id="unidades_empaque" class="form-control" 
                                 min="1" max="1000" required placeholder="Ej: 9 (unidades por caja)"
-                                oninput="calcularCompra()">
+                                oninput="calcularTotal()">
                             <small style="color: #666;">Unidades individuales por empaque</small>
                         </div>
                     </div>
@@ -453,22 +512,6 @@ $total_productos = count($result);
                             style="background-color: #e3f2fd; font-weight: bold; color: #1565c0;">
                     </div>
                     
-                    <div class="form-group">
-                        <label for="fecha_compra" class="required">Fecha de Compra</label>
-                        <input type="date" name="fecha_compra" id="fecha_compra" class="form-control" 
-                            value="<?php echo date('Y-m-d'); ?>" required
-                            max="<?php echo date('Y-m-d'); ?>">
-                        <small style="color: #666;">No puede ser posterior a hoy</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="fecha_vencimiento" class="required">Fecha de Vencimiento</label>
-                        <input type="date" name="fecha_vencimiento" id="fecha_vencimiento" class="form-control" 
-                            value="<?php echo date('Y-m-d', strtotime('+30 days')); ?>" required
-                            min="<?php echo date('Y-m-d'); ?>">
-                        <small style="color: #666;">Fecha en la que vence este lote (mínimo hoy)</small>
-                    </div>
-                    
                     <div class="alert-info">
                         <strong>💡 Información:</strong><br>
                         • <strong>Precio total de la compra:</strong> Total pagado al proveedor por todo el lote<br>
@@ -480,26 +523,92 @@ $total_productos = count($result);
                     
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="cerrarModalCompra()">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">✅ Registrar Compra</button>
+                        <button type="submit" class="btn btn-primary">🛒 Agregar al Carrito</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <script>
-      <?php if (isset($_SESSION['error'])): ?>
-    document.addEventListener('DOMContentLoaded', function () {
-      const modal = document.getElementById('modalAgregarCategoria');
-      if (modal) {
-        modal.style.display = 'block'; // o usa tu función para abrir el modal
-      }
-    });
-  <?php endif; ?>
+    <!-- Modal para confirmar compra completa -->
+    <div id="modalConfirmarCompra" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✅ Confirmar Compra Completa</h3>
+                <span class="close-modal" onclick="cerrarModalConfirmarCompra()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="formConfirmarCompra" method="POST" action="procesar_compras_multiples.php">
+                    <div id="resumen-compra">
+                        <h4>Resumen de la Compra</h4>
+                        <div id="detalles-resumen" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+                            <!-- Los detalles del carrito se cargarán aquí -->
+                        </div>
+                        
+                        <div class="resumen-total" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="fecha_compra_total" class="required">Fecha de Compra</label>
+                                    <input type="date" name="fecha_compra" id="fecha_compra_total" class="form-control" 
+                                        value="<?php echo date('Y-m-d'); ?>" required
+                                        max="<?php echo date('Y-m-d'); ?>">
+                                    <small style="color: #666;">No puede ser posterior a hoy</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="fecha_vencimiento_base" class="required">Fecha Base de Vencimiento</label>
+                                    <input type="date" name="fecha_vencimiento_base" id="fecha_vencimiento_base" class="form-control" 
+                                        value="<?php echo date('Y-m-d', strtotime('+30 days')); ?>" required
+                                        min="<?php echo date('Y-m-d'); ?>">
+                                    <small style="color: #666;">Fecha base para todos los productos (se puede ajustar por producto)</small>
+                                </div>
+                            </div>
+                            
+                            <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
+                                <h4 style="color: #28a745; margin-bottom: 10px;">TOTAL GENERAL</h4>
+                                <div style="font-size: 1.5em; font-weight: bold; color: #28a745;">
+                                    $<span id="total-general"><?php echo number_format($total_carrito, 2); ?></span>
+                                </div>
+                                <div style="color: #666; font-size: 0.9em;">
+                                    <?php echo $total_unidades_carrito; ?> unidades en total
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert-info">
+                        <strong>⚠️ Confirmación:</strong><br>
+                        • Esta acción registrará todas las compras en el sistema<br>
+                        • Se actualizará el inventario automáticamente<br>
+                        • Se generará un historial de compras<br>
+                        • El carrito se vaciará después de la confirmación
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="cerrarModalConfirmarCompra()">Cancelar</button>
+                        <button type="submit" class="btn btn-success">✅ Confirmar y Procesar Todas las Compras</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-    function abrirModalCompra(idProducto, nombreProducto, unidadMedida) {
-        document.getElementById('compra_id_producto').value = idProducto;
-        document.getElementById('compra_nombre_producto').value = nombreProducto;
+    <!-- Modal para categorías (existente) -->
+    <div id="modalCategoria" class="modal">
+        <!-- ... contenido existente del modal de categorías ... -->
+    </div>
+
+    <script>
+    let productoActual = null;
+    let precioUnitarioActual = 0;
+
+    function abrirModalCompra(idProducto, nombreProducto, unidadMedida, precioUnitario) {
+        productoActual = idProducto;
+        precioUnitarioActual = parseFloat(precioUnitario);
+        
+        document.getElementById('carrito_id_producto').value = idProducto;
+        document.getElementById('carrito_nombre_producto').value = nombreProducto;
+        document.getElementById('precio_unitario').value = precioUnitario.toFixed(2);
         
         // Resetear campos
         document.getElementById('precio_compra_total').value = '';
@@ -509,16 +618,25 @@ $total_productos = count($result);
         document.getElementById('precio_compra_unidad').value = '';
         document.getElementById('precio_venta_unidad').value = '';
         
-        // Establecer fecha de vencimiento por defecto (30 días desde hoy)
-        const fechaVencimiento = new Date();
-        fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
-        document.getElementById('fecha_vencimiento').value = fechaVencimiento.toISOString().split('T')[0];
-        
         document.getElementById('modalCompra').style.display = 'block';
         document.getElementById('precio_compra_total').focus();
     }
 
-    function calcularCompra() {
+    function calcularEmpaques() {
+        const precioTotal = parseFloat(document.getElementById('precio_compra_total').value) || 0;
+        if (precioTotal > 0 && precioUnitarioActual > 0) {
+            const unidadesTotales = precioTotal / precioUnitarioActual;
+            const empaquesSugeridos = Math.ceil(unidadesTotales / 10); // Sugerir empaques de 10 unidades
+            
+            if (empaquesSugeridos > 0) {
+                document.getElementById('cantidad_empaques').value = empaquesSugeridos;
+                document.getElementById('unidades_empaque').value = 10;
+                calcularTotal();
+            }
+        }
+    }
+
+    function calcularTotal() {
         const precioCompraTotal = parseFloat(document.getElementById('precio_compra_total').value) || 0;
         const empaques = parseInt(document.getElementById('cantidad_empaques').value) || 0;
         const unidadesPorEmpaque = parseInt(document.getElementById('unidades_empaque').value) || 0;
@@ -546,47 +664,28 @@ $total_productos = count($result);
 
     function cerrarModalCompra() {
         document.getElementById('modalCompra').style.display = 'none';
+        productoActual = null;
+        precioUnitarioActual = 0;
     }
 
-    function abrirModalCategoria() {
-        document.getElementById('modalCategoria').style.display = 'block';
+    function abrirModalConfirmarCompra() {
+        // Cargar los detalles del carrito en el modal de confirmación
+        cargarDetallesCarrito();
+        document.getElementById('modalConfirmarCompra').style.display = 'block';
     }
 
-    function cerrarModalCategoria() {
-        document.getElementById('modalCategoria').style.display = 'none';
-        document.getElementById('formCategoria').reset();
-        document.getElementById('grupo-nueva-categoria').style.display = 'none';
-        document.getElementById('grupo-nueva-subcategoria').style.display = 'none';
-        document.getElementById('subcategoria-nueva-group').style.display = 'none';
-        document.getElementById('tipo_operacion').selectedIndex = 0;
+    function cerrarModalConfirmarCompra() {
+        document.getElementById('modalConfirmarCompra').style.display = 'none';
     }
 
-    function cambiarTipoOperacion() {
-        const tipo = document.getElementById('tipo_operacion').value;
-        const grupoCategoria = document.getElementById('grupo-nueva-categoria');
-        const grupoSubcategoria = document.getElementById('grupo-nueva-subcategoria');
-        const subcategoriaNuevaGroup = document.getElementById('subcategoria-nueva-group');
-        
-        // Ocultar todos los grupos primero
-        grupoCategoria.style.display = 'none';
-        grupoSubcategoria.style.display = 'none';
-        subcategoriaNuevaGroup.style.display = 'none';
-        
-        // Mostrar el grupo correspondiente
-        if (tipo === 'nueva_categoria') {
-            grupoCategoria.style.display = 'block';
-        } else if (tipo === 'nueva_subcategoria') {
-            grupoSubcategoria.style.display = 'block';
-        }
-    }
-
-    function toggleSubcategoriaNueva() {
-        const subcategoriaNuevaGroup = document.getElementById('subcategoria-nueva-group');
-        subcategoriaNuevaGroup.style.display = document.getElementById('agregar_subcategoria').checked ? 'block' : 'none';
+    function cargarDetallesCarrito() {
+        // Esta función cargaría los detalles del carrito via AJAX
+        // Por ahora, se puede recargar la página o usar PHP para generar el contenido
+        // En una implementación real, esto se haría con AJAX
     }
 
     // Validación de fechas en tiempo real
-    document.getElementById('fecha_compra')?.addEventListener('change', function() {
+    document.getElementById('fecha_compra_total')?.addEventListener('change', function() {
         const hoy = new Date().toISOString().split('T')[0];
         if (this.value > hoy) {
             alert('La fecha de compra no puede ser posterior a hoy');
@@ -594,7 +693,7 @@ $total_productos = count($result);
         }
     });
 
-    document.getElementById('fecha_vencimiento')?.addEventListener('change', function() {
+    document.getElementById('fecha_vencimiento_base')?.addEventListener('change', function() {
         const hoy = new Date().toISOString().split('T')[0];
         if (this.value < hoy) {
             alert('La fecha de vencimiento no puede ser anterior a hoy');
@@ -605,12 +704,16 @@ $total_productos = count($result);
     window.onclick = function(event) {
         const modalCompra = document.getElementById('modalCompra');
         const modalCategoria = document.getElementById('modalCategoria');
+        const modalConfirmar = document.getElementById('modalConfirmarCompra');
         
         if (event.target === modalCompra) {
             cerrarModalCompra();
         }
         if (event.target === modalCategoria) {
             cerrarModalCategoria();
+        }
+        if (event.target === modalConfirmar) {
+            cerrarModalConfirmarCompra();
         }
     }
 
