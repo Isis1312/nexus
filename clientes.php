@@ -18,7 +18,7 @@ if (!$sistemaPermisos->puedeVer('gestion_usuario')) {
     exit();
 }
 
-// Procesar búsqueda
+// Procesar búsqueda 
 $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
 $where = '';
 $params = [];
