@@ -6,49 +6,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 require_once 'conexion.php';
-require_once 'menu.php';
 
-// Inicializar sistema de permisos
-require_once 'permisos.php';
-$sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
-
-// Verificar si puede ver este módulo 
-if (!$sistemaPermisos->puedeVer('ventas')) {
-    header('Location: inicio.php');
-    exit();
-}
-
-// Obtener usuario actual
-$usuario_id = $_SESSION['id_usuario'] ?? null;
-
-// Obtener tasa del dólar desde JSON
-$tasas_file = 'js/tasas_cache.json';
-$tasa_usd = 10.00; // Valor por defecto
-
-if (file_exists($tasas_file)) {
-    $tasas_data = json_decode(file_get_contents($tasas_file), true);
-    if (isset($tasas_data['dolar'])) {
-        $tasa_usd = floatval($tasas_data['dolar']);
-    }
-}
-
-// Obtener último número de factura
-try {
-    $stmt = $pdo->query("SELECT nro_factura FROM ventas ORDER BY id_venta DESC LIMIT 1");
-    $ultima_factura = $stmt->fetchColumn();
-    
-    if ($ultima_factura && preg_match('/FAC-(\d+)/', $ultima_factura, $match)) {
-        $numero = intval($match[1]) + 1;
-    } else {
-        $numero = 1;
-    }
-    
-    $nro_factura = 'FAC-' . str_pad($numero, 6, '0', STR_PAD_LEFT);
-} catch (Exception $e) {
-    $nro_factura = 'FAC-' . str_pad(1, 6, '0', STR_PAD_LEFT);
-}
-
-// Procesar búsqueda de cliente por cédula (AJAX)
+// AQUÍ VAN LAS BÚSQUEDAS AJAX PRIMERO - IMPORTANTE
 if (isset($_GET['buscar_cliente'])) {
     $cedula = trim($_GET['buscar_cliente']);
     $stmt = $pdo->prepare("SELECT * FROM clientes WHERE cedula = ?");
@@ -63,7 +22,6 @@ if (isset($_GET['buscar_cliente'])) {
     exit();
 }
 
-// Procesar búsqueda de producto por código (AJAX)
 if (isset($_GET['buscar_producto'])) {
     $codigo = trim($_GET['buscar_producto']);
     $stmt = $pdo->prepare("SELECT p.*, c.nombre_categoria 
@@ -79,6 +37,48 @@ if (isset($_GET['buscar_producto'])) {
         echo json_encode(['success' => false, 'message' => 'Producto no disponible']);
     }
     exit();
+}
+
+// búsqueda AJAX,
+require_once 'menu.php';
+
+// Inicializar sistema de permisos
+require_once 'permisos.php';
+$sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
+
+// Verificar si puede ver este módulo 
+if (!$sistemaPermisos->puedeVer('ventas')) {
+    header('Location: inicio.php');
+    exit();
+}
+
+
+
+// Obtener tasa del dólar desde JSON
+$tasas_file = 'js/tasas_cache.json';
+
+
+if (file_exists($tasas_file)) {
+    $tasas_data = json_decode(file_get_contents($tasas_file), true);
+    if (isset($tasas_data['dolar'])) {
+        $tasa_usd = floatval($tasas_data['dolar']);
+    }
+}
+
+// Obtener último número de factura 
+try {
+    $stmt = $pdo->query("SELECT nro_factura FROM ventas ORDER BY id_venta DESC LIMIT 1");
+    $ultima_factura = $stmt->fetchColumn();
+    
+    if ($ultima_factura && preg_match('/FAC-(\d+)/', $ultima_factura, $match)) {
+        $numero = intval($match[1]) + 1;
+    } else {
+        $numero = 1; // Empieza en 1
+    }
+    
+    $nro_factura = 'FAC-' . str_pad($numero, 6, '0', STR_PAD_LEFT);
+} catch (Exception $e) {
+    $nro_factura = 'FAC-' . str_pad(1, 6, '0', STR_PAD_LEFT);
 }
 
 // Procesar facturación
@@ -105,11 +105,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
         $total_bs = $subtotal_bs + $iva_bs + $igtf_bs;
         $total_usd = $total_bs / $tasa_usd;
         
-        // Insertar venta (sin guardar impuestos en BD, se calculan)
+        // Insertar venta
         $stmt = $pdo->prepare("INSERT INTO ventas 
             (cliente, fecha, metodo_pago, total_bs, total_usd, tasa_usd, 
-             nro_factura, id_cliente, usuario_id) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+             nro_factura, id_cliente) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         
         $stmt->execute([
             $cliente_nombre,
@@ -119,8 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
             $total_usd,
             $tasa_usd,
             $nro_factura,
-            $id_cliente,
-            $usuario_id
+            $id_cliente
         ]);
         
         $id_venta = $pdo->lastInsertId();
@@ -134,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
             $precio_unitario_bs = $producto['precio_venta'];
             $subtotal_bs_producto = $precio_unitario_bs * $cantidad;
             
-            // Insertar detalle (solo en bolívares)
+            // Insertar detalle
             $stmt_detalle = $pdo->prepare("INSERT INTO detalle_venta 
                 (id_venta, id_producto, codigo_producto, nombre_producto, cantidad, 
                  precio_unitario_bs, subtotal_bs) 
@@ -163,12 +162,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
     } catch (Exception $e) {
         $pdo->rollBack();
         $_SESSION['error'] = "❌ Error al facturar: " . $e->getMessage();
-        header('Location: facturacion_form.php');
+        header('Location: facturacion.php');
         exit();
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -179,7 +177,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-
 <main class="main-content">
     <div class="content-wrapper">
         <!-- Header -->
@@ -281,8 +278,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
                                 <th>Código</th>
                                 <th>Producto</th>
                                 <th>Cantidad</th>
-                                <th>Precio Unitario (Bs)</th>
-                                <th>Subtotal (Bs)</th>
+                                <th>Precio Unitario ($)</th>
+                                <th>Subtotal ($)</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -298,20 +295,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
                 <div class="totales-container">
                     <div class="total-row">
                         <span class="total-label">Subtotal:</span>
-                        <span id="subtotal-bs" class="total-value">Bs. 0,00</span>
+                        <span id="subtotal-bs" class="total-value">$. 0,00</span>
                     </div>
-                    <div class="total-row">
+                  <!-- <div class="total-row">
                         <span class="total-label">IVA (16%):</span>
                         <span id="iva-bs" class="total-value">Bs. 0,00</span>
-                    </div>
+                    </div>-->
                     <div id="igtf-row" class="total-row" style="display: none;">
                         <span class="total-label">IGTF (3%):</span>
-                        <span id="igtf-bs" class="total-value">Bs. 0,00</span>
+                        <span id="igtf-bs" class="total-value">$. 0,00</span>
                     </div>
                     <div class="total-row total-final">
                         <span class="total-label">TOTAL:</span>
-                        <span id="total-bs" class="total-value">Bs. 0,00</span>
-                        <span id="total-usd" class="total-value-usd">$ 0,00</span>
+                        <span id="total-bs" class="total-value">$. 0,00</span>
+                        <span id="total-usd" class="total-value-usd">Bs. 0,00</span>
                     </div>
                 </div>
             </div>
@@ -398,13 +395,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
         </div>
     </div>
 </div>
-
 <script>
 let productos = [];
 let tasa_usd = <?= $tasa_usd ?>;
 let subtotal_bs = 0;
 
-// Buscar cliente
 function buscarCliente() {
     const cedula = $('#cedula-cliente').val().trim();
     if (!cedula) {
@@ -412,10 +407,12 @@ function buscarCliente() {
         return;
     }
     
-    $.get('facturacion_form.php', { buscar_cliente: cedula }, function(response) {
-        try {
-            const data = JSON.parse(response);
-            
+    $.ajax({
+        url: 'facturacion.php',
+        type: 'GET',
+        data: { buscar_cliente: cedula },
+        dataType: 'json',
+        success: function(data) {
             if (data.success) {
                 const cliente = data.cliente;
                 $('#id_cliente').val(cliente.id);
@@ -424,27 +421,25 @@ function buscarCliente() {
                 $('#cliente-direccion').text(cliente.direccion);
                 $('#datos-cliente').show();
                 
-                // Actualizar formulario
                 $('#id_cliente_form').val(cliente.id);
                 $('#cliente_nombre_form').val(cliente.nombre);
                 
                 verificarEstadoFactura();
-                mostrarAlerta('success', 'Cliente encontrado');
             } else {
                 mostrarAlerta('error', data.message);
                 $('#datos-cliente').hide();
             }
-        } catch (e) {
-            mostrarAlerta('error', 'Error en la respuesta del servidor');
+        },
+        error: function(xhr, status, error) {
+            console.error('Error AJAX:', error);
+            mostrarAlerta('error', 'Error de conexión con el servidor: ' + error);
         }
-    }).fail(function() {
-        mostrarAlerta('error', 'Error de conexión con el servidor');
     });
 }
 
-// Buscar producto
 function buscarProducto() {
     const codigo = $('#codigo-producto').val().trim();
+    
     if (!codigo) {
         mostrarAlerta('error', 'Ingrese un código de producto');
         return;
@@ -455,20 +450,20 @@ function buscarProducto() {
         return;
     }
     
-    $.get('facturacion_form.php', { buscar_producto: codigo }, function(response) {
-        try {
-            const data = JSON.parse(response);
-            
+    $.ajax({
+        url: 'facturacion.php',
+        type: 'GET',
+        data: { buscar_producto: codigo },
+        dataType: 'json',
+        success: function(data) {
             if (data.success) {
                 const producto = data.producto;
                 
-                // Verificar stock
                 if (parseInt(producto.cantidad) <= 0) {
                     mostrarAlerta('error', 'Producto sin stock disponible');
                     return;
                 }
                 
-                // Agregar producto a la lista
                 const productoObj = {
                     id: producto.id,
                     codigo: producto.codigo,
@@ -478,7 +473,6 @@ function buscarProducto() {
                     stock: parseInt(producto.cantidad)
                 };
                 
-                // Verificar si ya existe en la lista
                 const index = productos.findIndex(p => p.id === productoObj.id);
                 if (index !== -1) {
                     if (productos[index].cantidad < productoObj.stock) {
@@ -498,15 +492,14 @@ function buscarProducto() {
             } else {
                 mostrarAlerta('error', data.message, 10000);
             }
-        } catch (e) {
-            mostrarAlerta('error', 'Error en la respuesta del servidor');
+        },
+        error: function(xhr, status, error) {
+            console.error('Error AJAX:', error);
+            mostrarAlerta('error', 'Error de conexión con el servidor: ' + error);
         }
-    }).fail(function() {
-        mostrarAlerta('error', 'Error de conexión con el servidor');
     });
 }
 
-// Actualizar tabla de productos
 function actualizarTablaProductos() {
     const tbody = $('#tabla-productos tbody');
     tbody.empty();
@@ -530,8 +523,8 @@ function actualizarTablaProductos() {
                         <button type="button" class="btn-cantidad" onclick="cambiarCantidad(${index}, 1)">+</button>
                     </div>
                 </td>
-                <td>Bs. ${producto.precio_venta.toFixed(2).replace('.', ',')}</td>
-                <td>Bs. ${subtotal.toFixed(2).replace('.', ',')}</td>
+                <td>$. ${producto.precio_venta.toFixed(2).replace('.', ',')}</td>
+                <td>$. ${subtotal.toFixed(2).replace('.', ',')}</td>
                 <td>
                     <button type="button" class="btn-eliminar-producto" onclick="eliminarProducto(${index})">
                         🗑️ Eliminar
@@ -546,7 +539,6 @@ function actualizarTablaProductos() {
     verificarEstadoFactura();
 }
 
-// Cambiar cantidad con botones +/-
 function cambiarCantidad(index, cambio) {
     const nuevoValor = productos[index].cantidad + cambio;
     
@@ -556,7 +548,6 @@ function cambiarCantidad(index, cambio) {
     }
 }
 
-// Actualizar cantidad desde input
 function actualizarCantidad(index, valor) {
     const nuevoValor = parseInt(valor);
     
@@ -564,24 +555,20 @@ function actualizarCantidad(index, valor) {
         productos[index].cantidad = nuevoValor;
         actualizarTablaProductos();
     } else {
-        // Restaurar valor anterior
         $(`#producto-${index} .cantidad-input`).val(productos[index].cantidad);
     }
 }
 
-// Eliminar producto
 function eliminarProducto(index) {
     productos.splice(index, 1);
     actualizarTablaProductos();
     mostrarAlerta('info', 'Producto eliminado');
 }
 
-// Actualizar totales
 function actualizarTotales() {
-    const iva_porcentaje = 16;
+    const iva_porcentaje = 0.16;
     const iva_bs = subtotal_bs * (iva_porcentaje / 100);
     
-    // Verificar IGTF
     let igtf_porcentaje = 0;
     if ($('input[name="metodo_pago"]:checked').val() === 'Efectivo') {
         igtf_porcentaje = 3;
@@ -589,21 +576,18 @@ function actualizarTotales() {
     const igtf_bs = subtotal_bs * (igtf_porcentaje / 100);
     
     const total_bs = subtotal_bs + iva_bs + igtf_bs;
-    const total_usd = total_bs / tasa_usd;
+    const total_usd = total_bs * tasa_usd;
     
-    // Actualizar interfaz
-    $('#subtotal-bs').text('Bs. ' + subtotal_bs.toFixed(2).replace('.', ','));
-    $('#iva-bs').text('Bs. ' + iva_bs.toFixed(2).replace('.', ','));
+    $('#subtotal-bs').text('$. ' + subtotal_bs.toFixed(2).replace('.', ','));
+    $('#iva-bs').text('$. ' + iva_bs.toFixed(2).replace('.', ','));
     $('#igtf-bs').text('Bs. ' + igtf_bs.toFixed(2).replace('.', ','));
-    $('#total-bs').text('Bs. ' + total_bs.toFixed(2).replace('.', ','));
-    $('#total-usd').text('$ ' + total_usd.toFixed(2).replace('.', ','));
+    $('#total-bs').text('$. ' + total_bs.toFixed(2).replace('.', ','));
+    $('#total-usd').text('Bs. ' + total_usd.toFixed(2).replace('.', ','));
     
-    // Actualizar formulario oculto
     $('#subtotal_bs_form').val(subtotal_bs);
     $('#productos_json').val(JSON.stringify(productos));
 }
 
-// Mostrar/ocultar IGTF
 function mostrarIGTF() {
     const metodo = $('input[name="metodo_pago"]:checked').val();
     if (metodo === 'Efectivo') {
@@ -612,14 +596,12 @@ function mostrarIGTF() {
         $('#igtf-row').hide();
     }
     
-    // Actualizar formulario
     $('#metodo_pago_form').val(metodo);
     
     actualizarTotales();
     verificarEstadoFactura();
 }
 
-// Verificar estado de factura
 function verificarEstadoFactura() {
     const tieneCliente = $('#id_cliente').val() !== '';
     const tieneProductos = productos.length > 0;
@@ -632,7 +614,6 @@ function verificarEstadoFactura() {
     }
 }
 
-// Cancelar factura
 function cancelarFactura() {
     Swal.fire({
         title: '¿Cancelar factura?',
@@ -645,12 +626,11 @@ function cancelarFactura() {
         cancelButtonText: 'No, continuar'
     }).then((result) => {
         if (result.isConfirmed) {
-            window.location.href = 'facturacion_form.php';
+            window.location.href = 'facturacion.php';
         }
     });
 }
 
-// Mostrar alerta
 function mostrarAlerta(icon, message, timer = 3000) {
     Swal.fire({
         icon: icon,
@@ -663,7 +643,6 @@ function mostrarAlerta(icon, message, timer = 3000) {
     });
 }
 
-// Funciones para modal de cliente
 function abrirModalAgregar() {
     $('#modalAgregar').show();
 }
@@ -673,37 +652,37 @@ function cerrarModalAgregar() {
     $('#formAgregarCliente')[0].reset();
 }
 
-// Formulario agregar cliente
 $('#formAgregarCliente').submit(function(e) {
     e.preventDefault();
     
     const formData = $(this).serialize();
     
-    $.post('guardar_cliente.php', formData, function(response) {
-        try {
-            const data = JSON.parse(response);
-            
+    $.ajax({
+        url: 'guardar_cliente.php',
+        type: 'POST',
+        data: formData,
+        dataType: 'json',
+        success: function(data) {
             if (data.success) {
                 cerrarModalAgregar();
-                mostrarAlerta('success', 'Cliente agregado correctamente');
+                mostrarAlerta('success', data.message);
                 
-                // Buscar automáticamente el cliente agregado
                 $('#cedula-cliente').val(data.cedula);
-                buscarCliente();
+                setTimeout(function() {
+                    buscarCliente();
+                }, 500);
             } else {
                 mostrarAlerta('error', data.message);
             }
-        } catch (e) {
-            mostrarAlerta('error', 'Error en la respuesta del servidor');
+        },
+        error: function(xhr, status, error) {
+            console.error('Error AJAX:', error);
+            mostrarAlerta('error', 'Error de conexión con el servidor: ' + error);
         }
-    }).fail(function() {
-        mostrarAlerta('error', 'Error de conexión con el servidor');
     });
 });
 
-// Inicializar
 $(document).ready(function() {
-    // Actualizar fecha automáticamente
     const fecha = new Date();
     const fechaFormateada = fecha.toLocaleDateString('es-ES', {
         day: '2-digit',
@@ -712,17 +691,29 @@ $(document).ready(function() {
     });
     $('#fecha-actual').text(fechaFormateada);
     
-    // Cerrar modal al hacer clic fuera
     $(window).click(function(e) {
         if (e.target.id === 'modalAgregar') {
             cerrarModalAgregar();
         }
     });
     
-    // Auto-ocultar mensajes después de 5 segundos
     setTimeout(function() {
         $('#mensaje-exito, #mensaje-error').fadeOut('slow');
     }, 5000);
+    
+    $('#cedula-cliente').keypress(function(e) {
+        if (e.which == 13) {
+            buscarCliente();
+            return false;
+        }
+    });
+    
+    $('#codigo-producto').keypress(function(e) {
+        if (e.which == 13) {
+            buscarProducto();
+            return false;
+        }
+    });
 });
 </script>
 </body>

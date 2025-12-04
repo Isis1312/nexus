@@ -388,9 +388,6 @@ if (!empty($_SESSION['carrito_compras'])) {
                                             $<?php echo number_format($row['precio_compra'], 2); ?>
                                         </td>
                                         <td>
-                                            <span class="badge badge-success"><?php echo $row['unidad_medida']; ?></span>
-                                        </td>
-                                        <td>
                                             <?php if ($row['fecha_compra']): ?>
                                                 <span class="badge badge-info"><?php echo date('d/m/Y', strtotime($row['fecha_compra'])); ?></span>
                                             <?php else: ?>
@@ -405,7 +402,6 @@ if (!empty($_SESSION['carrito_compras'])) {
                                                 <button class="btn-comprar" 
                                                         onclick="abrirModalCompra(<?php echo $row['id_producto_proveedor']; ?>, 
                                                                                  '<?php echo addslashes($row['nombre']); ?>', 
-                                                                                 '<?php echo $row['unidad_medida']; ?>',
                                                                                  <?php echo $row['precio_compra']; ?>)">
                                                     🛒 Comprar
                                                 </button>

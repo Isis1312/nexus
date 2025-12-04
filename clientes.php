@@ -13,7 +13,7 @@ require_once 'permisos.php';
 $sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
 
 // Verificar si puede ver este módulo 
-if (!$sistemaPermisos->puedeVer('gestion_usuario')) {
+if (!$sistemaPermisos->puedeVer('clientes')) {
     header('Location: inicio.php');
     exit();
 }
@@ -164,7 +164,6 @@ require_once 'menu.php';
     </div>
     <div class="modal-body">
       <form id="formAgregar" method="POST" action="guardar_cliente.php">
-        <!-- CAMPO OCULTO PARA IDENTIFICAR EL ORIGEN -->
         <input type="hidden" name="origen" value="clientes">
         
         <div class="form-row">

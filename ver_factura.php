@@ -29,10 +29,9 @@ if ($id_venta <= 0) {
 // Obtener datos de la factura
 try {
     // Obtener venta
-    $stmt = $pdo->prepare("SELECT v.*, c.cedula, c.telefono, c.direccion, u.nombre as usuario_nombre 
+    $stmt = $pdo->prepare("SELECT v.*, c.cedula, c.telefono, c.direccion  
                           FROM ventas v 
                           LEFT JOIN clientes c ON v.id_cliente = c.id 
-                          LEFT JOIN usuario u ON v.usuario_id = u.id_usuario 
                           WHERE v.id_venta = ?");
     $stmt->execute([$id_venta]);
     $factura = $stmt->fetch(PDO::FETCH_ASSOC);

@@ -30,13 +30,13 @@
 
 /* Mensajes */
 .mensaje-exito {
-    background: linear-gradient(135deg, #23ca3f, #1ea832);
+    background: linear-gradient(135deg, #008B8B, #82cdcd);
     color: white;
     padding: 15px 20px;
     border-radius: 10px;
     margin-bottom: 20px;
     box-shadow: 0 4px 15px rgba(35, 202, 63, 0.3);
-    border-left: 5px solid #1ea832;
+    border-left: 5px solid #008B8B;
 }
 
 .mensaje-error {
