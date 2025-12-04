@@ -177,7 +177,6 @@ if (!empty($_SESSION['carrito_compras'])) {
                     <p>Gestiona los productos disponibles de tus proveedores</p>
                 </div>
 
-                <!-- Estadísticas -->
                 <div class="stats-container">
                     <div class="stat-card">
                         <span class="stat-number"><?php echo $total_productos; ?></span>
@@ -197,7 +196,6 @@ if (!empty($_SESSION['carrito_compras'])) {
                     </div>
                 </div>
 
-                <!-- Filtros -->
                 <div class="filtros-container">
                     <div class="filtro-group">
                         <form method="GET" action="" id="formBusqueda">
@@ -240,81 +238,82 @@ if (!empty($_SESSION['carrito_compras'])) {
                     </div>
                 </div>
 
-                <!-- Carrito de compras (si hay productos) -->
-                <?php if (!empty($carrito_detalles)): ?>
-                    <div class="carrito-container" style="margin-bottom: 30px; background: #fff; border-radius: 10px; padding: 20px; border: 2px solid #28a745;">
-                        <h3 style="color: #28a745; margin-bottom: 15px;">🛒 Carrito de Compras</h3>
-                        
-                        <div style="overflow-x: auto;">
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr style="background: rgba(40, 167, 69, 0.1);">
-                                        <th style="padding: 10px; text-align: left;">Producto</th>
-                                        <th style="padding: 10px; text-align: center;">Empaques</th>
-                                        <th style="padding: 10px; text-align: center;">Unid/Emp</th>
-                                        <th style="padding: 10px; text-align: center;">Total Unid</th>
-                                        <th style="padding: 10px; text-align: right;">Precio Total</th>
-                                        <th style="padding: 10px; text-align: center;">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($carrito_detalles as $item): ?>
-                                        <tr style="border-bottom: 1px solid #eee;">
-                                            <td style="padding: 10px;">
-                                                <strong><?php echo htmlspecialchars($item['nombre']); ?></strong><br>
-                                                <small>Código: <?php echo $item['codigo_producto']; ?></small><br>
-                                                <small>Proveedor: <?php echo $item['nombre_comercial']; ?></small>
-                                            </td>
-                                            <td style="padding: 10px; text-align: center;">
-                                                <?php echo $item['cantidad_empaques']; ?>
-                                            </td>
-                                            <td style="padding: 10px; text-align: center;">
-                                                <?php echo $item['unidades_empaque']; ?>
-                                            </td>
-                                            <td style="padding: 10px; text-align: center; font-weight: bold;">
-                                                <?php echo $item['total_unidades']; ?>
-                                            </td>
-                                            <td style="padding: 10px; text-align: right; font-weight: bold; color: #28a745;">
-                                                $<?php echo number_format($item['precio_total'], 2); ?>
-                                            </td>
-                                            <td style="padding: 10px; text-align: center;">
-                                                <a href="?accion=eliminar_carrito&id_producto=<?php echo $item['id_producto_proveedor']; ?>" 
-                                                   class="btn btn-danger btn-sm" 
-                                                   onclick="return confirm('¿Eliminar este producto del carrito?')">
-                                                    ❌ Eliminar
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                                <tfoot>
-                                    <tr style="background: rgba(40, 167, 69, 0.05); font-weight: bold;">
-                                        <td colspan="3" style="padding: 10px; text-align: right;">TOTALES:</td>
-                                        <td style="padding: 10px; text-align: center; color: #28a745;">
-                                            <?php echo $total_unidades_carrito; ?> unidades
-                                        </td>
-                                        <td style="padding: 10px; text-align: right; color: #28a745; font-size: 1.1em;">
-                                            $<?php echo number_format($total_carrito, 2); ?>
-                                        </td>
-                                        <td style="padding: 10px; text-align: center;">
-                                            <div style="display: flex; gap: 10px; justify-content: center;">
-                                                <a href="?accion=vaciar_carrito" 
-                                                   class="btn btn-secondary btn-sm"
-                                                   onclick="return confirm('¿Vaciar todo el carrito?')">
-                                                    🗑️ Vaciar
-                                                </a>
-                                                <button class="btn btn-success btn-sm" onclick="abrirModalConfirmarCompra()">
-                                                    ✅ Confirmar Compra
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
+                
+<?php if (!empty($carrito_detalles)): ?>
+    <div class="carrito-container" style="margin-bottom: 30px; background: #fff; border-radius: 10px; padding: 20px; border: 2px solid #28a745;">
+        <h3 style="color: #28a745; margin-bottom: 15px;">🛒 Carrito de Compras</h3>
+        
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: rgba(40, 167, 69, 0.1);">
+                        <th style="padding: 10px; text-align: left;">Producto</th>
+                        <th style="padding: 10px; text-align: center;">Empaques</th>
+                        <th style="padding: 10px; text-align: center;">Unid/Emp</th>
+                        <th style="padding: 10px; text-align: center;">Total Unid</th>
+                        <th style="padding: 10px; text-align: right;">Precio Total</th>
+                        <th style="padding: 10px; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($carrito_detalles as $item): ?>
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 10px;">
+                                <strong><?php echo htmlspecialchars($item['nombre']); ?></strong><br>
+                                <small>Código: <?php echo $item['codigo_producto']; ?></small><br>
+                                <small>Proveedor: <?php echo $item['nombre_comercial']; ?></small>
+                            </td>
+                            <td style="padding: 10px; text-align: center;">
+                                <?php echo $item['cantidad_empaques']; ?>
+                            </td>
+                            <td style="padding: 10px; text-align: center;">
+                                <?php echo $item['unidades_empaque']; ?>
+                            </td>
+                            <td style="padding: 10px; text-align: center; font-weight: bold;">
+                                <?php echo $item['total_unidades']; ?>
+                            </td>
+                            <td style="padding: 10px; text-align: right; font-weight: bold; color: #28a745;">
+                                $<?php echo number_format($item['precio_total'], 2); ?>
+                            </td>
+                            <td style="padding: 10px; text-align: center;">
+                                <a href="?accion=eliminar_carrito&id_producto=<?php echo $item['id_producto_proveedor']; ?>" 
+                                   class="btn btn-danger btn-sm" 
+                                   onclick="return confirm('¿Eliminar este producto del carrito?')">
+                                    ❌ Eliminar
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot>
+                    <tr style="background: rgba(40, 167, 69, 0.05); font-weight: bold;">
+                        <td colspan="3" style="padding: 10px; text-align: right;">TOTALES:</td>
+                        <td style="padding: 10px; text-align: center; color: #28a745;">
+                            <?php echo $total_unidades_carrito; ?> unidades
+                        </td>
+                        <td style="padding: 10px; text-align: right; color: #28a745; font-size: 1.1em;">
+                            $<?php echo number_format($total_carrito, 2); ?>
+                        </td>
+                        <td style="padding: 10px; text-align: center;">
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <form method="GET" action="" style="display: inline;">
+                                    <input type="hidden" name="accion" value="vaciar_carrito">
+                                    <button type="submit" class="btn btn-secondary btn-sm"
+                                            onclick="return confirm('¿Está seguro de vaciar todo el carrito?')">
+                                        🗑️ Vaciar
+                                    </button>
+                                </form>
+                                <button class="btn btn-success btn-sm" onclick="abrirModalConfirmarCompra()">
+                                    ✅ Confirmar Compra
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+<?php endif; ?>
                 <?php if ($total_productos > 0): ?>
                     <?php if ($id_proveedor > 0 && isset($result[0])): ?>
                         <div class="proveedor-info">
@@ -437,7 +436,6 @@ if (!empty($_SESSION['carrito_compras'])) {
             </div>
     </main>
 
-    <!-- Modal para agregar producto al carrito -->
     <div id="modalCompra" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -454,24 +452,13 @@ if (!empty($_SESSION['carrito_compras'])) {
                         <input type="text" id="carrito_nombre_producto" class="form-control" readonly>
                     </div>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="precio_unitario">Precio Unitario:</label>
-                            <div class="input-with-symbol">
-                                <span class="currency-symbol">$</span>
-                                <input type="number" id="precio_unitario" class="form-control with-symbol" 
-                                       readonly style="background-color: #f8f9fa;">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="precio_compra_total" class="required">Precio Total de la Compra ($)</label>
-                            <div class="input-with-symbol">
-                                <span class="currency-symbol">$</span>
-                                <input type="number" id="precio_compra_total" name="precio_total" 
-                                       step="0.01" class="form-control with-symbol" 
-                                       required min="0" placeholder="0.00"
-                                       oninput="calcularEmpaques()">
-                            </div>
+                    <div class="form-group">
+                        <label for="precio_compra_total" class="required">Precio Total de la Compra ($)</label>
+                        <div class="input-with-symbol">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" id="precio_compra_total" name="precio_total" 
+                                   step="0.01" class="form-control with-symbol" 
+                                   required min="0" placeholder="0.00">
                         </div>
                     </div>
 
@@ -507,7 +494,7 @@ if (!empty($_SESSION['carrito_compras'])) {
                     </div>
 
                     <div class="form-group">
-                        <label>Precio de Venta por Unidad (42%):</label>
+                        <label>Precio de Venta por Unidad (30%):</label>
                         <input type="text" id="precio_venta_unidad" class="form-control" readonly 
                             style="background-color: #e3f2fd; font-weight: bold; color: #1565c0;">
                     </div>
@@ -517,7 +504,7 @@ if (!empty($_SESSION['carrito_compras'])) {
                         • <strong>Precio total de la compra:</strong> Total pagado al proveedor por todo el lote<br>
                         • <strong>Empaques:</strong> Cantidad de cajas/paquetes recibidos<br>
                         • <strong>Unidades por empaque:</strong> Cantidad de productos individuales por empaque<br>
-                        • <strong>Precio de venta:</strong> Se calcula automáticamente (precio compra por unidad + 42%)<br>
+                        • <strong>Precio de venta:</strong> Se calcula automáticamente (precio compra por unidad + 30%)<br>
                         • <strong>Stock máximo:</strong> 200 unidades por producto
                     </div>
                     
@@ -530,7 +517,6 @@ if (!empty($_SESSION['carrito_compras'])) {
         </div>
     </div>
 
-    <!-- Modal para confirmar compra completa -->
     <div id="modalConfirmarCompra" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -542,8 +528,7 @@ if (!empty($_SESSION['carrito_compras'])) {
                     <div id="resumen-compra">
                         <h4>Resumen de la Compra</h4>
                         <div id="detalles-resumen" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
-                            <!-- Los detalles del carrito se cargarán aquí -->
-                        </div>
+                            </div>
                         
                         <div class="resumen-total" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                             <div class="form-row">
@@ -593,139 +578,135 @@ if (!empty($_SESSION['carrito_compras'])) {
         </div>
     </div>
 
-    <!-- Modal para categorías (existente) -->
     <div id="modalCategoria" class="modal">
-        <!-- ... contenido existente del modal de categorías ... -->
-    </div>
+        </div>
 
-    <script>
-    let productoActual = null;
-    let precioUnitarioActual = 0;
+ <script>
+let productoActual = null;
+let precioUnitarioActual = 0; // Se mantiene la variable pero ya no se usa, se recomienda eliminarla para limpiar código, pero la dejaremos por compatibilidad si es necesario.
 
-    function abrirModalCompra(idProducto, nombreProducto, unidadMedida, precioUnitario) {
-        productoActual = idProducto;
-        precioUnitarioActual = parseFloat(precioUnitario);
-        
-        document.getElementById('carrito_id_producto').value = idProducto;
-        document.getElementById('carrito_nombre_producto').value = nombreProducto;
-        document.getElementById('precio_unitario').value = precioUnitario.toFixed(2);
-        
-        // Resetear campos
-        document.getElementById('precio_compra_total').value = '';
-        document.getElementById('cantidad_empaques').value = '';
-        document.getElementById('unidades_empaque').value = '';
-        document.getElementById('cantidad_total').value = '';
-        document.getElementById('precio_compra_unidad').value = '';
-        document.getElementById('precio_venta_unidad').value = '';
-        
-        document.getElementById('modalCompra').style.display = 'block';
-        document.getElementById('precio_compra_total').focus();
-    }
+function abrirModalCompra(idProducto, nombreProducto, unidadMedida, precioUnitario) {
+    productoActual = idProducto;
+    // La variable precioUnitarioActual ya no se usa para cálculos, pero se mantiene la asignación por si el código futuro la requiere.
+    precioUnitarioActual = parseFloat(precioUnitario); 
+    
+    document.getElementById('carrito_id_producto').value = idProducto;
+    document.getElementById('carrito_nombre_producto').value = nombreProducto;
+    // Se elimina la línea que llenaba 'precio_unitario'
+    
+    // Resetear campos
+    document.getElementById('precio_compra_total').value = '';
+    document.getElementById('cantidad_empaques').value = '';
+    document.getElementById('unidades_empaque').value = '';
+    document.getElementById('cantidad_total').value = '';
+    document.getElementById('precio_compra_unidad').value = '';
+    document.getElementById('precio_venta_unidad').value = '';
+    
+    document.getElementById('modalCompra').style.display = 'block';
+    document.getElementById('precio_compra_total').focus();
+}
 
-    function calcularEmpaques() {
-        const precioTotal = parseFloat(document.getElementById('precio_compra_total').value) || 0;
-        if (precioTotal > 0 && precioUnitarioActual > 0) {
-            const unidadesTotales = precioTotal / precioUnitarioActual;
-            const empaquesSugeridos = Math.ceil(unidadesTotales / 10); // Sugerir empaques de 10 unidades
-            
-            if (empaquesSugeridos > 0) {
-                document.getElementById('cantidad_empaques').value = empaquesSugeridos;
-                document.getElementById('unidades_empaque').value = 10;
-                calcularTotal();
-            }
-        }
-    }
+// SE ELIMINÓ LA FUNCIÓN calcularEmpaques()
 
-    function calcularTotal() {
-        const precioCompraTotal = parseFloat(document.getElementById('precio_compra_total').value) || 0;
-        const empaques = parseInt(document.getElementById('cantidad_empaques').value) || 0;
-        const unidadesPorEmpaque = parseInt(document.getElementById('unidades_empaque').value) || 0;
-        
-        const totalUnidades = empaques * unidadesPorEmpaque;
-        
-        // Calcular precio por unidad
-        const precioPorUnidad = totalUnidades > 0 ? precioCompraTotal / totalUnidades : 0;
-        const precioVentaPorUnidad = precioPorUnidad * 1.42;
-        
-        document.getElementById('cantidad_total').value = totalUnidades;
-        document.getElementById('precio_compra_unidad').value = totalUnidades > 0 ? '$' + precioPorUnidad.toFixed(2) : '';
-        document.getElementById('precio_venta_unidad').value = totalUnidades > 0 ? '$' + precioVentaPorUnidad.toFixed(2) : '';
-        
-        // Estilo del campo total
-        const totalInput = document.getElementById('cantidad_total');
-        if (totalUnidades > 0) {
-            totalInput.style.backgroundColor = '#e8f5e8';
-            totalInput.style.color = '#2e7d32';
-        } else {
-            totalInput.style.backgroundColor = '#ffebee';
-            totalInput.style.color = '#c62828';
-        }
-    }
-
-    function cerrarModalCompra() {
-        document.getElementById('modalCompra').style.display = 'none';
-        productoActual = null;
-        precioUnitarioActual = 0;
-    }
-
-    function abrirModalConfirmarCompra() {
-        // Cargar los detalles del carrito en el modal de confirmación
-        cargarDetallesCarrito();
-        document.getElementById('modalConfirmarCompra').style.display = 'block';
-    }
-
-    function cerrarModalConfirmarCompra() {
-        document.getElementById('modalConfirmarCompra').style.display = 'none';
-    }
-
-    function cargarDetallesCarrito() {
-        // Esta función cargaría los detalles del carrito via AJAX
-        // Por ahora, se puede recargar la página o usar PHP para generar el contenido
-        // En una implementación real, esto se haría con AJAX
-    }
-
-    // Validación de fechas en tiempo real
-    document.getElementById('fecha_compra_total')?.addEventListener('change', function() {
-        const hoy = new Date().toISOString().split('T')[0];
-        if (this.value > hoy) {
-            alert('La fecha de compra no puede ser posterior a hoy');
-            this.value = hoy;
-        }
+function calcularTotal() {
+    const precioCompraTotal = parseFloat(document.getElementById('precio_compra_total').value) || 0;
+    const empaques = parseInt(document.getElementById('cantidad_empaques').value) || 0;
+    const unidadesPorEmpaque = parseInt(document.getElementById('unidades_empaque').value) || 0;
+    
+    const totalUnidades = empaques * unidadesPorEmpaque;
+    
+    // Calcular precio por unidad
+    const precioPorUnidad = totalUnidades > 0 ? precioCompraTotal / totalUnidades : 0;
+    
+    // CAMBIO: 42% a 30% de margen de ganancia (multiplicador 1.30)
+    const precioVentaPorUnidad = precioPorUnidad * 1.30; 
+    
+    document.getElementById('cantidad_total').value = totalUnidades;
+    document.getElementById('precio_compra_unidad').value = totalUnidades > 0 ? '$' + precioPorUnidad.toFixed(2) : '';
+    document.getElementById('precio_venta_unidad').value = totalUnidades > 0 ? '$' + precioVentaPorUnidad.toFixed(2) : '';
+    
+    // Actualizar texto informativo (Si se hace en el HTML, esta parte ya no sería necesaria)
+    // Se comenta ya que se actualizó directamente en el HTML
+    /*
+    const infoElements = document.querySelectorAll('.alert-info');
+    infoElements.forEach(element => {
+        element.innerHTML = element.innerHTML.replace(/42%/g, '30%');
     });
-
-    document.getElementById('fecha_vencimiento_base')?.addEventListener('change', function() {
-        const hoy = new Date().toISOString().split('T')[0];
-        if (this.value < hoy) {
-            alert('La fecha de vencimiento no puede ser anterior a hoy');
-            this.value = hoy;
-        }
-    });
-
-    window.onclick = function(event) {
-        const modalCompra = document.getElementById('modalCompra');
-        const modalCategoria = document.getElementById('modalCategoria');
-        const modalConfirmar = document.getElementById('modalConfirmarCompra');
-        
-        if (event.target === modalCompra) {
-            cerrarModalCompra();
-        }
-        if (event.target === modalCategoria) {
-            cerrarModalCategoria();
-        }
-        if (event.target === modalConfirmar) {
-            cerrarModalConfirmarCompra();
-        }
+    */
+    
+    // Estilo del campo total
+    const totalInput = document.getElementById('cantidad_total');
+    if (totalUnidades > 0) {
+        totalInput.style.backgroundColor = '#e8f5e8';
+        totalInput.style.color = '#2e7d32';
+    } else {
+        totalInput.style.backgroundColor = '#ffebee';
+        totalInput.style.color = '#c62828';
     }
+}
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('success')) {
-            alert('✅ ' + urlParams.get('success'));
-        }
-        if (urlParams.has('error')) {
-            alert('❌ ' + urlParams.get('error'));
-        }
-    });
-    </script>
+function cerrarModalCompra() {
+    document.getElementById('modalCompra').style.display = 'none';
+    productoActual = null;
+    precioUnitarioActual = 0;
+}
+
+function abrirModalConfirmarCompra() {
+    // Cargar los detalles del carrito en el modal de confirmación
+    cargarDetallesCarrito();
+    document.getElementById('modalConfirmarCompra').style.display = 'block';
+}
+
+function cerrarModalConfirmarCompra() {
+    document.getElementById('modalConfirmarCompra').style.display = 'none';
+}
+
+function cargarDetallesCarrito() {
+    
+}
+
+// Validación de fechas en tiempo real
+document.getElementById('fecha_compra_total')?.addEventListener('change', function() {
+    const hoy = new Date().toISOString().split('T')[0];
+    if (this.value > hoy) {
+        alert('La fecha de compra no puede ser posterior a hoy');
+        this.value = hoy;
+    }
+});
+
+document.getElementById('fecha_vencimiento_base')?.addEventListener('change', function() {
+    const hoy = new Date().toISOString().split('T')[0];
+    if (this.value < hoy) {
+        alert('La fecha de vencimiento no puede ser anterior a hoy');
+        this.value = hoy;
+    }
+});
+
+window.onclick = function(event) {
+    const modalCompra = document.getElementById('modalCompra');
+    const modalCategoria = document.getElementById('modalCategoria');
+    const modalConfirmar = document.getElementById('modalConfirmarCompra');
+    
+    if (event.target === modalCompra) {
+        cerrarModalCompra();
+    }
+    if (event.target === modalCategoria) {
+        cerrarModalCategoria();
+    }
+    if (event.target === modalConfirmar) {
+        cerrarModalConfirmarCompra();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('success')) {
+        alert('✅ ' + urlParams.get('success'));
+    }
+    if (urlParams.has('error')) {
+        alert('❌ ' + urlParams.get('error'));
+    }
+});
+</script>
 </body>
 </html>
