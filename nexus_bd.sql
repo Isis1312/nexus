@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 04-12-2025 a las 02:44:18
+-- Tiempo de generación: 04-12-2025 a las 04:59:18
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -139,7 +139,9 @@ CREATE TABLE `clientes` (
 
 INSERT INTO `clientes` (`id`, `nombre`, `cedula`, `telefono`, `direccion`) VALUES
 (1, 'Isis Sofia', 29604083, '04160588684', 'Av. libertador con calle 57'),
-(5, 'jose pernalete', 30797057, '04122201285', 'avenida españa entre calle 6 y 7');
+(5, 'jose pernalete', 30797057, '04122201285', 'avenida españa entre calle 6 y 7'),
+(11, 'Daviana', 1111111, '2147483647', 'su casa'),
+(12, 'marco', 888888, '04160588684', 'su casa');
 
 -- --------------------------------------------------------
 
@@ -182,7 +184,9 @@ INSERT INTO `compras_proveedores` (`id_compra`, `id_producto_proveedor`, `cantid
 (23, 8, 2, 10, '2025-12-03', '2026-01-08', 4, '2025-12-04 01:25:44'),
 (29, 8, 1, 10, '2025-12-04', '2026-01-03', 4, '2025-12-04 01:36:40'),
 (30, 8, 1, 100, '2025-12-04', '2026-06-04', 4, '2025-12-04 01:38:08'),
-(31, 8, 25, 100, '2025-12-04', '2026-01-03', 4, '2025-12-04 01:39:08');
+(31, 8, 25, 100, '2025-12-04', '2026-01-03', 4, '2025-12-04 01:39:08'),
+(32, 9, 5, 40, '2025-12-04', '2026-04-30', 4, '2025-12-04 03:48:16'),
+(33, 11, 5, 40, '2025-12-04', '2026-04-30', 4, '2025-12-04 03:48:16');
 
 -- --------------------------------------------------------
 
@@ -196,13 +200,10 @@ CREATE TABLE `detalle_venta` (
   `id_producto` int(11) NOT NULL,
   `codigo_producto` varchar(50) DEFAULT NULL,
   `nombre_producto` varchar(120) DEFAULT NULL,
-  `cantidad` decimal(12,2) NOT NULL,
+  `cantidad` decimal(10,2) NOT NULL,
   `precio_unitario_bs` decimal(12,2) NOT NULL,
-  `precio_unitario_usd` decimal(12,2) NOT NULL,
-  `precio_unitario_eur` decimal(12,2) NOT NULL,
   `subtotal_bs` decimal(12,2) NOT NULL,
-  `subtotal_usd` decimal(12,2) NOT NULL,
-  `subtotal_eur` decimal(12,2) NOT NULL
+  `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -235,7 +236,9 @@ INSERT INTO `historial_compras` (`id_historial`, `id_compra`, `id_producto_prove
 (7, 23, 8, 2, 10, 20, 100.00, '2025-12-03', '2026-01-08', 4, '2025-12-04 01:25:44'),
 (8, 29, 8, 1, 10, 10, 50.00, '2025-12-04', '2026-01-03', 4, '2025-12-04 01:36:40'),
 (9, 30, 8, 1, 100, 100, 4.00, '2025-12-04', '2026-06-04', 4, '2025-12-04 01:38:08'),
-(10, 31, 8, 25, 100, 2500, 10.00, '2025-12-04', '2026-01-03', 4, '2025-12-04 01:39:08');
+(10, 31, 8, 25, 100, 2500, 10.00, '2025-12-04', '2026-01-03', 4, '2025-12-04 01:39:08'),
+(11, 32, 9, 5, 40, 200, 100.00, '2025-12-04', '2026-04-30', 4, '2025-12-04 03:48:16'),
+(12, 33, 11, 5, 40, 200, 80.00, '2025-12-04', '2026-04-30', 4, '2025-12-04 03:48:16');
 
 -- --------------------------------------------------------
 
@@ -323,6 +326,14 @@ CREATE TABLE `productos` (
   `estado` enum('active','inactive') DEFAULT 'active'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `productos`
+--
+
+INSERT INTO `productos` (`id`, `codigo`, `nombre`, `categoria_id`, `subcategoria_id`, `proveedor_id`, `id_producto_proveedor`, `fecha_vencimiento`, `cantidad`, `precio_costo`, `precio_venta`, `created_at`, `updated_at`, `estado`) VALUES
+(15, 'PROD-009', 'Choclate con Leche', 6, NULL, 3, 9, '2026-04-30', 200, 0.50, 0.71, '2025-12-04 03:48:16', '2025-12-04 03:48:16', 'active'),
+(16, 'PROD-011', 'Cocosette', 6, NULL, 3, 11, '2026-04-30', 200, 0.40, 0.57, '2025-12-04 03:48:16', '2025-12-04 03:48:16', 'active');
+
 -- --------------------------------------------------------
 
 --
@@ -357,9 +368,9 @@ INSERT INTO `productos_proveedor` (`id_producto_proveedor`, `codigo_producto`, `
 (6, 'PROD-006', 'natilla', 1, NULL, 1, 1.50, 'paquete', NULL, 1, '2025-11-03 14:55:54', '2025-11-12 14:53:00'),
 (7, 'PROD-007', 'queso manchego', 2, 2, 1, 5.00, 'kilo', NULL, 1, '2025-11-03 15:02:03', '2025-11-12 14:58:17'),
 (8, 'PROD-008', 'Queso', 1, 2, 2, 0.00, 'kilo', '2025-12-04', 1, '2025-11-12 13:42:00', '2025-12-04 01:39:08'),
-(9, 'PROD-009', 'Choclate con Leche', 6, NULL, 3, 2.27, 'unidad', '2025-12-04', 1, '2025-11-12 20:27:03', '2025-12-03 23:18:59'),
+(9, 'PROD-009', 'Choclate con Leche', 6, NULL, 3, 0.50, 'unidad', '2025-12-04', 1, '2025-11-12 20:27:03', '2025-12-04 03:48:16'),
 (10, 'PROD-010', 'Samba', 6, NULL, 3, 1.67, 'unidad', '2025-11-14', 1, '2025-11-12 21:36:37', '2025-11-14 12:25:25'),
-(11, 'PROD-011', 'Cocosette', 6, NULL, 3, 8.67, 'unidad', '2025-12-04', 1, '2025-11-12 21:37:50', '2025-12-03 23:18:59');
+(11, 'PROD-011', 'Cocosette', 6, NULL, 3, 0.40, 'unidad', '2025-12-04', 1, '2025-11-12 21:37:50', '2025-12-04 03:48:16');
 
 -- --------------------------------------------------------
 
@@ -474,12 +485,12 @@ CREATE TABLE `ventas` (
   `cliente` varchar(100) DEFAULT NULL,
   `fecha` date DEFAULT NULL,
   `metodo_pago` varchar(50) DEFAULT NULL,
-  `total_bs` decimal(10,2) DEFAULT NULL,
+  `total_bs` decimal(12,2) DEFAULT 0.00,
   `id_cliente` int(11) DEFAULT NULL,
-  `total_usd` decimal(12,2) DEFAULT NULL,
+  `total_usd` decimal(12,2) DEFAULT 0.00,
   `total_eur` decimal(12,2) DEFAULT NULL,
-  `tasa_usd` decimal(12,4) DEFAULT NULL,
-  `tasa_eur` decimal(12,4) DEFAULT NULL,
+  `tasa_usd` decimal(12,4) DEFAULT 0.0000,
+  `tasa_eur` decimal(12,4) DEFAULT 0.0000,
   `nro_factura` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -559,7 +570,8 @@ ALTER TABLE `compras_proveedores`
 ALTER TABLE `detalle_venta`
   ADD PRIMARY KEY (`id_detalle`),
   ADD KEY `id_venta` (`id_venta`),
-  ADD KEY `id_producto` (`id_producto`);
+  ADD KEY `id_producto` (`id_producto`),
+  ADD KEY `idx_detalle_venta` (`id_venta`);
 
 --
 -- Indices de la tabla `historial_compras`
@@ -641,7 +653,10 @@ ALTER TABLE `usuario`
 --
 ALTER TABLE `ventas`
   ADD PRIMARY KEY (`id_venta`),
-  ADD KEY `fk_venta_cliente` (`id_cliente`);
+  ADD KEY `fk_venta_cliente` (`id_cliente`),
+  ADD KEY `idx_ventas_fecha` (`fecha`),
+  ADD KEY `idx_ventas_nro_factura` (`nro_factura`),
+  ADD KEY `idx_ventas_cliente` (`id_cliente`);
 
 --
 -- AUTO_INCREMENT de las tablas volcadas
@@ -657,13 +672,13 @@ ALTER TABLE `categoria_prod`
 -- AUTO_INCREMENT de la tabla `clientes`
 --
 ALTER TABLE `clientes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT de la tabla `compras_proveedores`
 --
 ALTER TABLE `compras_proveedores`
-  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_venta`
@@ -675,7 +690,7 @@ ALTER TABLE `detalle_venta`
 -- AUTO_INCREMENT de la tabla `historial_compras`
 --
 ALTER TABLE `historial_compras`
-  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT de la tabla `modulos`
@@ -687,7 +702,7 @@ ALTER TABLE `modulos`
 -- AUTO_INCREMENT de la tabla `productos`
 --
 ALTER TABLE `productos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT de la tabla `productos_proveedor`

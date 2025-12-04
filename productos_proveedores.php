@@ -212,7 +212,11 @@ if (!empty($_SESSION['carrito_compras'])) {
                             <?php endif; ?>
                             <div style="margin-top: 5px;">
                                 <button type="submit" class="btn btn-primary" style="padding: 8px 15px; font-size: 0.85em;">Buscar</button>
-                                <?php if (!empty($busqueda)): ?>
+                    
+                    <button type="button" class="btn btn-primary" onclick="abrirModalCategoria()">➕ Agregar Categoría</button>
+                    <a href="agregar_producto_proveedor.php" class="btn btn-primary">➕ Agregar Producto de Proveedor</a>
+                    <a href="proveedores.php" class="btn btn-secondary">👥 Ver Proveedores</a>
+                                                <?php if (!empty($busqueda)): ?>
                                     <a href="?<?php echo $id_proveedor > 0 ? 'id_proveedor=' . $id_proveedor : ''; ?>" class="clear-search">
                                         Limpiar búsqueda
                                     </a>
@@ -429,11 +433,7 @@ if (!empty($_SESSION['carrito_compras'])) {
                     </div>
                 <?php endif; ?>
                 
-                <div class="action-buttons">
-                    <button type="button" class="btn btn-primary" onclick="abrirModalCategoria()">➕ Agregar Categoría</button>
-                    <a href="agregar_producto_proveedor.php" class="btn btn-primary">➕ Agregar Producto de Proveedor</a>
-                    <a href="proveedores.php" class="btn btn-secondary">👥 Ver Proveedores</a>
-                </div>
+                
             </div>
     </main>
 
