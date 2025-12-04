@@ -51,9 +51,6 @@ $totalClientes = count($clientes);
         <?php if (!empty($mensaje)): ?>
             <div class="alert alert-success" id="mensaje-exito">
                 <?= htmlspecialchars($mensaje) ?>
-                <?php if ($cliente_reciente): ?>
-                    <br><small>Cliente disponible para facturación</small>
-                <?php endif; ?>
             </div>
         <?php endif; ?>
 
@@ -131,43 +128,43 @@ $totalClientes = count($clientes);
 
 <!-- Modal Agregar Cliente -->
 <div id="modalAgregar" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Agregar Nuevo Cliente</h3>
-            <span class="close-modal" onclick="cerrarModalAgregar()">&times;</span>
-        </div>
-        <div class="modal-body">
-            <form id="formAgregar" method="POST" action="guardar_cliente.php">
-                <!-- Campo oculto para identificar el origen -->
-                <input type="hidden" name="origen" value="facturacion">
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nombre:</label>
-                        <input type="text" name="nombre" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Cédula:</label>
-                        <input type="text" name="cedula" class="form-input" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Teléfono:</label>
-                        <input type="text" name="telefono" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Dirección:</label>
-                        <input type="text" name="direccion" class="form-input" required>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-volver" onclick="cerrarModalAgregar()">Volver</button>
-                    <button type="submit" class="btn-guardar">Guardar Cliente</button>
-                </div>
-            </form>
-        </div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Agregar Nuevo Cliente</h3>
+      <span class="close-modal" onclick="cerrarModalAgregar()">&times;</span>
     </div>
+    <div class="modal-body">
+      <form id="formAgregar" method="POST" action="guardar_cliente.php">
+        <!-- CAMPO OCULTO PARA IDENTIFICAR EL ORIGEN -->
+        <input type="hidden" name="origen" value="facturacion">
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre:</label>
+            <input type="text" name="nombre" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label>Cédula:</label>
+            <input type="text" name="cedula" class="form-input" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Teléfono:</label>
+            <input type="text" name="telefono" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label>Dirección:</label>
+            <input type="text" name="direccion" class="form-input" required>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-volver" onclick="cerrarModalAgregar()">Volver</button>
+          <button type="submit" class="btn-guardar">Guardar Cliente</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -196,13 +193,6 @@ $totalClientes = count($clientes);
             $('#mensaje-exito, #mensaje-error').fadeOut('slow');
         }, 5000);
         
-        // Si hay un cliente recién creado, resaltarlo
-        <?php if ($cliente_reciente): ?>
-            $('#cliente-<?= $cliente_reciente ?>').css({
-                'background-color': 'rgba(0, 139, 139, 0.1)',
-                'border-left': '4px solid #008B8B'
-            });
-        <?php endif; ?>
     });
 </script>
 </body>
