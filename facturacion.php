@@ -52,12 +52,11 @@ if (!$sistemaPermisos->puedeVer('ventas')) {
     exit();
 }
 
-// Obtener usuario actual
-$usuario_id = $_SESSION['id_usuario'] ?? null;
+
 
 // Obtener tasa del dólar desde JSON (CORREGIDO)
 $tasas_file = 'js/tasas_cache.json';
-$tasa_usd = 36.50; // Valor por defecto
+
 
 if (file_exists($tasas_file)) {
     $tasas_data = json_decode(file_get_contents($tasas_file), true);
@@ -66,7 +65,7 @@ if (file_exists($tasas_file)) {
     }
 }
 
-// Obtener último número de factura (EMPIEZA EN 000001)
+// Obtener último número de factura 
 try {
     $stmt = $pdo->query("SELECT nro_factura FROM ventas ORDER BY id_venta DESC LIMIT 1");
     $ultima_factura = $stmt->fetchColumn();
@@ -109,8 +108,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
         // Insertar venta
         $stmt = $pdo->prepare("INSERT INTO ventas 
             (cliente, fecha, metodo_pago, total_bs, total_usd, tasa_usd, 
-             nro_factura, id_cliente, usuario_id) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+             nro_factura, id_cliente) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         
         $stmt->execute([
             $cliente_nombre,
@@ -120,8 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
             $total_usd,
             $tasa_usd,
             $nro_factura,
-            $id_cliente,
-            $usuario_id
+            $id_cliente
         ]);
         
         $id_venta = $pdo->lastInsertId();

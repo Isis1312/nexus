@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 04-12-2025 a las 04:59:18
+-- Tiempo de generación: 04-12-2025 a las 06:46:21
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -206,6 +206,13 @@ CREATE TABLE `detalle_venta` (
   `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `detalle_venta`
+--
+
+INSERT INTO `detalle_venta` (`id_detalle`, `id_venta`, `id_producto`, `codigo_producto`, `nombre_producto`, `cantidad`, `precio_unitario_bs`, `subtotal_bs`, `fecha_registro`) VALUES
+(3, 5, 16, 'PROD-011', 'Cocosette', 8.00, 0.57, 4.56, '2025-12-04 05:36:03');
+
 -- --------------------------------------------------------
 
 --
@@ -332,7 +339,22 @@ CREATE TABLE `productos` (
 
 INSERT INTO `productos` (`id`, `codigo`, `nombre`, `categoria_id`, `subcategoria_id`, `proveedor_id`, `id_producto_proveedor`, `fecha_vencimiento`, `cantidad`, `precio_costo`, `precio_venta`, `created_at`, `updated_at`, `estado`) VALUES
 (15, 'PROD-009', 'Choclate con Leche', 6, NULL, 3, 9, '2026-04-30', 200, 0.50, 0.71, '2025-12-04 03:48:16', '2025-12-04 03:48:16', 'active'),
-(16, 'PROD-011', 'Cocosette', 6, NULL, 3, 11, '2026-04-30', 200, 0.40, 0.57, '2025-12-04 03:48:16', '2025-12-04 03:48:16', 'active');
+(16, 'PROD-011', 'Cocosette', 6, NULL, 3, 11, '2026-04-30', 192, 0.40, 0.57, '2025-12-04 03:48:16', '2025-12-04 05:36:03', 'active'),
+(17, 'PROD-101', 'Leche Entera 1L', 1, NULL, 1, NULL, NULL, 100, 1.20, 1.56, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(18, 'PROD-102', 'Arroz 1kg', 4, NULL, 2, NULL, NULL, 80, 0.80, 1.04, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(19, 'PROD-103', 'Aceite Vegetal 1L', 3, NULL, 2, NULL, NULL, 60, 2.50, 3.25, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(20, 'PROD-104', 'Harina PAN 1kg', 3, NULL, 2, NULL, NULL, 120, 0.90, 1.17, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(21, 'PROD-105', 'Azúcar 1kg', 3, NULL, 2, NULL, NULL, 90, 0.70, 0.91, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(22, 'PROD-106', 'Café 500g', 3, NULL, 2, NULL, NULL, 50, 3.50, 4.55, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(23, 'PROD-107', 'Atún en Lata', 2, NULL, 2, NULL, NULL, 70, 1.80, 2.34, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(24, 'PROD-108', 'Sardinas en Lata', 2, NULL, 2, NULL, NULL, 65, 1.50, 1.95, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(25, 'PROD-109', 'Refresco 2L', 8, NULL, 3, NULL, NULL, 110, 1.00, 1.30, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(26, 'PROD-110', 'Agua Mineral 500ml', 8, NULL, 3, NULL, NULL, 200, 0.40, 0.52, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(27, 'PROD-111', 'Galletas Chocolate', 7, NULL, 3, NULL, NULL, 85, 0.60, 0.78, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(28, 'PROD-112', 'Papas Fritas', 7, NULL, 3, NULL, NULL, 75, 0.90, 1.17, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(29, 'PROD-113', 'Queso Amarillo', 1, NULL, 1, NULL, NULL, 45, 2.80, 3.64, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(30, 'PROD-114', 'Mantequilla 250g', 1, NULL, 1, NULL, NULL, 55, 1.50, 1.95, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active'),
+(31, 'PROD-115', 'Yogurt 1L', 1, NULL, 1, NULL, NULL, 40, 1.80, 2.34, '2025-12-04 05:32:21', '2025-12-04 05:32:21', 'active');
 
 -- --------------------------------------------------------
 
@@ -499,9 +521,7 @@ CREATE TABLE `ventas` (
 --
 
 INSERT INTO `ventas` (`id_venta`, `cliente`, `fecha`, `metodo_pago`, `total_bs`, `id_cliente`, `total_usd`, `total_eur`, `tasa_usd`, `tasa_eur`, `nro_factura`) VALUES
-(1, 'Isis Sofia', '2025-12-01', 'Efectivo', 250.00, 1, 25.00, 22.00, 10.0000, 11.3636, 'FAC-0001'),
-(3, 'Isis Sofia', '2025-12-01', 'Efectivo', 250.00, 1, 25.00, 22.00, 10.0000, 11.3636, 'FAC-0001'),
-(4, 'jose pernalete', '2025-12-03', 'Efectivo', 0.00, 5, 0.00, 0.00, 10.0000, 11.3636, 'FAC-4535');
+(5, 'Isis Sofia', '2025-12-04', 'Débito', 5.29, 1, 0.02, NULL, 251.8900, 0.0000, 'FAC-004536');
 
 -- --------------------------------------------------------
 
@@ -684,7 +704,7 @@ ALTER TABLE `compras_proveedores`
 -- AUTO_INCREMENT de la tabla `detalle_venta`
 --
 ALTER TABLE `detalle_venta`
-  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `historial_compras`
@@ -702,7 +722,7 @@ ALTER TABLE `modulos`
 -- AUTO_INCREMENT de la tabla `productos`
 --
 ALTER TABLE `productos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT de la tabla `productos_proveedor`
@@ -738,7 +758,7 @@ ALTER TABLE `usuario`
 -- AUTO_INCREMENT de la tabla `ventas`
 --
 ALTER TABLE `ventas`
-  MODIFY `id_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Restricciones para tablas volcadas

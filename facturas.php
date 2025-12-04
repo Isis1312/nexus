@@ -29,12 +29,11 @@ if (!empty($busqueda)) {
     $params = [$searchTerm, $searchTerm, $searchTerm, $searchTerm];
 }
 
-// Obtener facturas
+// Obtener facturas - MODIFICADO: Sin JOIN con usuario
 try {
-    $sql = "SELECT v.*, c.cedula, u.nombre as usuario_nombre 
+    $sql = "SELECT v.*, c.cedula 
             FROM ventas v 
             LEFT JOIN clientes c ON v.id_cliente = c.id 
-            LEFT JOIN usuario u ON v.usuario_id = u.id_usuario 
             $where 
             ORDER BY v.fecha DESC, v.id_venta DESC";
     
@@ -144,7 +143,8 @@ unset($_SESSION['error']);
                                 </td>
                                 <td><strong>Bs. <?= number_format($factura['total_bs'], 2, ',', '.') ?></strong></td>
                                 <td><strong>$ <?= number_format($factura['total_usd'], 2, ',', '.') ?></strong></td>
-                                <td><?= htmlspecialchars($factura['usuario_nombre'] ?? 'Sistema') ?></td>
+                                <!-- MODIFICADO: Usa el nombre de la sesión en lugar de usuario_nombre -->
+                                <td><?= htmlspecialchars($_SESSION['nombre'] ?? 'Sistema') ?></td>
                                 <td>
                                     <div class="acciones-container">
                                         <a href="ver_factura.php?id=<?= $factura['id_venta'] ?>" 
