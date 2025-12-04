@@ -5,8 +5,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     exit();
 }
 
-// Incluir la conexión a la base de datos
 require_once 'conexion.php';
+require_once 'menu.php';
 
 // Inicializar sistema de permisos
 require_once 'permisos.php';
@@ -18,317 +18,478 @@ if (!$sistemaPermisos->puedeVer('reportes')) {
     exit();
 }
 
-// Datos estáticos para reportes
-$reportes_data = [
-    'productos_mas_vendidos' => [
-        'titulo' => 'Productos Más Vendidos del Mes',
-        'icono' => '🏆',
-        'color' => '#FF6B6B',
-        'datos' => [
-            ['producto' => 'Leche Entera 1L', 'ventas' => 245, 'cambio' => '+12%'],
-            ['producto' => 'Arroz 1kg', 'ventas' => 189, 'cambio' => '+5%'],
-            ['producto' => 'Aceite Vegetal', 'ventas' => 167, 'cambio' => '+8%'],
-            ['producto' => 'Harina PAN', 'ventas' => 156, 'cambio' => '+3%'],
-            ['producto' => 'Azúcar 1kg', 'ventas' => 142, 'cambio' => '+7%']
-        ]
-    ],
-    'productos_menos_vendidos' => [
-        'titulo' => 'Productos Menos Vendidos del Mes',
-        'icono' => '📉',
-        'color' => '#4ECDC4',
-        'datos' => [
-            ['producto' => 'Salsa de Soja', 'ventas' => 12, 'cambio' => '-15%'],
-            ['producto' => 'Aceitunas', 'ventas' => 15, 'cambio' => '-8%'],
-            ['producto' => 'Mostaza', 'ventas' => 18, 'cambio' => '-5%'],
-            ['producto' => 'Encurtidos', 'ventas' => 21, 'cambio' => '-12%'],
-            ['producto' => 'Salsa Picante', 'ventas' => 23, 'cambio' => '-3%']
-        ]
-    ],
-    'ventas_dia' => [
-        'titulo' => 'Ventas del Día',
-        'icono' => '📅',
-        'color' => '#45B7D1',
-        'datos' => [
-            'total' => 12560.75,
-            'transacciones' => 89,
-            'ticket_promedio' => 141.13,
-            'cambio' => '+8.5%'
-        ]
-    ],
-    'ventas_semana' => [
-        'titulo' => 'Ventas de la Semana',
-        'icono' => '📊',
-        'color' => '#96CEB4',
-        'datos' => [
-            'total' => 84520.30,
-            'transacciones' => 623,
-            'ticket_promedio' => 135.67,
-            'cambio' => '+12.3%'
-        ]
-    ],
-    'ventas_mes' => [
-        'titulo' => 'Ventas del Mes',
-        'icono' => '📈',
-        'color' => '#FECA57',
-        'datos' => [
-            'total' => 325840.50,
-            'transacciones' => 2450,
-            'ticket_promedio' => 133.00,
-            'cambio' => '+15.8%'
-        ]
-    ],
-    'tasa_semanal' => [
-        'titulo' => 'Tasa Cambiaria Semanal',
-        'icono' => '🔄',
-        'color' => '#FF9FF3',
-        'datos' => [
-            'actual' => 36.50,
-            'anterior' => 35.20,
-            'cambio_porcentaje' => '+3.7%',
-            'cambio_valor' => 1.30
-        ]
-    ],
-    'tasa_mensual' => [
-        'titulo' => 'Tasa Cambiaria Mensual',
-        'icono' => '💰',
-        'color' => '#54A0FF',
-        'datos' => [
-            'actual' => 36.50,
-            'anterior' => 32.80,
-            'cambio_porcentaje' => '+11.3%',
-            'cambio_valor' => 3.70
-        ]
-    ]
-];
+// Obtener fecha actual para valores por defecto
+$current_year = date('Y');
+$current_month = date('m');
+$current_day = date('Y-m-d');
 
-// Colores para los botones
-$botones_colores = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
-    '#FECA57', '#FF9FF3', '#54A0FF', '#5F27CD'
-];
+// Procesar filtros si se enviaron
+$year = isset($_GET['year']) ? intval($_GET['year']) : $current_year;
+$month = isset($_GET['month']) ? intval($_GET['month']) : $current_month;
+$day = isset($_GET['day']) ? $_GET['day'] : $current_day;
 
-// Determinar qué reporte mostrar
-$reporte_actual = isset($_GET['reporte']) ? $_GET['reporte'] : 'productos_mas_vendidos';
-$reporte = $reportes_data[$reporte_actual] ?? $reportes_data['productos_mas_vendidos'];
+// Obtener reporte mensual
+function getReporteMensual($pdo, $year, $month) {
+    $query = "SELECT 
+                DAY(v.fecha) as dia,
+                COUNT(DISTINCT v.id_venta) as total_facturas,
+                SUM(v.total_bs) as total_ventas_bs,
+                SUM(v.total_usd) as total_ventas_usd,
+                SUM(dv.cantidad) as total_productos,
+                AVG(v.total_bs) as promedio_venta_bs
+              FROM ventas v
+              LEFT JOIN detalle_venta dv ON v.id_venta = dv.id_venta
+              WHERE YEAR(v.fecha) = :year 
+                AND MONTH(v.fecha) = :month
+              GROUP BY DAY(v.fecha)
+              ORDER BY dia";
+    
+    $stmt = $pdo->prepare($query);
+    $stmt->execute(['year' => $year, 'month' => $month]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Obtener reporte diario
+function getReporteDiario($pdo, $day) {
+    $query = "SELECT 
+                v.id_venta,
+                v.nro_factura,
+                v.cliente,
+                v.fecha,
+                v.metodo_pago,
+                v.total_bs,
+                v.total_usd,
+                COUNT(dv.id_detalle) as items,
+                TIME(v.fecha) as hora
+              FROM ventas v
+              LEFT JOIN detalle_venta dv ON v.id_venta = dv.id_venta
+              WHERE DATE(v.fecha) = :fecha
+              GROUP BY v.id_venta
+              ORDER BY v.fecha DESC";
+    
+    $stmt = $pdo->prepare($query);
+    $stmt->execute(['fecha' => $day]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Obtener productos más vendidos del mes
+function getProductosMasVendidos($pdo, $year, $month) {
+    $query = "SELECT 
+                p.nombre,
+                p.codigo,
+                SUM(dv.cantidad) as total_vendido,
+                SUM(dv.subtotal_bs) as total_ingresos_bs,
+                ROUND(AVG(dv.precio_unitario_bs), 2) as precio_promedio
+              FROM detalle_venta dv
+              JOIN productos p ON dv.id_producto = p.id
+              JOIN ventas v ON dv.id_venta = v.id_venta
+              WHERE YEAR(v.fecha) = :year 
+                AND MONTH(v.fecha) = :month
+                AND p.estado = 'active'
+              GROUP BY p.id
+              ORDER BY total_vendido DESC
+              LIMIT 10";
+    
+    $stmt = $pdo->prepare($query);
+    $stmt->execute(['year' => $year, 'month' => $month]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Obtener resumen general del mes
+function getResumenMensual($pdo, $year, $month) {
+    $query = "SELECT 
+                COUNT(DISTINCT v.id_venta) as total_facturas,
+                SUM(v.total_bs) as total_bs,
+                SUM(v.total_usd) as total_usd,
+                AVG(v.total_bs) as promedio_bs,
+                COUNT(DISTINCT v.id_cliente) as clientes_unicos,
+                MIN(v.total_bs) as venta_minima,
+                MAX(v.total_bs) as venta_maxima
+              FROM ventas v
+              WHERE YEAR(v.fecha) = :year 
+                AND MONTH(v.fecha) = :month";
+    
+    $stmt = $pdo->prepare($query);
+    $stmt->execute(['year' => $year, 'month' => $month]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Obtener ventas por método de pago
+function getVentasPorMetodoPago($pdo, $year, $month) {
+    $query = "SELECT 
+                v.metodo_pago,
+                COUNT(v.id_venta) as cantidad,
+                SUM(v.total_bs) as total_bs
+              FROM ventas v
+              WHERE YEAR(v.fecha) = :year 
+                AND MONTH(v.fecha) = :month
+              GROUP BY v.metodo_pago
+              ORDER BY total_bs DESC";
+    
+    $stmt = $pdo->prepare($query);
+    $stmt->execute(['year' => $year, 'month' => $month]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Ejecutar consultas según tipo de reporte
+$reporte_tipo = isset($_GET['tipo']) ? $_GET['tipo'] : 'mensual';
+
+// Inicializar variables para evitar errores
+$reporte_mensual = [];
+$productos_mas_vendidos = [];
+$ventas_por_metodo = [];
+$resumen_mensual = [];
+
+if ($reporte_tipo === 'mensual') {
+    $reporte_mensual = getReporteMensual($pdo, $year, $month) ?: [];
+    $productos_mas_vendidos = getProductosMasVendidos($pdo, $year, $month) ?: [];
+    $resumen_mensual = getResumenMensual($pdo, $year, $month) ?: [];
+    $ventas_por_metodo = getVentasPorMetodoPago($pdo, $year, $month) ?: [];
+} else {
+    $reporte_diario = getReporteDiario($pdo, $day) ?: [];
+}
+
+// Calcular totales del mes (SOLUCIÓN AL ERROR)
+$total_mensual_bs = 0;
+$total_mensual_facturas = 0;
+$total_productos_mensual = 0;
+$total_mensual_usd = 0;
+
+if (is_array($reporte_mensual)) {
+    foreach ($reporte_mensual as $dia) {
+        $total_mensual_bs += floatval($dia['total_ventas_bs'] ?? 0);
+        $total_mensual_facturas += intval($dia['total_facturas'] ?? 0);
+        $total_productos_mensual += intval($dia['total_productos'] ?? 0);
+        $total_mensual_usd += floatval($dia['total_ventas_usd'] ?? 0);
+    }
+}
+
+// Meses en español
+$meses_espanol = [
+    1 => 'Enero',
+    2 => 'Febrero',
+    3 => 'Marzo',
+    4 => 'Abril',
+    5 => 'Mayo',
+    6 => 'Junio',
+    7 => 'Julio',
+    8 => 'Agosto',
+    9 => 'Septiembre',
+    10 => 'Octubre',
+    11 => 'Noviembre',
+    12 => 'Diciembre'
+];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reportes y Métricas</title>
+    <title>Reportes de Ventas</title>
     <link rel="stylesheet" href="css/reportes.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <?php require_once 'menu.php'; ?>
-    
-    <main class="main-content">
-        <div class="content-wrapper">
-            <!-- Header de la página -->
-            <div class="page-header">
-                <h1 class="page-title">Reportes y Métricas</h1>
-                <div class="reporte-fecha">
-                    <?= date('d/m/Y') ?>
+<main class="main-content">
+    <div class="content-wrapper">
+        <!-- Header -->
+        <div class="page-header">
+            <h1 class="page-title">Reportes de Ventas</h1>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filtros-container">
+            <div class="filtros-card">
+                <h3>Filtrar Reporte</h3>
+                <form method="GET" class="filtros-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tipo de Reporte:</label>
+                            <select name="tipo" class="form-select" onchange="cambiarTipoReporte(this.value)">
+                                <option value="mensual" <?= $reporte_tipo === 'mensual' ? 'selected' : '' ?>>Mensual</option>
+                                <option value="diario" <?= $reporte_tipo === 'diario' ? 'selected' : '' ?>>Diario</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="filtro-mes">
+                            <label>Mes:</label>
+                            <select name="month" class="form-select">
+                                <?php foreach($meses_espanol as $num => $nombre): ?>
+                                    <option value="<?= $num ?>" <?= $num == $month ? 'selected' : '' ?>>
+                                        <?= $nombre ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="filtro-ano">
+                            <label>Año:</label>
+                            <select name="year" class="form-select">
+                                <?php for($y = 2023; $y <= $current_year; $y++): ?>
+                                    <option value="<?= $y ?>" <?= $y == $year ? 'selected' : '' ?>>
+                                        <?= $y ?>
+                                    </option>
+                                <?php endfor; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="filtro-dia" style="display: <?= $reporte_tipo === 'diario' ? 'block' : 'none' ?>;">
+                            <label>Día:</label>
+                            <input type="date" name="day" class="form-input" value="<?= $day ?>">
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn-generar">
+                                Generar Reporte
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Reporte Mensual -->
+        <?php if($reporte_tipo === 'mensual'): ?>
+        <div class="reporte-container">
+            <div class="reporte-header">
+                <h2>Reporte Mensual de Ventas</h2>
+                <div class="periodo-info">
+                    <span><?= $meses_espanol[$month] ?> <?= $year ?></span>
                 </div>
             </div>
-
-            <!-- Submenú de Reportes - BOTONES HORIZONTALES -->
-            <div class="submenu-reportes">
-                <div class="submenu-botones">
-                    <?php 
-                    $i = 0;
-                    foreach ($reportes_data as $key => $reporte_item): 
-                        $color = $botones_colores[$i % count($botones_colores)];
-                        $i++;
-                    ?>
-                    <a href="?reporte=<?= $key ?>" 
-                       class="reporte-btn <?= $reporte_actual == $key ? 'active' : '' ?>" 
-                       style="--btn-color: <?= $color ?>">
-                        <span class="btn-icon"><?= $reporte_item['icono'] ?></span>
-                        <span class="btn-text"><?= $reporte_item['titulo'] ?></span>
-                    </a>
+            
+            <!-- Resumen Estadístico -->
+            <div class="estadisticas-grid">
+                <div class="estadistica-card">
+                    <div class="estadistica-label">Total Ventas (Bs)</div>
+                    <div class="estadistica-value">Bs. <?= number_format($total_mensual_bs, 2, ',', '.') ?></div>
+                </div>
+                
+                <div class="estadistica-card">
+                    <div class="estadistica-label">Facturas Emitidas</div>
+                    <div class="estadistica-value"><?= $total_mensual_facturas ?></div>
+                </div>
+                
+                <div class="estadistica-card">
+                    <div class="estadistica-label">Promedio por Factura</div>
+                    <div class="estadistica-value">Bs. <?= $total_mensual_facturas > 0 ? number_format($total_mensual_bs / $total_mensual_facturas, 2, ',', '.') : '0,00' ?></div>
+                </div>
+                
+                <div class="estadistica-card">
+                    <div class="estadistica-label">Productos Vendidos</div>
+                    <div class="estadistica-value"><?= $total_productos_mensual ?></div>
+                </div>
+            </div>
+            
+            <!-- Tabla de Ventas por Día -->
+            <div class="tabla-container">
+                <h3>Ventas por Día</h3>
+                <div class="table-responsive">
+                    <table class="tabla-reporte">
+                        <thead>
+                            <tr>
+                                <th>Día</th>
+                                <th>Facturas</th>
+                                <th>Productos Vendidos</th>
+                                <th>Total Bs</th>
+                                <th>Total USD</th>
+                                <th>Promedio Bs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if(empty($reporte_mensual)): ?>
+                                <tr>
+                                    <td colspan="6" class="empty-state">No hay ventas registradas para este mes</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach($reporte_mensual as $dia): ?>
+                                <tr>
+                                    <td><?= $dia['dia'] ?? 0 ?></td>
+                                    <td><?= $dia['total_facturas'] ?? 0 ?></td>
+                                    <td><?= $dia['total_productos'] ?? 0 ?></td>
+                                    <td>Bs. <?= number_format($dia['total_ventas_bs'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$ <?= number_format($dia['total_ventas_usd'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>Bs. <?= number_format($dia['promedio_venta_bs'] ?? 0, 2, ',', '.') ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td><strong>TOTAL</strong></td>
+                                <td><strong><?= $total_mensual_facturas ?></strong></td>
+                                <td><strong><?= $total_productos_mensual ?></strong></td>
+                                <td><strong>Bs. <?= number_format($total_mensual_bs, 2, ',', '.') ?></strong></td>
+                                <td><strong>$ <?= number_format($total_mensual_usd, 2, ',', '.') ?></strong></td>
+                                <td><strong>Bs. <?= $total_mensual_facturas > 0 ? number_format($total_mensual_bs / $total_mensual_facturas, 2, ',', '.') : '0,00' ?></strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Productos Más Vendidos -->
+            <?php if(!empty($productos_mas_vendidos)): ?>
+            <div class="tabla-container">
+                <h3>Productos Más Vendidos</h3>
+                <div class="table-responsive">
+                    <table class="tabla-reporte">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Código</th>
+                                <th>Cantidad Vendida</th>
+                                <th>Total Ingresos (Bs)</th>
+                                <th>Precio Promedio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($productos_mas_vendidos as $producto): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($producto['nombre'] ?? '') ?></td>
+                                <td><?= $producto['codigo'] ?? '' ?></td>
+                                <td><?= $producto['total_vendido'] ?? 0 ?></td>
+                                <td>Bs. <?= number_format($producto['total_ingresos_bs'] ?? 0, 2, ',', '.') ?></td>
+                                <td>Bs. <?= number_format($producto['precio_promedio'] ?? 0, 2, ',', '.') ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+            <!-- Métodos de Pago -->
+            <?php if(!empty($ventas_por_metodo)): ?>
+            <div class="metodos-pago-container">
+                <h3>Ventas por Método de Pago</h3>
+                <div class="metodos-grid">
+                    <?php foreach($ventas_por_metodo as $metodo): ?>
+                    <div class="metodo-card">
+                        <div class="metodo-nombre"><?= $metodo['metodo_pago'] ?? 'No especificado' ?></div>
+                        <div class="metodo-cantidad"><?= $metodo['cantidad'] ?? 0 ?> facturas</div>
+                        <div class="metodo-total">Bs. <?= number_format($metodo['total_bs'] ?? 0, 2, ',', '.') ?></div>
+                    </div>
                     <?php endforeach; ?>
                 </div>
             </div>
-
-            <!-- Contenido del Reporte -->
-            <div class="reporte-contenido">
-                <div class="reporte-header">
-                    <h2><?= $reporte['icono'] ?> <?= $reporte['titulo'] ?></h2>
-                    <div class="reporte-acciones">
-                        <button class="btn-exportar">📥 Exportar PDF</button>
-                        <button class="btn-imprimir">🖨️ Imprimir</button>
-                    </div>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Reporte Diario -->
+        <?php if($reporte_tipo === 'diario'): ?>
+        <div class="reporte-container">
+            <div class="reporte-header">
+                <h2>Reporte Diario de Ventas</h2>
+                <div class="periodo-info">
+                    <span><?= date('d/m/Y', strtotime($day)) ?></span>
                 </div>
-
-                <div class="reporte-body">
-                    <?php if (in_array($reporte_actual, ['productos_mas_vendidos', 'productos_menos_vendidos'])): ?>
-                        <!-- Reporte de Productos -->
-                        <div class="productos-lista">
-                            <?php foreach ($reporte['datos'] as $index => $producto): ?>
-                            <div class="producto-item <?= $index < 3 && $reporte_actual == 'productos_mas_vendidos' ? 'destacado' : '' ?>">
-                                <div class="producto-rank">#<?= $index + 1 ?></div>
-                                <div class="producto-info">
-                                    <div class="producto-nombre"><?= $producto['producto'] ?></div>
-                                    <div class="producto-detalle"><?= $producto['ventas'] ?> unidades vendidas</div>
-                                </div>
-                                <div class="producto-cambio <?= strpos($producto['cambio'], '+') !== false ? 'positivo' : 'negativo' ?>">
-                                    <?= $producto['cambio'] ?>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-
-                        <!-- Gráfico de Productos -->
-                        <div class="grafico-container">
-                            <canvas id="productosChart"></canvas>
-                        </div>
-
-                    <?php elseif (in_array($reporte_actual, ['ventas_dia', 'ventas_semana', 'ventas_mes'])): ?>
-                        <!-- Reporte de Ventas -->
-                        <div class="metricas-ventas">
-                            <div class="metrica-principal">
-                                <div class="metrica-valor">$<?= number_format($reporte['datos']['total'], 2) ?></div>
-                                <div class="metrica-titulo">Total Ventas</div>
-                                <div class="metrica-cambio <?= strpos($reporte['datos']['cambio'], '+') !== false ? 'positivo' : 'negativo' ?>">
-                                    <?= $reporte['datos']['cambio'] ?>
-                                </div>
-                            </div>
-                            
-                            <div class="metricas-secundarias">
-                                <div class="metrica-secundaria">
-                                    <div class="metrica-valor"><?= $reporte['datos']['transacciones'] ?></div>
-                                    <div class="metrica-titulo">Transacciones</div>
-                                </div>
-                                <div class="metrica-secundaria">
-                                    <div class="metrica-valor">$<?= number_format($reporte['datos']['ticket_promedio'], 2) ?></div>
-                                    <div class="metrica-titulo">Ticket Promedio</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Gráfico de Ventas -->
-                        <div class="grafico-container">
-                            <canvas id="ventasChart"></canvas>
-                        </div>
-
-                    <?php else: ?>
-                        <!-- Reporte de Tasa Cambiaria -->
-                        <div class="metricas-tasa">
-                            <div class="tasa-actual">
-                                <div class="tasa-valor">Bs <?= number_format($reporte['datos']['actual'], 2) ?></div>
-                                <div class="tasa-titulo">Tasa Actual</div>
-                            </div>
-                            
-                            <div class="tasa-comparacion">
-                                <div class="tasa-anterior">
-                                    <span>Anterior: Bs <?= number_format($reporte['datos']['anterior'], 2) ?></span>
-                                </div>
-                                <div class="tasa-variacion">
-                                    <span>Variación: Bs <?= number_format($reporte['datos']['cambio_valor'], 2) ?></span>
-                                </div>
-                                <div class="tasa-porcentaje <?= strpos($reporte['datos']['cambio_porcentaje'], '+') !== false ? 'positivo' : 'negativo' ?>">
-                                    <?= $reporte['datos']['cambio_porcentaje'] ?>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Gráfico de Tasa -->
-                        <div class="grafico-container">
-                            <canvas id="tasaChart"></canvas>
-                        </div>
-                    <?php endif; ?>
+            </div>
+            
+            <!-- Estadísticas Diarias -->
+            <?php 
+            $total_diario_bs = 0;
+            $total_diario_usd = 0;
+            $productos_vendidos_dia = 0;
+            
+            if(is_array($reporte_diario)) {
+                foreach($reporte_diario as $venta) {
+                    $total_diario_bs += floatval($venta['total_bs'] ?? 0);
+                    $total_diario_usd += floatval($venta['total_usd'] ?? 0);
+                    $productos_vendidos_dia += intval($venta['items'] ?? 0);
+                }
+            }
+            $total_diario_facturas = is_array($reporte_diario) ? count($reporte_diario) : 0;
+            ?>
+            
+            <div class="estadisticas-grid">
+                <div class="estadistica-card">
+                    <div class="estadistica-label">Total del Día (Bs)</div>
+                    <div class="estadistica-value">Bs. <?= number_format($total_diario_bs, 2, ',', '.') ?></div>
+                </div>
+                
+                <div class="estadistica-card">
+                    <div class="estadistica-label">Facturas del Día</div>
+                    <div class="estadistica-value"><?= $total_diario_facturas ?></div>
+                </div>
+                
+                <div class="estadistica-card">
+                    <div class="estadistica-label">Productos Vendidos</div>
+                    <div class="estadistica-value"><?= $productos_vendidos_dia ?></div>
+                </div>
+                
+                <div class="estadistica-card">
+                    <div class="estadistica-label">Promedio por Factura</div>
+                    <div class="estadistica-value">Bs. <?= $total_diario_facturas > 0 ? number_format($total_diario_bs / $total_diario_facturas, 2, ',', '.') : '0,00' ?></div>
+                </div>
+            </div>
+            
+            <!-- Tabla de Ventas Diarias -->
+            <div class="tabla-container">
+                <div class="table-responsive">
+                    <table class="tabla-reporte">
+                        <thead>
+                            <tr>
+                                <th>Factura</th>
+                                <th>Cliente</th>
+                                <th>Hora</th>
+                                <th>Método de Pago</th>
+                                <th>Items</th>
+                                <th>Total Bs</th>
+                                <th>Total USD</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if(empty($reporte_diario)): ?>
+                                <tr>
+                                    <td colspan="7" class="empty-state">No hay ventas registradas para este día</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach($reporte_diario as $venta): ?>
+                                <tr>
+                                    <td><?= $venta['nro_factura'] ?? 'N/A' ?></td>
+                                    <td><?= htmlspecialchars($venta['cliente'] ?? 'Sin cliente') ?></td>
+                                    <td><?= isset($venta['hora']) ? substr($venta['hora'], 0, 5) : '--:--' ?></td>
+                                    <td><?= $venta['metodo_pago'] ?? 'No especificado' ?></td>
+                                    <td><?= $venta['items'] ?? 0 ?></td>
+                                    <td>Bs. <?= number_format($venta['total_bs'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$ <?= number_format($venta['total_usd'] ?? 0, 2, ',', '.') ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="5"><strong>TOTAL DEL DÍA</strong></td>
+                                <td><strong>Bs. <?= number_format($total_diario_bs, 2, ',', '.') ?></strong></td>
+                                <td><strong>$ <?= number_format($total_diario_usd, 2, ',', '.') ?></strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
         </div>
-    </main>
+        <?php endif; ?>
+    </div>
+</main>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Gráficos según el reporte actual
-        const reporteActual = '<?= $reporte_actual ?>';
-        
-        if (reporteActual.includes('productos')) {
-            // Gráfico de productos
-            const ctx = document.getElementById('productosChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: <?= json_encode(array_column($reporte['datos'], 'producto')) ?>,
-                    datasets: [{
-                        label: 'Unidades Vendidas',
-                        data: <?= json_encode(array_column($reporte['datos'], 'ventas')) ?>,
-                        backgroundColor: '#008B8B',
-                        borderColor: '#006666',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Distribución de Ventas por Producto'
-                        }
-                    }
-                }
-            });
-        } else if (reporteActual.includes('ventas')) {
-            // Gráfico de ventas
-            const ctx = document.getElementById('ventasChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-                    datasets: [{
-                        label: 'Ventas ($)',
-                        data: [1850, 1920, 2100, 1980, 2250, 2450, 2100],
-                        borderColor: '#008B8B',
-                        backgroundColor: 'rgba(0, 139, 139, 0.1)',
-                        borderWidth: 3,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Evolución de Ventas Diarias'
-                        }
-                    }
-                }
-            });
-        } else {
-            // Gráfico de tasa cambiaria
-            const ctx = document.getElementById('tasaChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5'],
-                    datasets: [{
-                        label: 'Tasa USD/BS',
-                        data: [32.80, 33.50, 34.20, 35.20, 36.50],
-                        borderColor: '#008B8B',
-                        backgroundColor: 'rgba(0, 139, 139, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Evolución de la Tasa Cambiaria'
-                        }
-                    }
-                }
-            });
-        }
-    });
-    </script>
+<script>
+function cambiarTipoReporte(tipo) {
+    if (tipo === 'diario') {
+        $('#filtro-mes').hide();
+        $('#filtro-ano').hide();
+        $('#filtro-dia').show();
+    } else {
+        $('#filtro-mes').show();
+        $('#filtro-ano').show();
+        $('#filtro-dia').hide();
+    }
+}
+
+// Inicializar el estado correcto
+$(document).ready(function() {
+    cambiarTipoReporte('<?= $reporte_tipo ?>');
+});
+</script>
 </body>
 </html>

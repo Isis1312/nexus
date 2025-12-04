@@ -1,4 +1,5 @@
 <?php
+// obtener_permisos_usuario.php
 session_start();
 require_once 'conexion.php';
 
@@ -8,39 +9,33 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     exit();
 }
 
-if (!isset($_GET['id_rol'])) {
+if (!isset($_GET['id_usuario']) || !isset($_GET['id_rol'])) {
     header('HTTP/1.1 400 Bad Request');
-    echo json_encode(['error' => 'ID de rol no proporcionado']);
+    echo json_encode(['error' => 'Parámetros incompletos']);
     exit();
 }
 
+$id_usuario = intval($_GET['id_usuario']);
 $id_rol = intval($_GET['id_rol']);
 
 try {
-    // Verificar si el rol existe
-    $sqlRol = "SELECT id_rol FROM roles WHERE id_rol = ?";
-    $stmtRol = $pdo->prepare($sqlRol);
-    $stmtRol->execute([$id_rol]);
-    
-    if ($stmtRol->rowCount() === 0) {
-        header('HTTP/1.1 404 Not Found');
-        echo json_encode(['error' => 'Rol no encontrado']);
-        exit();
-    }
-
-    // Obtener todos los permisos para el rol
-    $sql = "SELECT m.id_modulo, m.nombre_modulo, 
-                   COALESCE(p.ver, 0) as ver, 
-                   COALESCE(p.agregar, 0) as agregar, 
-                   COALESCE(p.editar, 0) as editar, 
-                   COALESCE(p.eliminar, 0) as eliminar, 
-                   COALESCE(p.cambiar_estado, 0) as cambiar_estado
-            FROM modulos m 
+    // Obtener permisos combinados: personalizados del usuario o por defecto del rol
+    $sql = "SELECT 
+                m.id_modulo, 
+                m.nombre_modulo,
+                COALESCE(pu.ver, p.ver, 0) as ver,
+                COALESCE(pu.agregar, p.agregar, 0) as agregar,
+                COALESCE(pu.editar, p.editar, 0) as editar,
+                COALESCE(pu.eliminar, p.eliminar, 0) as eliminar,
+                COALESCE(pu.cambiar_estado, p.cambiar_estado, 0) as cambiar_estado,
+                CASE WHEN pu.id_usuario IS NOT NULL THEN 1 ELSE 0 END as es_personalizado
+            FROM modulos m
             LEFT JOIN permisos p ON m.id_modulo = p.id_modulo AND p.id_rol = ?
+            LEFT JOIN permisos_usuario pu ON m.id_modulo = pu.id_modulo AND pu.id_usuario = ?
             ORDER BY m.id_modulo";
     
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([$id_rol]);
+    $stmt->execute([$id_rol, $id_usuario]);
     $permisos = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     header('Content-Type: application/json');

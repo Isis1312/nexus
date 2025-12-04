@@ -21,8 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cantidad = $_POST['cantidad'];
         $precio_costo = $_POST['precio_costo'];
         $precio_venta = $_POST['precio_venta'];
-        $unidad_medida = $_POST['unidad_medida'] ?? 'unidad';
-        $es_perecedero = isset($_POST['es_perecedero']) ? 1 : 0;
+
         
         // Validar código único
         $stmt = $pdo->prepare("SELECT id FROM productos WHERE codigo = ?");
@@ -38,14 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Insertar producto
         $sql = "INSERT INTO productos (codigo, nombre, descripcion, categoria_id, subcategoria_id, marca_id, 
-                proveedor_id, fecha_vencimiento, es_perecedero, cantidad, cantidad_minima, 
-                precio_costo, precio_venta, margen_ganancia, unidad_medida, estado) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 5, ?, ?, ?, ?, 'active')";
+                proveedor_id, fecha_vencimiento, , cantidad, cantidad_minima, 
+                precio_costo, precio_venta, margen_ganancia, estado) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 5, ?, ?,  'active')";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$codigo, $nombre, $descripcion, $categoria_id, $subcategoria_id, $marca_id,
-                       $proveedor_id, $fecha_vencimiento, $es_perecedero, $cantidad,
-                       $precio_costo, $precio_venta, $margen_ganancia, $unidad_medida]);
+                       $proveedor_id, $fecha_vencimiento, $cantidad,
+                       $precio_costo, $precio_venta, $margen_ganancia]);
         
         $_SESSION['mensaje'] = "Producto registrado exitosamente";
         header('Location: productos.php');
