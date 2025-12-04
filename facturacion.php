@@ -39,7 +39,7 @@ if (isset($_GET['buscar_producto'])) {
     exit();
 }
 
-// Solo si no es una búsqueda AJAX, continuar con el HTML
+// búsqueda AJAX,
 require_once 'menu.php';
 
 // Inicializar sistema de permisos
@@ -54,7 +54,7 @@ if (!$sistemaPermisos->puedeVer('ventas')) {
 
 
 
-// Obtener tasa del dólar desde JSON (CORREGIDO)
+// Obtener tasa del dólar desde JSON
 $tasas_file = 'js/tasas_cache.json';
 
 
@@ -278,8 +278,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
                                 <th>Código</th>
                                 <th>Producto</th>
                                 <th>Cantidad</th>
-                                <th>Precio Unitario (Bs)</th>
-                                <th>Subtotal (Bs)</th>
+                                <th>Precio Unitario ($)</th>
+                                <th>Subtotal ($)</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -295,20 +295,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
                 <div class="totales-container">
                     <div class="total-row">
                         <span class="total-label">Subtotal:</span>
-                        <span id="subtotal-bs" class="total-value">Bs. 0,00</span>
+                        <span id="subtotal-bs" class="total-value">$. 0,00</span>
                     </div>
-                    <div class="total-row">
+                  <!-- <div class="total-row">
                         <span class="total-label">IVA (16%):</span>
                         <span id="iva-bs" class="total-value">Bs. 0,00</span>
-                    </div>
+                    </div>-->
                     <div id="igtf-row" class="total-row" style="display: none;">
                         <span class="total-label">IGTF (3%):</span>
-                        <span id="igtf-bs" class="total-value">Bs. 0,00</span>
+                        <span id="igtf-bs" class="total-value">$. 0,00</span>
                     </div>
                     <div class="total-row total-final">
                         <span class="total-label">TOTAL:</span>
-                        <span id="total-bs" class="total-value">Bs. 0,00</span>
-                        <span id="total-usd" class="total-value-usd">$ 0,00</span>
+                        <span id="total-bs" class="total-value">$. 0,00</span>
+                        <span id="total-usd" class="total-value-usd">Bs. 0,00</span>
                     </div>
                 </div>
             </div>
@@ -523,8 +523,8 @@ function actualizarTablaProductos() {
                         <button type="button" class="btn-cantidad" onclick="cambiarCantidad(${index}, 1)">+</button>
                     </div>
                 </td>
-                <td>Bs. ${producto.precio_venta.toFixed(2).replace('.', ',')}</td>
-                <td>Bs. ${subtotal.toFixed(2).replace('.', ',')}</td>
+                <td>$. ${producto.precio_venta.toFixed(2).replace('.', ',')}</td>
+                <td>$. ${subtotal.toFixed(2).replace('.', ',')}</td>
                 <td>
                     <button type="button" class="btn-eliminar-producto" onclick="eliminarProducto(${index})">
                         🗑️ Eliminar
@@ -566,7 +566,7 @@ function eliminarProducto(index) {
 }
 
 function actualizarTotales() {
-    const iva_porcentaje = 16;
+    const iva_porcentaje = 0.16;
     const iva_bs = subtotal_bs * (iva_porcentaje / 100);
     
     let igtf_porcentaje = 0;
@@ -576,13 +576,13 @@ function actualizarTotales() {
     const igtf_bs = subtotal_bs * (igtf_porcentaje / 100);
     
     const total_bs = subtotal_bs + iva_bs + igtf_bs;
-    const total_usd = total_bs / tasa_usd;
+    const total_usd = total_bs * tasa_usd;
     
-    $('#subtotal-bs').text('Bs. ' + subtotal_bs.toFixed(2).replace('.', ','));
-    $('#iva-bs').text('Bs. ' + iva_bs.toFixed(2).replace('.', ','));
+    $('#subtotal-bs').text('$. ' + subtotal_bs.toFixed(2).replace('.', ','));
+    $('#iva-bs').text('$. ' + iva_bs.toFixed(2).replace('.', ','));
     $('#igtf-bs').text('Bs. ' + igtf_bs.toFixed(2).replace('.', ','));
-    $('#total-bs').text('Bs. ' + total_bs.toFixed(2).replace('.', ','));
-    $('#total-usd').text('$ ' + total_usd.toFixed(2).replace('.', ','));
+    $('#total-bs').text('$. ' + total_bs.toFixed(2).replace('.', ','));
+    $('#total-usd').text('Bs. ' + total_usd.toFixed(2).replace('.', ','));
     
     $('#subtotal_bs_form').val(subtotal_bs);
     $('#productos_json').val(JSON.stringify(productos));
