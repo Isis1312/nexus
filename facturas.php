@@ -149,7 +149,7 @@ unset($_SESSION['error']);
                                     <div class="acciones-container">
                                         <a href="ver_factura.php?id=<?= $factura['id_venta'] ?>" 
                                            class="btn-action btn-ver" target="_blank">
-                                            👁️ Ver
+                                            👁 Ver
                                         </a>
                                     </div>
                                 </td>

@@ -6,49 +6,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 require_once 'conexion.php';
-require_once 'menu.php';
 
-// Inicializar sistema de permisos
-require_once 'permisos.php';
-$sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
-
-// Verificar si puede ver este módulo 
-if (!$sistemaPermisos->puedeVer('ventas')) {
-    header('Location: inicio.php');
-    exit();
-}
-
-// Obtener usuario actual
-$usuario_id = $_SESSION['id_usuario'] ?? null;
-
-// Obtener tasa del dólar desde JSON
-$tasas_file = 'js/tasas_cache.json';
-$tasa_usd = 10.00; // Valor por defecto
-
-if (file_exists($tasas_file)) {
-    $tasas_data = json_decode(file_get_contents($tasas_file), true);
-    if (isset($tasas_data['dolar'])) {
-        $tasa_usd = floatval($tasas_data['dolar']);
-    }
-}
-
-// Obtener último número de factura
-try {
-    $stmt = $pdo->query("SELECT nro_factura FROM ventas ORDER BY id_venta DESC LIMIT 1");
-    $ultima_factura = $stmt->fetchColumn();
-    
-    if ($ultima_factura && preg_match('/FAC-(\d+)/', $ultima_factura, $match)) {
-        $numero = intval($match[1]) + 1;
-    } else {
-        $numero = 1;
-    }
-    
-    $nro_factura = 'FAC-' . str_pad($numero, 6, '0', STR_PAD_LEFT);
-} catch (Exception $e) {
-    $nro_factura = 'FAC-' . str_pad(1, 6, '0', STR_PAD_LEFT);
-}
-
-// Procesar búsqueda de cliente por cédula (AJAX)
+// AQUÍ VAN LAS BÚSQUEDAS AJAX PRIMERO - IMPORTANTE
 if (isset($_GET['buscar_cliente'])) {
     $cedula = trim($_GET['buscar_cliente']);
     $stmt = $pdo->prepare("SELECT * FROM clientes WHERE cedula = ?");
@@ -62,7 +21,7 @@ if (isset($_GET['buscar_cliente'])) {
     }
     exit();
 }
-// Procesar búsqueda de producto por código (AJAX)
+
 if (isset($_GET['buscar_producto'])) {
     $codigo = trim($_GET['buscar_producto']);
     $stmt = $pdo->prepare("SELECT p.*, c.nombre_categoria 
@@ -78,6 +37,49 @@ if (isset($_GET['buscar_producto'])) {
         echo json_encode(['success' => false, 'message' => 'Producto no disponible']);
     }
     exit();
+}
+
+// Solo si no es una búsqueda AJAX, continuar con el HTML
+require_once 'menu.php';
+
+// Inicializar sistema de permisos
+require_once 'permisos.php';
+$sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
+
+// Verificar si puede ver este módulo 
+if (!$sistemaPermisos->puedeVer('ventas')) {
+    header('Location: inicio.php');
+    exit();
+}
+
+// Obtener usuario actual
+$usuario_id = $_SESSION['id_usuario'] ?? null;
+
+// Obtener tasa del dólar desde JSON (CORREGIDO)
+$tasas_file = 'js/tasas_cache.json';
+$tasa_usd = 36.50; // Valor por defecto
+
+if (file_exists($tasas_file)) {
+    $tasas_data = json_decode(file_get_contents($tasas_file), true);
+    if (isset($tasas_data['dolar'])) {
+        $tasa_usd = floatval($tasas_data['dolar']);
+    }
+}
+
+// Obtener último número de factura (EMPIEZA EN 000001)
+try {
+    $stmt = $pdo->query("SELECT nro_factura FROM ventas ORDER BY id_venta DESC LIMIT 1");
+    $ultima_factura = $stmt->fetchColumn();
+    
+    if ($ultima_factura && preg_match('/FAC-(\d+)/', $ultima_factura, $match)) {
+        $numero = intval($match[1]) + 1;
+    } else {
+        $numero = 1; // Empieza en 1
+    }
+    
+    $nro_factura = 'FAC-' . str_pad($numero, 6, '0', STR_PAD_LEFT);
+} catch (Exception $e) {
+    $nro_factura = 'FAC-' . str_pad(1, 6, '0', STR_PAD_LEFT);
 }
 
 // Procesar facturación
@@ -104,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
         $total_bs = $subtotal_bs + $iva_bs + $igtf_bs;
         $total_usd = $total_bs / $tasa_usd;
         
-        // Insertar venta (sin guardar impuestos en BD, se calculan)
+        // Insertar venta
         $stmt = $pdo->prepare("INSERT INTO ventas 
             (cliente, fecha, metodo_pago, total_bs, total_usd, tasa_usd, 
              nro_factura, id_cliente, usuario_id) 
@@ -133,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
             $precio_unitario_bs = $producto['precio_venta'];
             $subtotal_bs_producto = $precio_unitario_bs * $cantidad;
             
-            // Insertar detalle (solo en bolívares)
+            // Insertar detalle
             $stmt_detalle = $pdo->prepare("INSERT INTO detalle_venta 
                 (id_venta, id_producto, codigo_producto, nombre_producto, cantidad, 
                  precio_unitario_bs, subtotal_bs) 
@@ -167,7 +169,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -178,7 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-
 <main class="main-content">
     <div class="content-wrapper">
         <!-- Header -->
@@ -409,10 +409,12 @@ function buscarCliente() {
         return;
     }
     
-    $.get('facturacion.php', { buscar_cliente: cedula }, function(response) {
-        try {
-            const data = JSON.parse(response);
-            
+    $.ajax({
+        url: 'facturacion.php',
+        type: 'GET',
+        data: { buscar_cliente: cedula },
+        dataType: 'json',
+        success: function(data) {
             if (data.success) {
                 const cliente = data.cliente;
                 $('#id_cliente').val(cliente.id);
@@ -425,16 +427,15 @@ function buscarCliente() {
                 $('#cliente_nombre_form').val(cliente.nombre);
                 
                 verificarEstadoFactura();
-                mostrarAlerta('success', 'Cliente encontrado');
             } else {
                 mostrarAlerta('error', data.message);
                 $('#datos-cliente').hide();
             }
-        } catch (e) {
-            mostrarAlerta('error', 'Error en la respuesta del servidor');
+        },
+        error: function(xhr, status, error) {
+            console.error('Error AJAX:', error);
+            mostrarAlerta('error', 'Error de conexión con el servidor: ' + error);
         }
-    }).fail(function() {
-        mostrarAlerta('error', 'Error de conexión con el servidor');
     });
 }
 
@@ -451,10 +452,12 @@ function buscarProducto() {
         return;
     }
     
-    $.get('facturacion.php', { buscar_producto: codigo }, function(response) {
-        try {
-            const data = JSON.parse(response);
-            
+    $.ajax({
+        url: 'facturacion.php',
+        type: 'GET',
+        data: { buscar_producto: codigo },
+        dataType: 'json',
+        success: function(data) {
             if (data.success) {
                 const producto = data.producto;
                 
@@ -491,11 +494,11 @@ function buscarProducto() {
             } else {
                 mostrarAlerta('error', data.message, 10000);
             }
-        } catch (e) {
-            mostrarAlerta('error', 'Error en la respuesta del servidor');
+        },
+        error: function(xhr, status, error) {
+            console.error('Error AJAX:', error);
+            mostrarAlerta('error', 'Error de conexión con el servidor: ' + error);
         }
-    }).fail(function() {
-        mostrarAlerta('error', 'Error de conexión con el servidor');
     });
 }
 
@@ -674,8 +677,9 @@ $('#formAgregarCliente').submit(function(e) {
                 mostrarAlerta('error', data.message);
             }
         },
-        error: function() {
-            mostrarAlerta('error', 'Error de conexión con el servidor');
+        error: function(xhr, status, error) {
+            console.error('Error AJAX:', error);
+            mostrarAlerta('error', 'Error de conexión con el servidor: ' + error);
         }
     });
 });
@@ -714,3 +718,5 @@ $(document).ready(function() {
     });
 });
 </script>
+</body>
+</html>

@@ -257,13 +257,6 @@ try {
                         
                         <div class="modal-body">
                             <div class="modal-scroll-content">
-                                <div id="detallesContenido">
-                                    <!-- El contenido se llenará dinámicamente -->
-                                </div>
-                                
-                                <div class="permisos-grid" id="permisosGrid">
-                                    <!-- Los permisos se cargarán dinámicamente con AJAX -->
-                                </div>
                                 
                                 <div class="modal-actions">
                                     <button type="submit" class="btn-guardar">
