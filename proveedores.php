@@ -5,25 +5,20 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     exit();
 }
 
-// Incluir la conexión a la base de datos
 require_once 'conexion.php';
-
-// Inicializar sistema de permisos
 require_once 'permisos.php';
 $sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
 
-// Verificar si puede ver este módulo 
 if (!$sistemaPermisos->puedeVer('proveedores')) {
     header('Location: inicio.php');
     exit();
 }
-// Consultar proveedores
+
 try {
     $sql = "SELECT * FROM proveedores ORDER BY nombre_comercial";
     $stmt = $pdo->query($sql);
     $proveedores = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Calcular estadísticas
     $total_proveedores = count($proveedores);
     $proveedores_activos = count(array_filter($proveedores, function($p) { return $p['estado'] == 'activo'; }));
 } catch (PDOException $e) {
@@ -109,6 +104,7 @@ try {
                                         <td style="white-space: nowrap;">
                                             <?php
                                             if (isset($row['id_proveedor'])) {
+                                                echo '<a href="productos_proveedores.php?id_proveedor=' . $row['id_proveedor'] . '" class="btn btn-primary btn-sm"> Productos</a>';
                                                 echo '<a href="editar_proveedor.php?id=' . $row['id_proveedor'] . '" class="btn btn-success btn-sm">✎ Editar</a>';
                                                 echo '<a href="eliminar_proveedor.php?id=' . $row['id_proveedor'] . '" class="btn btn-danger btn-sm" onclick="return confirm(\'¿Estás seguro de eliminar este proveedor?\')">🗑️ Eliminar</a>';
                                             } else {
@@ -130,8 +126,7 @@ try {
                 <?php endif; ?>
                 
                 <div class="action-buttons">
-                    <a href="agregar_proveedores.php" class="btn btn-primary">➕ Agregar proveedor</a>
-                    <a href="productos_proveedores.php" class="btn btn-primary"> Ver productos</a>
+                    <a href="agregar_proveedores.php" class="btn btn-primary">➕ Agregar Nuevo Proveedor</a>
                 </div>
             </div>
         </div>

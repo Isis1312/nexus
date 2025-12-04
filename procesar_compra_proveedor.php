@@ -34,24 +34,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("La fecha de vencimiento es requerida");
         }
         
-        // Validar fecha de vencimiento no sea anterior a la fecha actual
         if (strtotime($fecha_vencimiento) < strtotime(date('Y-m-d'))) {
             throw new Exception("La fecha de vencimiento no puede ser anterior a la fecha actual");
         }
         
-        // Calcular cantidad total en PHP
+        // Calcular cantidad total
         $cantidad_total = $cantidad_empaques * $unidades_empaque;
         
         if ($cantidad_total <= 0) {
             throw new Exception("El cálculo del total de unidades es inválido");
         }
         
-        // Validar stock máximo en PHP
+        // Validar stock máximo
         if ($cantidad_total > 200) {
             throw new Exception("El stock no puede ser mayor a 200 unidades. Cantidad calculada: " . $cantidad_total);
         }
         
-        // Verificar que el producto proveedor existe y obtener todos los datos
+        // Verificar que el producto proveedor existe
         $stmt_check = $pdo->prepare("
             SELECT 
                 pp.*, 
@@ -73,15 +72,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Producto de proveedor no encontrado");
         }
         
-        // Calcular precios en PHP
+        // Calcular precios (30% de margen)
         $precio_compra_unidad = $precio_compra_total / $cantidad_total;
-        $precio_venta_unidad = $precio_compra_unidad * 1.42;
+        $precio_venta_unidad = $precio_compra_unidad * 1.30;
         
-        // ACTUALIZAR PRECIO DE COMPRA EN PRODUCTOS_PROVEEDOR (SIN updated_at)
+        // Actualizar precio en productos_proveedor
         $stmt_actualizar_precio = $pdo->prepare("
             UPDATE productos_proveedor 
             SET precio_compra = ?, 
-                fecha_compra = ?
+                fecha_compra = ?,
+                actualizacion = NOW()
             WHERE id_producto_proveedor = ?
         ");
         $stmt_actualizar_precio->execute([
@@ -96,24 +96,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $producto_existente = $stmt_existe->fetch(PDO::FETCH_ASSOC);
         
         if ($producto_existente) {
-            // Actualizar producto existente - SUMAR al stock actual
+            // Actualizar producto existente
             $nuevo_stock = $producto_existente['cantidad'] + $cantidad_total;
             
             if ($nuevo_stock > 200) {
                 throw new Exception("No se puede agregar stock. El stock total excedería 200 unidades. Stock actual: " . $producto_existente['cantidad']);
             }
             
-            // Actualizar productos (SIN updated_at si no existe)
+            // Actualizar productos
             $stmt_update = $pdo->prepare("
                 UPDATE productos 
                 SET cantidad = ?,
                     precio_costo = ?,
-                    fecha_vencimiento = ?
+                    precio_venta = ?,
+                    fecha_vencimiento = ?,
+                    updated_at = NOW()
                 WHERE id = ?
             ");
             $stmt_update->execute([
                 $nuevo_stock,
                 $precio_compra_unidad,
+                $precio_venta_unidad,
                 $fecha_vencimiento,
                 $producto_existente['id']
             ]);
@@ -131,8 +134,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     id_producto_proveedor,
                     fecha_vencimiento,
                     cantidad,
-                    precio_costo
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    precio_costo,
+                    precio_venta,
+                    created_at,
+                    updated_at,
+                    estado
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 'active')
             ");
             $stmt_insert->execute([
                 $producto_proveedor['codigo_producto'],
@@ -143,7 +150,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id_producto_proveedor,
                 $fecha_vencimiento,
                 $cantidad_total,
-                $precio_compra_unidad
+                $precio_compra_unidad,
+                $precio_venta_unidad
             ]);
             
             $mensaje_stock = "Nuevo producto agregado: " . $cantidad_total . " unidades";
@@ -159,6 +167,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id_producto_proveedor, 
             $cantidad_empaques,
             $unidades_empaque,
+            $fecha_compra,
+            $fecha_vencimiento,
+            $_SESSION['id_usuario'] ?? 1
+        ]);
+        
+        // Registrar en historial_compras
+        $id_compra = $pdo->lastInsertId();
+        $total_unidades = $cantidad_empaques * $unidades_empaque;
+        
+        $stmt_historial_detalle = $pdo->prepare("
+            INSERT INTO historial_compras 
+            (id_compra, id_producto_proveedor, cantidad_empaques, unidades_empaque, 
+             total_unidades, precio_total, fecha_compra, fecha_vencimiento, usuario_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt_historial_detalle->execute([
+            $id_compra,
+            $id_producto_proveedor,
+            $cantidad_empaques,
+            $unidades_empaque,
+            $total_unidades,
+            $precio_compra_total,
             $fecha_compra,
             $fecha_vencimiento,
             $_SESSION['id_usuario'] ?? 1

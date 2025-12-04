@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
                 $nueva_cantidad = $producto_existente['cantidad'] + $total_unidades;
                 $stmt = $pdo->prepare("
                     UPDATE productos 
-                    SET cantidad = ?, precio_costo = ?, precio_venta = ROUND(? * 1.42, 2),
+                    SET cantidad = ?, precio_costo = ?, precio_venta = ROUND(? * 1.30, 2),
                         fecha_vencimiento = ?, updated_at = NOW()
                     WHERE id = ?
                 ");
@@ -101,8 +101,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
                         INSERT INTO productos 
                         (codigo, nombre, categoria_id, subcategoria_id, proveedor_id, 
                          id_producto_proveedor, fecha_vencimiento, cantidad, precio_costo, 
-                         precio_venta, estado) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+                         precio_venta, unidad_medida, es_perecedero, estado,
+                         created_at, updated_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW(), NOW())
                     ");
                     $stmt->execute([
                         $producto_proveedor['codigo_producto'],
@@ -114,7 +115,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
                         $fecha_vencimiento_base,
                         $total_unidades,
                         $precio_por_unidad,
-                        round($precio_por_unidad * 1.42, 2)
+                        round($precio_por_unidad * 1.30, 2),
+                        $producto_proveedor['unidad_medida'],
+                        $producto_proveedor['es_perecedero']
                     ]);
                 }
             }
