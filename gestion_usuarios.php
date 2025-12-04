@@ -507,10 +507,7 @@ try {
                                 <input type="checkbox" name="permisos[${id_modulo}][eliminar]" ${permiso.eliminar ? 'checked' : ''}>
                                 Eliminar
                             </label>
-                            <label class="checkbox-label">
-                                <input type="checkbox" name="permisos[${id_modulo}][cambiar_estado]" ${permiso.cambiar_estado ? 'checked' : ''}>
-                                Cambiar Estado
-                            </label>
+                           
                         `;
                 }
                 

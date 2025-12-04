@@ -13,7 +13,7 @@ require_once 'permisos.php';
 $sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
 
 // Verificar si puede ver este módulo 
-if (!$sistemaPermisos->puedeVer('gestion_usuario')) {
+if (!$sistemaPermisos->puedeVer('clientes')) {
     header('Location: inicio.php');
     exit();
 }
