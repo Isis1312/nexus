@@ -65,9 +65,7 @@ require_once 'menu.php';
 <head>
   <meta charset="UTF-8">
   <title>Gestión de Clientes</title>
-  <link rel="stylesheet" href="css/inventario.css">
   <link rel="stylesheet" href="css/clientes.css">
-  <link rel="stylesheet" href="css/modales.css">
 </head>
 <body>
 
