@@ -47,22 +47,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['cambiar_estado'])) {
 // Procesar actualización de permisos desde el modal
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['actualizar_permisos'])) {
     try {
-        $id_usuario = $_POST['id_usuario'];
         $id_rol = $_POST['id_rol'];
-        
-        // Verificar que no esté cambiando permisos de su propio usuario
-        if ($id_usuario == $_SESSION['id_usuario']) {
-            $_SESSION['error'] = "No puedes cambiar los permisos de tu propio usuario";
-            header('Location: gestion_usuarios.php');
-            exit();
-        }
         
         // Obtener todos los módulos
         $sqlModulos = "SELECT id_modulo, nombre_modulo FROM modulos ORDER BY id_modulo";
         $stmtModulos = $pdo->query($sqlModulos);
         $modulos = $stmtModulos->fetchAll(PDO::FETCH_ASSOC);
         
-        // Actualizar cada permiso en la tabla permisos (por rol)
+        // Actualizar cada permiso
         foreach ($modulos as $modulo) {
             $id_modulo = $modulo['id_modulo'];
             
@@ -73,29 +65,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['actualizar_permisos'])
             $eliminar = isset($_POST['permisos'][$id_modulo]['eliminar']) ? 1 : 0;
             $cambiar_estado = isset($_POST['permisos'][$id_modulo]['cambiar_estado']) ? 1 : 0;
             
-            // Verificar si ya existe el permiso para este rol
-            $sqlCheck = "SELECT COUNT(*) as count FROM permisos WHERE id_rol = ? AND id_modulo = ?";
-            $stmtCheck = $pdo->prepare($sqlCheck);
-            $stmtCheck->execute([$id_rol, $id_modulo]);
-            $existe = $stmtCheck->fetch(PDO::FETCH_ASSOC);
-            
-            if ($existe['count'] > 0) {
-                // Actualizar permiso existente
-                $sqlUpdate = "UPDATE permisos SET 
-                             ver = ?, agregar = ?, editar = ?, eliminar = ?, cambiar_estado = ?
-                             WHERE id_rol = ? AND id_modulo = ?";
-                $stmtUpdate = $pdo->prepare($sqlUpdate);
-                $stmtUpdate->execute([$ver, $agregar, $editar, $eliminar, $cambiar_estado, $id_rol, $id_modulo]);
-            } else {
-                // Insertar nuevo permiso
-                $sqlInsert = "INSERT INTO permisos (id_rol, id_modulo, ver, agregar, editar, eliminar, cambiar_estado)
-                             VALUES (?, ?, ?, ?, ?, ?, ?)";
-                $stmtInsert = $pdo->prepare($sqlInsert);
-                $stmtInsert->execute([$id_rol, $id_modulo, $ver, $agregar, $editar, $eliminar, $cambiar_estado]);
-            }
+            // Actualizar en la base de datos
+            $sqlUpdate = "UPDATE permisos SET 
+                         ver = ?, agregar = ?, editar = ?, eliminar = ?, cambiar_estado = ?
+                         WHERE id_rol = ? AND id_modulo = ?";
+            $stmtUpdate = $pdo->prepare($sqlUpdate);
+            $stmtUpdate->execute([$ver, $agregar, $editar, $eliminar, $cambiar_estado, $id_rol, $id_modulo]);
         }
         
-        $_SESSION['mensaje'] = "Permisos actualizados correctamente para el usuario";
+        $_SESSION['mensaje'] = "Permisos actualizados correctamente";
         header('Location: gestion_usuarios.php');
         exit();
         
@@ -125,84 +103,6 @@ try {
     <title>Gestión de Usuarios - NEXUS</title>
     <link rel="stylesheet" href="css/menu.css">
     <link rel="stylesheet" href="css/g_usuarios.css">
-    <style>
-        /* Estilos adicionales específicos para el modal */
-        .usuario-seleccionado {
-            background: linear-gradient(135deg, rgba(0, 139, 139, 0.08), rgba(0, 102, 102, 0.08));
-            padding: 18px 22px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            border-left: 5px solid #008B8B;
-            border: 2px solid rgba(0, 139, 139, 0.2);
-        }
-        
-        .usuario-seleccionado strong {
-            color: #008B8B;
-            font-weight: 700;
-        }
-        
-        .rol-info h4 {
-            color: #008B8B;
-            margin: 15px 0 8px 0;
-            font-size: 1.3em;
-            font-weight: 700;
-        }
-        
-        .rol-description {
-            color: rgba(51, 65, 85, 0.8);
-            font-size: 1em;
-            margin: 0 0 20px 0;
-            line-height: 1.5;
-        }
-        
-        /* Mejoras para checkboxes en modal */
-        .permiso-opciones input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            accent-color: #008B8B;
-            margin-right: 10px;
-            vertical-align: middle;
-        }
-        
-        .permiso-opciones input[type="checkbox"]:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        /* Toast de notificación */
-        #toastNotificacion {
-            position: fixed;
-            top: 25px;
-            right: 25px;
-            background: linear-gradient(135deg, #23ca3f, #1ea832);
-            color: white;
-            padding: 18px 24px;
-            border-radius: 10px;
-            box-shadow: 0 8px 25px rgba(35, 202, 63, 0.4);
-            transform: translateX(150%);
-            transition: transform 0.4s ease;
-            z-index: 1001;
-            border-left: 5px solid #1ea832;
-            display: none;
-        }
-        
-        #toastNotificacion.show {
-            transform: translateX(0);
-            display: block;
-        }
-        
-        .toast-content {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .toast-icon {
-            font-weight: bold;
-            font-size: 1.3em;
-        }
-    </style>
 </head>
 <body>
     <?php require_once 'menu.php'; ?>
@@ -322,14 +222,9 @@ try {
                                                     </a>
                                                 <?php endif; ?>
                                                 
-                                                <?php if ($sistemaPermisos->puedeEditar('gestion_usuario') && !$esUsuarioActual): ?>
-                                                    <button class="btn-action btn-detalles" onclick="mostrarModalPermisos(
-                                                        <?php echo $usuario['id_usuario']; ?>, 
-                                                        '<?php echo htmlspecialchars(addslashes($usuario['usuario'])); ?>',
-                                                        <?php echo $usuario['id_rol']; ?>, 
-                                                        '<?php echo htmlspecialchars(addslashes($usuario['nombre_rol'])); ?>'
-                                                    )">
-                                                        <span>🔒</span>
+                                                <?php if ($sistemaPermisos->puedeVer('gestion_usuario')): ?>
+                                                    <button class="btn-action btn-detalles" onclick="mostrarModalPermisos(<?php echo $usuario['id_rol']; ?>, '<?php echo htmlspecialchars($usuario['nombre_rol']); ?>')">
+                                                        <span>⚙️</span>
                                                         Permisos
                                                     </button>
                                                 <?php endif; ?>
@@ -353,28 +248,25 @@ try {
             <div id="modalPermisos" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3>Configurar Permisos del Usuario</h3>
+                        <h3>Configurar Permisos del Rol</h3>
                         <span class="close-modal" onclick="cerrarModal()">&times;</span>
                     </div>
                     <form method="POST" action="" id="formPermisos">
                         <input type="hidden" name="actualizar_permisos" value="1">
-                        <input type="hidden" name="id_usuario" id="id_usuario_modal">
                         <input type="hidden" name="id_rol" id="id_rol_modal">
                         
                         <div class="modal-body">
                             <div class="modal-scroll-content">
-                                <div id="detallesContenido" class="rol-info">
-                                    <!-- Información del usuario y rol se cargará aquí -->
+                                <div id="detallesContenido">
+                                    <!-- El contenido se llenará dinámicamente -->
                                 </div>
                                 
-                                <div id="permisosGrid" class="permisos-grid">
-                                    <!-- Los permisos se cargarán aquí dinámicamente -->
-                                    <div class="cargando">Cargando permisos...</div>
+                                <div class="permisos-grid" id="permisosGrid">
+                                    <!-- Los permisos se cargarán dinámicamente con AJAX -->
                                 </div>
                                 
                                 <div class="modal-actions">
                                     <button type="submit" class="btn-guardar">
-                                        <span>💾</span>
                                         Guardar Cambios
                                     </button>
                                     <button type="button" class="btn-cancelar" onclick="cerrarModal()">
@@ -385,14 +277,6 @@ try {
                             </div>
                         </div>
                     </form>
-                </div>
-            </div>
-            
-            <!-- Toast de notificación -->
-            <div id="toastNotificacion">
-                <div class="toast-content">
-                    <span class="toast-icon">✓</span>
-                    <span id="toastMensaje">Permisos actualizados correctamente</span>
                 </div>
             </div>
         </div>
@@ -430,7 +314,7 @@ try {
             // Función para confirmar cambio de estado
             function confirmarCambioEstado(idUsuario, estadoActual, esUsuarioActual) {
                 if (esUsuarioActual) {
-                    mostrarToast('No puedes cambiar el estado de tu propio usuario', 'error');
+                    alert('No puedes cambiar el estado de tu propio usuario');
                     return false;
                 }
                 
@@ -449,25 +333,15 @@ try {
             }
 
             // Funciones para el modal de permisos
-            async function mostrarModalPermisos(idUsuario, usuarioNombre, idRol, rolNombre) {
-                console.log("Mostrando modal para usuario:", idUsuario, usuarioNombre, idRol, rolNombre);
+            async function mostrarModalPermisos(idRol, nombreRol) {
+                console.log("Mostrando modal para rol:", idRol, nombreRol);
                 const modal = document.getElementById('modalPermisos');
                 const contenido = document.getElementById('detallesContenido');
                 const permisosGrid = document.getElementById('permisosGrid');
-                const idUsuarioInput = document.getElementById('id_usuario_modal');
                 const idRolInput = document.getElementById('id_rol_modal');
                 
-                // Mostrar información del usuario
-                contenido.innerHTML = `
-                    <div class="usuario-seleccionado">
-                        <strong>Usuario:</strong> ${usuarioNombre}<br>
-                        <strong>Rol:</strong> ${rolNombre}
-                    </div>
-                    <h4>${rolNombre}</h4>
-                    <p class="rol-description">Configura los permisos para el rol de ${rolNombre}. Los cambios afectarán a todos los usuarios con este rol.</p>
-                `;
-                
-                idUsuarioInput.value = idUsuario;
+                // Mostrar información del rol
+                contenido.innerHTML = `<h4>${nombreRol}</h4><p class="rol-description">Configura los permisos para el rol de ${nombreRol}</p>`;
                 idRolInput.value = idRol;
                 
                 // Limpiar grid mientras carga
@@ -565,7 +439,6 @@ try {
                         break;
                         
                     case 'clientes':
-                    case 'inventario':
                         html = `
                             <label class="checkbox-label">
                                 <input type="checkbox" name="permisos[${id_modulo}][agregar]" ${permiso.agregar ? 'checked' : ''}>
@@ -582,9 +455,24 @@ try {
                         `;
                         break;
                         
+                  case 'inventario':
+                    html = `
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="permisos[${id_modulo}][agregar]" ${permiso.agregar ? 'checked' : ''}>
+                            Agregar
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="permisos[${id_modulo}][editar]" ${permiso.editar ? 'checked' : ''}>
+                            Editar
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="permisos[${id_modulo}][eliminar]" ${permiso.eliminar ? 'checked' : ''}>
+                            Eliminar
+                        </label>
+                    `;
+                    break;
+                        
                     case 'proveedores':
-                    case 'reportes':
-                    case 'ventas':
                         html = `
                             <label class="checkbox-label">
                                 <input type="checkbox" name="permisos[${id_modulo}][agregar]" ${permiso.agregar ? 'checked' : ''}>
@@ -619,6 +507,10 @@ try {
                                 <input type="checkbox" name="permisos[${id_modulo}][eliminar]" ${permiso.eliminar ? 'checked' : ''}>
                                 Eliminar
                             </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="permisos[${id_modulo}][cambiar_estado]" ${permiso.cambiar_estado ? 'checked' : ''}>
+                                Cambiar Estado
+                            </label>
                         `;
                 }
                 
@@ -644,6 +536,8 @@ try {
                 
                 const estaActivo = verCheckbox.checked;
                 const otrosCheckboxes = moduloDiv.querySelectorAll('input[type="checkbox"]:not([name*="[ver]"])');
+                
+                console.log(`Módulo ${idModulo} - Ver: ${estaActivo}, otros checkboxes: ${otrosCheckboxes.length}`);
                 
                 // Habilitar/deshabilitar otros checkboxes basado en "Ver"
                 otrosCheckboxes.forEach(checkbox => {
@@ -681,34 +575,12 @@ try {
 
             // Manejar envío del formulario de permisos
             document.getElementById('formPermisos').addEventListener('submit', function(e) {
-                if (!confirm('¿Estás seguro de actualizar los permisos de este rol? Esto afectará a todos los usuarios con este rol.')) {
+                if (!confirm('¿Estás seguro de actualizar los permisos de este rol?')) {
                     e.preventDefault();
                 } else {
                     console.log("Enviando formulario de permisos...");
                 }
             });
-
-            // Función para mostrar toast de notificación
-            function mostrarToast(mensaje, tipo = 'exito') {
-                const toast = document.getElementById('toastNotificacion');
-                const toastMensaje = document.getElementById('toastMensaje');
-                
-                // Cambiar color según tipo
-                if (tipo === 'error') {
-                    toast.style.background = 'linear-gradient(135deg, #ff6b6b, #ff5252)';
-                    toast.style.borderLeft = '5px solid #ff5252';
-                } else {
-                    toast.style.background = 'linear-gradient(135deg, #23ca3f, #1ea832)';
-                    toast.style.borderLeft = '5px solid #1ea832';
-                }
-                
-                toastMensaje.textContent = mensaje;
-                toast.classList.add('show');
-                
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                }, 3000);
-            }
         </script>
     </main>
 </body>
