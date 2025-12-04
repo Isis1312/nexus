@@ -117,7 +117,7 @@ $reporte = $reportes_data[$reporte_actual] ?? $reportes_data['productos_mas_vend
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reportes y Métricas</title>
-    <link rel="stylesheet" href="css/resportes.css">
+    <link rel="stylesheet" href="css/reportes.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>

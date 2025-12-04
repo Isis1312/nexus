@@ -65,9 +65,7 @@ require_once 'menu.php';
 <head>
   <meta charset="UTF-8">
   <title>Gestión de Clientes</title>
-  <link rel="stylesheet" href="css/inventario.css">
   <link rel="stylesheet" href="css/clientes.css">
-  <link rel="stylesheet" href="css/modales.css">
 </head>
 <body>
 
@@ -166,6 +164,9 @@ require_once 'menu.php';
     </div>
     <div class="modal-body">
       <form id="formAgregar" method="POST" action="guardar_cliente.php">
+        <!-- CAMPO OCULTO PARA IDENTIFICAR EL ORIGEN -->
+        <input type="hidden" name="origen" value="clientes">
+        
         <div class="form-row">
           <div class="form-group">
             <label>Nombre:</label>
