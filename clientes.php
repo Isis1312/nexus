@@ -21,7 +21,7 @@ if (!$sistemaPermisos->puedeVer('gestion_usuario')) {
 // Procesar búsqueda 
 $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
 $where = '';
-$params = [];
+$params = []; 
 
 if (!empty($busqueda)) {
     $where = "WHERE cedula LIKE ? OR nombre LIKE ?";
