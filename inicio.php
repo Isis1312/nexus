@@ -300,7 +300,7 @@ require_once 'menu.php';
                     <div class="rate-card usd">
                         <div class="currency-main">
                             <div class="currency-badge">
-                                <span class="currency-flag">🇺🇸d</span>
+                                <span class="currency-flag">USD</span>
                                 <div class="currency-details">
                                     <span class="currency-code">USD</span>
                                     <span class="currency-name">Dólar Americano</span>

@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_stock'])) 
     exit();
 }
 
-// Procesar eliminación de producto (DELETE físico)
+// Procesar eliminación de producto 
 if (isset($_GET['eliminar'])) {
     $id = $_GET['eliminar'];
     $stmt = $pdo->prepare("DELETE FROM productos WHERE id = ?");
@@ -44,7 +44,7 @@ if (isset($_GET['eliminar'])) {
     exit();
 }
 
-// Obtener productos del inventario - CONSULTA CORREGIDA
+// Obtener productos del inventario 
 try {
     $query = "SELECT 
                 p.id,
@@ -409,7 +409,7 @@ if (isset($_SESSION['error'])) {
             notificaciones.forEach(notif => {
                 notif.style.display = 'none';
             });
-        }, 10000);
+        }, 1000);
     });
     </script>
 </body>

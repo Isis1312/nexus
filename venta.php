@@ -52,7 +52,7 @@ $tasa_dia = $tasa_usd;
 
 
     <div class="page-header">
-      <h1 class="page-title">Gestión de Ventas</h1>
+      <h1 class="page-title">Libro de Ventas</h1>
     </div>
 
     <div class="controls-container">
@@ -61,12 +61,7 @@ $tasa_dia = $tasa_usd;
       </button>
 
       <div class="filtros-container">
-        <form method="GET" class="filtros-form">
-          <select name="estado" class="filtro-select">
-          <option value="">Todos los estados</option>
-          <option value="Pagado">Pagado</option>
-          <option value="Pendiente">Pendiente</option>
-          </select>
+    
 
           <div class="search-container">
             <input type="text" name="busqueda" class="search-input" placeholder="Buscar ventas...">

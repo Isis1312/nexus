@@ -107,9 +107,8 @@ if (!isset($current_page)) {
 
 
                 <li>
-                    <a href="clientes_factura.php" class="menu-item <?php echo $current_page == 'clientes_factura.php' ? 'active' : ''; ?>">
-                        <span class="menu-icon">💵</span>
-                        <span class="menu-text">Facturas</span>
+                    <a href="facturacion.php" class="menu-item <?php echo $current_page == 'facturacion.php' ? 'active' : ''; ?>">
+                        <span class="menu-text">Facturación</span>
                     </a>
                 </li>
               

@@ -517,7 +517,7 @@ tr:hover {
 }
 
 .notificacion.success {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+    background: linear-gradient(135deg, #76a777, #080808);
     transform: translateX(0);
 }
 
@@ -648,7 +648,7 @@ tr:hover {
 .alert-success {
     background-color: #d4edda;
     border: 1px solid #c3e6cb;
-    color: #32ff62;
+    color: #090909;
     padding: 12px 15px;
     border-radius: 5px;
     margin: 15px 0;

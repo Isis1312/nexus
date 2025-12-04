@@ -101,8 +101,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
                         INSERT INTO productos 
                         (codigo, nombre, categoria_id, subcategoria_id, proveedor_id, 
                          id_producto_proveedor, fecha_vencimiento, cantidad, precio_costo, 
-                         precio_venta, unidad_medida, es_perecedero, estado) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+                         precio_venta, estado) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
                     ");
                     $stmt->execute([
                         $producto_proveedor['codigo_producto'],
@@ -114,9 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
                         $fecha_vencimiento_base,
                         $total_unidades,
                         $precio_por_unidad,
-                        round($precio_por_unidad * 1.42, 2),
-                        $producto_proveedor['unidad_medida'],
-                        $producto_proveedor['es_perecedero']
+                        round($precio_por_unidad * 1.42, 2)
                     ]);
                 }
             }

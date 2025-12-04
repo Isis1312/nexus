@@ -1,14 +1,14 @@
 <?php
 session_start();
 require_once 'conexion.php';
+require_once 'menu.php';
 
 // Obtener clientes
 $stmt = $pdo->query("SELECT id, nombre, cedula, telefono, direccion FROM clientes ORDER BY nombre ASC");
 $clientes = $stmt->fetchAll();
-?>
-<?php
-session_start();
-require_once 'conexion.php';
+
+
+
 
 $busqueda = $_GET['busqueda'] ?? '';
 $sql = "SELECT * FROM clientes";
@@ -83,8 +83,8 @@ $totalClientes = count($clientes);
             <tr>
               <th>Nombre</th>
               <th>Cédula</th>
-              <th>Teléfono</th>
-              <th>Dirección</th>
+              <th>1</th>
+              <th>1</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -98,13 +98,11 @@ $totalClientes = count($clientes);
                 <tr>
                     <td><?= htmlspecialchars($cliente['nombre']) ?></td>
                     <td><?= htmlspecialchars($cliente['cedula']) ?></td>
-                    <td><?= htmlspecialchars($cliente['telefono']) ?></td>
-                    <td><?= htmlspecialchars($cliente['direccion']) ?></td>
                     <td>
                         <div class="acciones-container">
                             <a href="crear_factura.php?cliente_id=<?= $cliente['id'] ?>" class="btn-action btn-factura">🧾 Factura</a>
-                            <button class="btn-action btn-editar" onclick="abrirModalEditar(<?= $cliente['id'] ?>, '<?= addslashes($cliente['nombre']) ?>', '<?= addslashes($cliente['telefono']) ?>')">Editar</button>
-                            <button class="btn-action btn-eliminar" onclick="confirmarEliminar(<?= $cliente['id'] ?>, '<?= addslashes($cliente['nombre']) ?>')">Eliminar</button>
+                            <button class="btn-action btn-editar" onclick="abrirModalEditar(<?= $cliente['id'] ?>, '
+                            <?= addslashes($cliente['nombre']) ?>', '<?= addslashes($cliente['telefono']) ?>')">Editar</button>
                         </div>
                     </td>
                 </tr>
@@ -118,7 +116,7 @@ $totalClientes = count($clientes);
   </div>
 </main>
 
-<!-- Modales (idénticos a clientes.php) -->
+<!-- Modales -->
 <div id="modalAgregar" class="modal">
   <div class="modal-content">
     <div class="modal-header">
