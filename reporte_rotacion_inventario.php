@@ -87,7 +87,7 @@ $tipo_analisis = isset($_GET['tipo_analisis']) ? $_GET['tipo_analisis'] : 'rotac
 $limite_resultados = isset($_GET['limite']) ? intval($_GET['limite']) : 20;
 $ordenar_por = isset($_GET['ordenar_por']) ? $_GET['ordenar_por'] : 'rotacion_promedio';
 
-// Función para obtener rotación por categoría basada en ventas
+// Función para obtener rotación por categoría basada en ventas - CORREGIDA
 function getRotacionPorCategoriaVentas($pdo, $start_date, $end_date, $columna_stock, $columna_stock_minimo) {
     // Primero verificar si existe la columna de stock
     $query_check = "SHOW COLUMNS FROM productos WHERE Field = ?";
@@ -115,6 +115,7 @@ function getRotacionPorCategoriaVentas($pdo, $start_date, $end_date, $columna_st
         }
     }
     
+    // Consulta corregida sin la subconsulta problemática
     $query = "SELECT 
                 cp.id as categoria_id,
                 cp.nombre_categoria as categoria,
@@ -154,20 +155,6 @@ function getRotacionPorCategoriaVentas($pdo, $start_date, $end_date, $columna_st
                 -- Porcentaje de productos con stock bajo
                 ROUND(SUM(CASE WHEN $columna_stock_sql <= $columna_minimo_sql THEN 1 ELSE 0 END) * 100.0 / COUNT(p.id), 2) as porcentaje_stock_bajo,
                 
-                -- Producto más vendido de la categoría
-                (SELECT p2.nombre 
-                 FROM productos p2 
-                 WHERE p2.categoria_id = cp.id 
-                   AND p2.id IN (
-                       SELECT dv2.id_producto 
-                       FROM detalle_venta dv2 
-                       INNER JOIN ventas v2 ON dv2.id_venta = v2.id_venta
-                       WHERE v2.fecha BETWEEN :start_date2 AND :end_date2
-                   )
-                 GROUP BY p2.id 
-                 ORDER BY SUM(dv3.cantidad) DESC 
-                 LIMIT 1) as producto_mas_vendido,
-                
                 -- Última venta de la categoría
                 MAX(v.fecha) as ultima_venta
                 
@@ -185,13 +172,36 @@ function getRotacionPorCategoriaVentas($pdo, $start_date, $end_date, $columna_st
     $stmt->execute([
         'start_date' => $start_date,
         'end_date' => $end_date,
-        'start_date2' => $start_date . ' 00:00:00',
-        'end_date2' => $end_date . ' 23:59:59',
         'start_date3' => $start_date . ' 00:00:00',
         'end_date3' => $end_date . ' 23:59:59'
     ]);
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Función separada para obtener producto más vendido por categoría
+function getProductoMasVendidoPorCategoria($pdo, $categoria_id, $start_date, $end_date) {
+    $query = "SELECT 
+                p.nombre as producto_mas_vendido,
+                SUM(dv.cantidad) as total_vendido
+              FROM productos p
+              INNER JOIN detalle_venta dv ON p.id = dv.id_producto
+              INNER JOIN ventas v ON dv.id_venta = v.id_venta
+              WHERE p.categoria_id = :categoria_id
+                AND v.fecha BETWEEN :start_date AND :end_date
+              GROUP BY p.id, p.nombre
+              ORDER BY total_vendido DESC
+              LIMIT 1";
+    
+    $stmt = $pdo->prepare($query);
+    $stmt->execute([
+        'categoria_id' => $categoria_id,
+        'start_date' => $start_date . ' 00:00:00',
+        'end_date' => $end_date . ' 23:59:59'
+    ]);
+    
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result['producto_mas_vendido'] ?? 'N/A';
 }
 
 // Función para obtener análisis de stock por categoría
@@ -290,26 +300,7 @@ function getTendenciaVentasCategoria($pdo, $start_date, $end_date, $categoria_id
                 SUM(dv.cantidad) as unidades_vendidas,
                 SUM(dv.subtotal_bs) as ingresos_mes,
                 COUNT(DISTINCT v.id_venta) as facturas_mes,
-                COUNT(DISTINCT p.id) as productos_vendidos_mes,
-                
-                -- Calcular variación mes a mes
-                LAG(SUM(dv.cantidad), 1) OVER (PARTITION BY cp.id ORDER BY DATE_FORMAT(v.fecha, '%Y-%m')) as unidades_mes_anterior,
-                LAG(SUM(dv.subtotal_bs), 1) OVER (PARTITION BY cp.id ORDER BY DATE_FORMAT(v.fecha, '%Y-%m')) as ingresos_mes_anterior,
-                
-                -- Calcular crecimiento
-                CASE 
-                    WHEN LAG(SUM(dv.cantidad), 1) OVER (PARTITION BY cp.id ORDER BY DATE_FORMAT(v.fecha, '%Y-%m')) > 0
-                    THEN ROUND((SUM(dv.cantidad) - LAG(SUM(dv.cantidad), 1) OVER (PARTITION BY cp.id ORDER BY DATE_FORMAT(v.fecha, '%Y-%m'))) / 
-                           LAG(SUM(dv.cantidad), 1) OVER (PARTITION BY cp.id ORDER BY DATE_FORMAT(v.fecha, '%Y-%m')) * 100, 2)
-                    ELSE 0 
-                END as crecimiento_unidades,
-                
-                CASE 
-                    WHEN LAG(SUM(dv.subtotal_bs), 1) OVER (PARTITION BY cp.id ORDER BY DATE_FORMAT(v.fecha, '%Y-%m')) > 0
-                    THEN ROUND((SUM(dv.subtotal_bs) - LAG(SUM(dv.subtotal_bs), 1) OVER (PARTITION BY cp.id ORDER BY DATE_FORMAT(v.fecha, '%Y-%m'))) / 
-                           LAG(SUM(dv.subtotal_bs), 1) OVER (PARTition BY cp.id ORDER BY DATE_FORMAT(v.fecha, '%Y-%m')) * 100, 2)
-                    ELSE 0 
-                END as crecimiento_ingresos
+                COUNT(DISTINCT p.id) as productos_vendidos_mes
                 
               FROM categoria_prod cp
               INNER JOIN productos p ON cp.id = p.categoria_id
@@ -322,7 +313,61 @@ function getTendenciaVentasCategoria($pdo, $start_date, $end_date, $categoria_id
     
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Calcular crecimiento manualmente
+    $datos_por_categoria = [];
+    foreach ($resultados as $fila) {
+        $categoria = $fila['categoria'];
+        $mes = $fila['mes'];
+        
+        if (!isset($datos_por_categoria[$categoria])) {
+            $datos_por_categoria[$categoria] = [];
+        }
+        
+        $datos_por_categoria[$categoria][$mes] = $fila;
+    }
+    
+    // Calcular crecimiento para cada categoría
+    $resultados_con_crecimiento = [];
+    foreach ($datos_por_categoria as $categoria => $meses) {
+        $meses_ordenados = array_keys($meses);
+        sort($meses_ordenados);
+        
+        foreach ($meses_ordenados as $index => $mes) {
+            $datos_mes = $meses[$mes];
+            
+            // Buscar mes anterior
+            $crecimiento_unidades = 0;
+            $crecimiento_ingresos = 0;
+            
+            if ($index > 0) {
+                $mes_anterior = $meses_ordenados[$index - 1];
+                $datos_mes_anterior = $meses[$mes_anterior];
+                
+                if ($datos_mes_anterior['unidades_vendidas'] > 0) {
+                    $crecimiento_unidades = round(
+                        (($datos_mes['unidades_vendidas'] - $datos_mes_anterior['unidades_vendidas']) / 
+                         $datos_mes_anterior['unidades_vendidas']) * 100, 2
+                    );
+                }
+                
+                if ($datos_mes_anterior['ingresos_mes'] > 0) {
+                    $crecimiento_ingresos = round(
+                        (($datos_mes['ingresos_mes'] - $datos_mes_anterior['ingresos_mes']) / 
+                         $datos_mes_anterior['ingresos_mes']) * 100, 2
+                    );
+                }
+            }
+            
+            $resultados_con_crecimiento[] = array_merge($datos_mes, [
+                'crecimiento_unidades' => $crecimiento_unidades,
+                'crecimiento_ingresos' => $crecimiento_ingresos
+            ]);
+        }
+    }
+    
+    return $resultados_con_crecimiento;
 }
 
 // Función para obtener categorías (para select)
@@ -343,6 +388,7 @@ $analisis_stock = [];
 $tendencia_ventas = [];
 $categorias = getCategorias($pdo);
 $resumen_general = null;
+$productos_mas_vendidos = [];
 
 // Información de depuración
 $debug_info = [
@@ -353,6 +399,17 @@ $debug_info = [
 
 if ($tipo_analisis === 'rotacion_ventas') {
     $rotacion_categorias = getRotacionPorCategoriaVentas($pdo, $start_date, $end_date, $columna_stock, $columna_stock_minimo);
+    
+    // Obtener productos más vendidos para cada categoría
+    foreach ($rotacion_categorias as $categoria) {
+        $productos_mas_vendidos[$categoria['categoria_id']] = getProductoMasVendidoPorCategoria(
+            $pdo, 
+            $categoria['categoria_id'], 
+            $start_date, 
+            $end_date
+        );
+    }
+    
     $resumen_general = calcularResumenRotacion($rotacion_categorias);
 } elseif ($tipo_analisis === 'analisis_stock') {
     $analisis_stock = getAnalisisStockPorCategoria($pdo, $columna_stock, $columna_stock_minimo);
@@ -518,7 +575,6 @@ $meses_espanol = [
             <p><strong>Columna de stock mínimo detectada:</strong> <?= $columna_stock_minimo ?></p>
             <p><strong>Columnas de stock encontradas:</strong> <?= implode(', ', $estructura['stock']) ?></p>
             <p><strong>Columnas de mínimo encontradas:</strong> <?= implode(', ', $estructura['minimo']) ?></p>
-            <p><strong>Todas las columnas de productos:</strong> <?= implode(', ', $estructura['todas']) ?></p>
         </div>
         <?php endif; ?>
         
@@ -835,6 +891,9 @@ $meses_espanol = [
                                     
                                     $rotacion = $categoria['rotacion_promedio'] ?? 0;
                                     $clase_barra = $rotacion >= 3 ? 'alta' : ($rotacion >= 1.5 ? 'media' : 'baja');
+                                    
+                                    // Obtener producto más vendido para esta categoría
+                                    $producto_mas_vendido = $productos_mas_vendidos[$categoria['categoria_id']] ?? 'N/A';
                             ?>
                             <tr>
                                 <td class="categoria-nombre"><?= htmlspecialchars($categoria['categoria'] ?? '') ?></td>
@@ -859,8 +918,8 @@ $meses_espanol = [
                                 <td style="color: <?= $color_stock_bajo ?>; font-weight: bold;">
                                     <?= number_format($porcentaje_stock_bajo, 1, ',', '.') ?>%
                                 </td>
-                                <td title="<?= htmlspecialchars($categoria['producto_mas_vendido'] ?? 'N/A') ?>">
-                                    <?= htmlspecialchars(substr($categoria['producto_mas_vendido'] ?? 'N/A', 0, 25)) ?><?= strlen($categoria['producto_mas_vendido'] ?? '') > 25 ? '...' : '' ?>
+                                <td title="<?= htmlspecialchars($producto_mas_vendido) ?>">
+                                    <?= htmlspecialchars(substr($producto_mas_vendido, 0, 25)) ?><?= strlen($producto_mas_vendido) > 25 ? '...' : '' ?>
                                 </td>
                                 <td>
                                     <span class="indicador-rotacion <?= $clase_rotacion ?>">
