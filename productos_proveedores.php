@@ -26,22 +26,23 @@ if (isset($_GET['accion']) && isset($_GET['id_producto'])) {
     
     switch ($_GET['accion']) {
         case 'agregar_carrito':
-            if (isset($_GET['cantidad_empaques']) && isset($_GET['unidades_empaque'])) {
+            if (isset($_GET['cantidad_empaques']) && isset($_GET['unidades_empaque']) && isset($_GET['precio_total'])) {
                 $cantidad_empaques = intval($_GET['cantidad_empaques']);
                 $unidades_empaque = intval($_GET['unidades_empaque']);
                 $precio_total = floatval($_GET['precio_total']);
                 
-                // Buscar si el producto ya está en el carrito
-                $index = array_search($id_producto, array_column($_SESSION['carrito_compras'], 'id_producto'));
+                // *** MODIFICACIÓN CLAVE: Usar id_producto como clave del array ***
                 
-                if ($index !== false) {
+                // Verificar si el producto ya está en el carrito
+                if (isset($_SESSION['carrito_compras'][$id_producto])) {
                     // Actualizar cantidad
-                    $_SESSION['carrito_compras'][$index]['cantidad_empaques'] += $cantidad_empaques;
-                    $_SESSION['carrito_compras'][$index]['unidades_empaque'] = $unidades_empaque;
-                    $_SESSION['carrito_compras'][$index]['precio_total'] += $precio_total;
+                    $_SESSION['carrito_compras'][$id_producto]['cantidad_empaques'] += $cantidad_empaques;
+                    // Mantenemos las unidades_empaque por si se actualizan o se confirma que son las mismas
+                    $_SESSION['carrito_compras'][$id_producto]['unidades_empaque'] = $unidades_empaque; 
+                    $_SESSION['carrito_compras'][$id_producto]['precio_total'] += $precio_total;
                 } else {
-                    // Agregar nuevo producto al carrito
-                    $_SESSION['carrito_compras'][] = [
+                    // Agregar nuevo producto al carrito usando su ID como clave
+                    $_SESSION['carrito_compras'][$id_producto] = [
                         'id_producto' => $id_producto,
                         'cantidad_empaques' => $cantidad_empaques,
                         'unidades_empaque' => $unidades_empaque,
@@ -54,9 +55,9 @@ if (isset($_GET['accion']) && isset($_GET['id_producto'])) {
             break;
             
         case 'eliminar_carrito':
-            $index = array_search($id_producto, array_column($_SESSION['carrito_compras'], 'id_producto'));
-            if ($index !== false) {
-                array_splice($_SESSION['carrito_compras'], $index, 1);
+            // *** MODIFICACIÓN CLAVE: Eliminar directamente por la clave (id_producto) ***
+            if (isset($_SESSION['carrito_compras'][$id_producto])) {
+                unset($_SESSION['carrito_compras'][$id_producto]);
                 $_SESSION['mensaje'] = "Producto eliminado del carrito";
             }
             break;
@@ -132,14 +133,15 @@ $total_productos = count($result);
 $total_carrito = 0;
 $total_productos_carrito = 0;
 $total_unidades_carrito = 0;
-$carrito_detalles = [];
 
 if (!empty($_SESSION['carrito_compras'])) {
+    // Obtener detalles de los productos en el carrito
+    $carrito_detalles = [];
     foreach ($_SESSION['carrito_compras'] as $item) {
         $stmt = $pdo->prepare("SELECT pp.*, p.nombre_comercial FROM productos_proveedor pp 
                               JOIN proveedores p ON pp.id_proveedor = p.id_proveedor 
                               WHERE pp.id_producto_proveedor = ?");
-        $stmt->execute([$item['id_producto']]);
+        $stmt->execute([$id_producto_carrito]); // Usar la clave como ID del producto
         $producto = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($producto) {
@@ -361,13 +363,11 @@ if (!empty($_SESSION['carrito_compras'])) {
                             <tbody>
                                 <?php foreach($result as $row): ?>
                                     <?php 
-                                    // Verificar si el producto está en el carrito
-                                    $en_carrito = false;
-                                    $carrito_index = -1;
-                                    if (!empty($_SESSION['carrito_compras'])) {
-                                        $carrito_index = array_search($row['id_producto_proveedor'], array_column($_SESSION['carrito_compras'], 'id_producto'));
-                                        $en_carrito = ($carrito_index !== false);
-                                    }
+                                    // Verificar si el producto está en el carrito (se verifica la clave ahora)
+                                    $en_carrito = isset($_SESSION['carrito_compras'][$row['id_producto_proveedor']]);
+                                    
+                                    // Obtener la información del carrito directamente por la clave
+                                    $carrito_item = $en_carrito ? $_SESSION['carrito_compras'][$row['id_producto_proveedor']] : null;
                                     ?>
                                     <tr id="producto-<?php echo $row['id_producto_proveedor']; ?>">
                                         <td><code><?php echo $row['codigo_producto']; ?></code></td>
@@ -377,7 +377,7 @@ if (!empty($_SESSION['carrito_compras'])) {
                                                 <br><span class="badge badge-warning">🕒 Perecedero</span>
                                             <?php endif; ?>
                                             <?php if ($en_carrito): ?>
-                                                <br><span class="badge badge-success">🛒 En carrito (<?php echo $_SESSION['carrito_compras'][$carrito_index]['cantidad_empaques']; ?> empaques)</span>
+                                                <br><span class="badge badge-success">🛒 En carrito (<?php echo $carrito_item['cantidad_empaques']; ?> empaques)</span>
                                             <?php endif; ?>
                                         </td>
                                         <td><?php echo $row['nombre_categoria']; ?></td>
@@ -406,6 +406,7 @@ if (!empty($_SESSION['carrito_compras'])) {
                                                 <button class="btn-comprar" 
                                                         onclick="abrirModalCompra(<?php echo $row['id_producto_proveedor']; ?>, 
                                                                                  '<?php echo addslashes($row['nombre']); ?>', 
+                                                                                 'unidad_medida_no_usada', 
                                                                                  <?php echo $row['precio_compra']; ?>)">
                                                     🛒 Comprar
                                                 </button>
@@ -457,8 +458,8 @@ if (!empty($_SESSION['carrito_compras'])) {
                             <span class="currency-symbol">$</span>
                             <input type="number" id="precio_compra_total" name="precio_total" 
                                    step="0.01" class="form-control with-symbol" 
-                                   required min="0" placeholder="0.00">
-                        </div>
+                                   required min="0" placeholder="0.00"
+                                   oninput="calcularTotal()"> </div>
                     </div>
 
                     <div class="form-row">
@@ -596,6 +597,16 @@ function calcularTotal() {
     document.getElementById('precio_compra_unidad').value = totalUnidades > 0 ? '$' + precioPorUnidad.toFixed(2) : '';
     document.getElementById('precio_venta_unidad').value = totalUnidades > 0 ? '$' + precioVentaPorUnidad.toFixed(2) : '';
     
+    // Actualizar texto informativo (Si se hace en el HTML, esta parte ya no sería necesaria)
+    // Se comenta ya que se actualizó directamente en el HTML
+    /*
+    const infoElements = document.querySelectorAll('.alert-info');
+    infoElements.forEach(element => {
+        element.innerHTML = element.innerHTML.replace(/42%/g, '30%');
+    });
+    */
+    
+    // Estilo del campo total
     const totalInput = document.getElementById('cantidad_total');
     if (totalUnidades > 0) {
         totalInput.style.backgroundColor = '#e8f5e8';
@@ -622,7 +633,7 @@ function cerrarModalConfirmarCompra() {
 }
 
 function cargarDetallesCarrito() {
-    // Función placeholder, se puede expandir según necesidad
+    
 }
 
 // Validaciones de fecha
