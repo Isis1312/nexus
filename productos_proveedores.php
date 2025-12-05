@@ -133,11 +133,13 @@ $total_productos = count($result);
 $total_carrito = 0;
 $total_productos_carrito = 0;
 $total_unidades_carrito = 0;
+$carrito_detalles = [];
 
 if (!empty($_SESSION['carrito_compras'])) {
     // Obtener detalles de los productos en el carrito
-    $carrito_detalles = [];
-    foreach ($_SESSION['carrito_compras'] as $item) {
+    
+    // *** MODIFICACIÓN CLAVE: Iterar sobre el carrito donde la clave es el id_producto ***
+    foreach ($_SESSION['carrito_compras'] as $id_producto_carrito => $item) {
         $stmt = $pdo->prepare("SELECT pp.*, p.nombre_comercial FROM productos_proveedor pp 
                               JOIN proveedores p ON pp.id_proveedor = p.id_proveedor 
                               WHERE pp.id_producto_proveedor = ?");
@@ -157,6 +159,7 @@ if (!empty($_SESSION['carrito_compras'])) {
         }
     }
 }
+
 
 
 ?>
@@ -580,6 +583,28 @@ if (!empty($_SESSION['carrito_compras'])) {
 let productoActual = null;
 let precioUnitarioActual = 0;
 
+function abrirModalCompra(idProducto, nombreProducto, unidadMedida, precioUnitario) {
+    productoActual = idProducto;
+    // La variable precioUnitarioActual ya no se usa para cálculos, pero se mantiene la asignación por si el código futuro la requiere.
+    precioUnitarioActual = parseFloat(precioUnitario); 
+    
+    document.getElementById('carrito_id_producto').value = idProducto;
+    document.getElementById('carrito_nombre_producto').value = nombreProducto;
+    // Se elimina la línea que llenaba 'precio_unitario'
+    
+    // Resetear campos
+    document.getElementById('precio_compra_total').value = '';
+    document.getElementById('cantidad_empaques').value = '';
+    document.getElementById('unidades_empaque').value = '';
+    document.getElementById('cantidad_total').value = '';
+    document.getElementById('precio_compra_unidad').value = '';
+    document.getElementById('precio_venta_unidad').value = '';
+    
+    document.getElementById('modalCompra').style.display = 'block';
+    document.getElementById('precio_compra_total').focus();
+}
+
+
 function calcularTotal() {
     const precioCompraTotal = parseFloat(document.getElementById('precio_compra_total').value) || 0;
     const empaques = parseInt(document.getElementById('cantidad_empaques').value) || 0;
@@ -597,14 +622,7 @@ function calcularTotal() {
     document.getElementById('precio_compra_unidad').value = totalUnidades > 0 ? '$' + precioPorUnidad.toFixed(2) : '';
     document.getElementById('precio_venta_unidad').value = totalUnidades > 0 ? '$' + precioVentaPorUnidad.toFixed(2) : '';
     
-    // Actualizar texto informativo (Si se hace en el HTML, esta parte ya no sería necesaria)
-    // Se comenta ya que se actualizó directamente en el HTML
-    /*
-    const infoElements = document.querySelectorAll('.alert-info');
-    infoElements.forEach(element => {
-        element.innerHTML = element.innerHTML.replace(/42%/g, '30%');
-    });
-    */
+
     
     // Estilo del campo total
     const totalInput = document.getElementById('cantidad_total');
@@ -656,11 +674,9 @@ document.getElementById('fecha_vencimiento_base')?.addEventListener('change', fu
 // Cierre de modales al hacer clic fuera
 window.onclick = function(event) {
     const modalCompra = document.getElementById('modalCompra');
-    const modalCategoria = document.getElementById('modalCategoria');
     const modalConfirmar = document.getElementById('modalConfirmarCompra');
     
     if (event.target === modalCompra) cerrarModalCompra();
-    if (event.target === modalCategoria) cerrarModalCategoria();
     if (event.target === modalConfirmar) cerrarModalConfirmarCompra();
 }
 
