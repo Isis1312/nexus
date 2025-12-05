@@ -1,0 +1,211 @@
+/* css/categorias.css - Basado en g_usuarios.css */
+
+.main-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.content-wrapper {
+    padding: 25px;
+    color: #2b3139;
+    width: 100%;
+    background: #f8fafc;
+}
+
+/* Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid rgba(0, 139, 139, 0.2);
+}
+
+.page-title {
+    color: #008B8B;
+    font-size: 2.2em;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 139, 139, 0.1);
+}
+
+/* Formularios Superiores */
+.forms-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-bottom: 35px;
+}
+
+.form-box {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 139, 139, 0.1);
+    border: 1px solid rgba(0, 139, 139, 0.15);
+    transition: transform 0.3s ease;
+}
+
+.form-box:hover {
+    transform: translateY(-5px);
+}
+
+.form-box h3 {
+    margin-top: 0;
+    color: #008B8B;
+    border-bottom: 2px solid rgba(0, 139, 139, 0.1);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid rgba(0, 139, 139, 0.2);
+    border-radius: 10px;
+    font-size: 1em;
+    box-sizing: border-box; /* Importante para que no se salga del contenedor */
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #008B8B;
+    background: #f0fdfd;
+}
+
+/* Botones */
+.btn-guardar {
+    background: linear-gradient(135deg, #008B8B, #006666);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    width: 100%;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 139, 139, 0.3);
+}
+
+.btn-guardar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 139, 139, 0.4);
+}
+
+/* Tabla */
+.table-container {
+    background: white;
+    border-radius: 15px;
+    padding: 5px;
+    box-shadow: 0 10px 30px rgba(0, 139, 139, 0.1);
+    border: 1px solid rgba(0, 139, 139, 0.15);
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: rgba(0, 139, 139, 0.06);
+    color: #008B8B;
+    padding: 18px;
+    text-align: left;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+td {
+    padding: 18px;
+    border-bottom: 1px solid rgba(0, 139, 139, 0.08);
+    color: #334155;
+    vertical-align: top;
+}
+
+tr:hover {
+    background: rgba(0, 139, 139, 0.02);
+}
+
+/* Badges de Subcategorías */
+.subcat-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #e0f2f1;
+    color: #00695c;
+    padding: 5px 10px;
+    border-radius: 20px;
+    margin: 3px;
+    font-size: 0.85em;
+    border: 1px solid #b2dfdb;
+}
+
+.btn-del-sub {
+    margin-left: 6px;
+    color: #ef5350;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.btn-del-sub:hover {
+    color: #c62828;
+}
+
+/* Acciones Tabla */
+.btn-action {
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.9em;
+    margin-right: 5px;
+    display: inline-block;
+}
+
+.btn-editar {
+    background: rgba(0, 139, 139, 0.1);
+    color: #008B8B;
+    border: 1px solid rgba(0, 139, 139, 0.3);
+}
+
+.btn-eliminar {
+    background: rgba(255, 107, 107, 0.1);
+    color: #ff5252;
+    border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.btn-eliminar:hover {
+    background: #ff5252;
+    color: white;
+}
+
+/* Alertas */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #008B8B, #82cdcd);
+    border-left: 5px solid #006666;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #ff6b6b, #ff5252);
+    border-left: 5px solid #c62828;
+}
+
+@media (max-width: 768px) {
+    .forms-container {
+        grid-template-columns: 1fr;
+    }
+}
