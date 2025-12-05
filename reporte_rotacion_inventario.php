@@ -560,9 +560,6 @@ $meses_espanol = [
                                 <span class="btn-icon">📊</span> Generar Reporte
                             </button>
                             <?php if(!isset($_GET['debug'])): ?>
-                                <a href="?<?= http_build_query(array_merge($_GET, ['debug' => 1])) ?>" class="btn-rotacion" style="background: #6c757d; margin-left: 10px;">
-                                    <span class="btn-icon">🐛</span> Ver Debug
-                                </a>
                             <?php endif; ?>
                         </div>
                     </div>
