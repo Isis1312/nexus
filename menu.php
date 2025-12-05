@@ -75,15 +75,6 @@ if (!isset($current_page)) {
                 </li>
                 <?php endif; ?>
                 
-                <!-- Reportes - Solo si puede ver -->
-                <?php if ($sistemaPermisos->puedeVer('reportes')): ?>
-                <li>
-                    <a href="reportes.php" class="menu-item <?php echo $current_page == 'reportes.php' ? 'active' : ''; ?>">
-                        <span class="menu-icon">📈</span>
-                        <span class="menu-text">Reportes</span>
-                    </a>
-                </li>
-                <?php endif; ?>
                 
                 <!-- Clientes - Solo si puede ver -->
                 <?php if ($sistemaPermisos->puedeVer('clientes')): ?>
@@ -112,8 +103,16 @@ if (!isset($current_page)) {
                         <span class="menu-text">Facturación</span>
                     </a>
                 </li>
-              
 
+                 <!-- Reportes - Solo si puede ver -->
+                <?php if ($sistemaPermisos->puedeVer('reportes')): ?>
+                <li>
+                    <a href="reportes.php" class="menu-item <?php echo $current_page == 'reportes.php' ? 'active' : ''; ?>">
+                        <span class="menu-icon">📈</span>
+                        <span class="menu-text">Reportes</span>
+                    </a>
+                </li>
+                <?php endif; ?>
 
                 <div class="menu-separator"></div>
                 
