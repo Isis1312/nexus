@@ -8,6 +8,15 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 require_once 'conexion.php';
 require_once 'menu.php';
 
+// Inicializar sistema de permisos
+require_once 'permisos.php';
+$sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
+
+// Verificar si puede ver este módulo 
+if (!$sistemaPermisos->puedeVer('reportes')) {
+    header('Location: inicio.php');
+    exit();
+}
 
 // Primero, verificar la estructura de la tabla productos
 function verificarEstructuraProductos($pdo) {
@@ -344,25 +353,25 @@ function getResumenRentabilidad($pdo, $start_date, $end_date, $columna_costo) {
                   ) as rentabilidad";
         
         $stmt_distribucion = $pdo->prepare($query_distribucion);
-        $stmt_distribucion->execute([
-            'start_date' => $start_date . ' 00:00:00',
-            'end_date' => $end_date . ' 23:59:59'
-        ]);
-        
-        $distribucion = $stmt_distribucion->fetch(PDO::FETCH_ASSOC);
-        
-        if ($distribucion) {
-            $resumen_completo = array_merge($resumen_completo, $distribucion);
-        } else {
-            $resumen_completo['facturas_alta_rentabilidad'] = 0;
-            $resumen_completo['facturas_media_rentabilidad'] = 0;
-            $resumen_completo['facturas_baja_rentabilidad'] = 0;
-        }
-        
-        return $resumen_completo;
+    $stmt_distribucion->execute([
+        'start_date' => $start_date . ' 00:00:00',
+        'end_date' => $end_date . ' 23:59:59'
+    ]);
+    
+    $distribucion = $stmt_distribucion->fetch(PDO::FETCH_ASSOC);
+    
+    if ($distribucion) {
+        $resumen_completo = array_merge($resumen_completo, $distribucion);
+    } else {
+        $resumen_completo['facturas_alta_rentabilidad'] = 0;
+        $resumen_completo['facturas_media_rentabilidad'] = 0;
+        $resumen_completo['facturas_baja_rentabilidad'] = 0;
     }
     
-    return null;
+    return $resumen_completo;
+}
+
+return null;
 }
 
 // Función para obtener rentabilidad por cliente
@@ -446,6 +455,12 @@ $resumen_rentabilidad = [];
 $costo_promedio_productos = [];
 $clientes = getClientes($pdo);
 
+// Inicializar variables para estadísticas de márgenes (CORRECCIÓN APLICADA AQUÍ)
+$productos_alto_margen = 0;
+$productos_medio_margen = 0;
+$productos_bajo_margen = 0;
+$productos_sin_costo = 0;
+
 // Información de depuración (puedes eliminar esto después)
 $debug_info = [
     'columna_costo_detectada' => $columna_costo,
@@ -487,7 +502,10 @@ $meses_espanol = [
 <head>
     <meta charset="UTF-8">
     <title>Reporte de Rentabilidad</title>
+    <!-- CONEXIÓN CORRECTA DE CSS -->
     <link rel="stylesheet" href="css/reportes.css">
+    <link rel="stylesheet" href="css/reportes/repo_rentabilidad.css">
+    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -522,7 +540,6 @@ $meses_espanol = [
         <!-- Header -->
         <div class="page-header">
             <h1 class="page-title">Reporte de Rentabilidad</h1>
-            <a href="reportes.php" class="volver-button"> Volver</a>
         </div>
 
         <!-- Información de depuración (opcional, puede eliminar) -->
@@ -613,7 +630,6 @@ $meses_espanol = [
                         Bs. <?= number_format($resumen_rentabilidad['ganancia_total'] ?? 0, 2, ',', '.') ?>
                     </div>
                 </div>
-                 
                 
                 <div class="estadistica-card">
                     <div class="estadistica-label">Margen Promedio</div>
@@ -1015,6 +1031,7 @@ $meses_espanol = [
                                 </tr>
                             <?php else: ?>
                                 <?php 
+                                // Reinicializar contadores para esta sección
                                 $productos_alto_margen = 0;
                                 $productos_medio_margen = 0;
                                 $productos_bajo_margen = 0;
