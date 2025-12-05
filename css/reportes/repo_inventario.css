@@ -1,0 +1,167 @@
+/* Estilos generales */
+.main-content {
+    /* Contenedor principal para la estructura general de la página */
+    display: flex;
+    min-height: 100vh;
+}
+
+.content-wrapper {
+    /* Contenedor que centra y da padding al contenido */
+    padding: 25px;
+    color: #2b3139;
+    width: 100%;
+    background: #f8fafc;
+}
+
+/* --- Header y Título --- */
+.page-header {
+    /* Encabezado que contiene el título y los botones de acción */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid rgba(0, 139, 139, 0.2);
+}
+
+.page-title {
+    color: #008B8B;
+    font-size: 2.2em;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 139, 139, 0.1);
+}
+
+/* --- Contenedor de Botones de Acción --- */
+.action-buttons {
+    display: flex;
+    gap: 15px; /* Espacio entre el botón Volver y Actualizar */
+}
+
+/* --- Estilos del Botón Base (Volver y Actualizar) --- */
+.volver-button,
+.refresh-button {
+    border: none;
+    border-radius: 8px; 
+    padding: 10px 18px; 
+    text-decoration: none;
+    font-size: 1em; 
+    font-weight: 600;
+    white-space: nowrap; 
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+     background: #008B8B; 
+    color: white; 
+}
+
+
+
+.volver-button:hover,
+.refresh-button:hover  {
+    background: #006969; 
+    transform: translateY(-1px); 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+/* --- Estilos de las Tarjetas de Métricas (report-summary) --- */
+.report-summary {
+    display: grid;
+    /* 2 columnas en el grid para pantallas grandes */
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 25px;
+    margin-top: 20px;
+}
+
+.metric-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s, box-shadow 0.3s;
+    border-left: 5px solid; /* Usado para el color temático */
+}
+
+.metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.metric-label {
+    font-size: 1em;
+    font-weight: 500;
+    color: #666;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.metric-value {
+    font-size: 2.5em;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* --- Colores Temáticos por Métrica --- */
+
+/* Unidades */
+.metric-card.units {
+    border-left-color: #3498db; /* Azul */
+}
+.metric-card.units .metric-value {
+    color: #3498db;
+}
+
+/* Costo/Inversión */
+.metric-card.cost {
+    border-left-color: #e74c3c; /* Rojo/Naranja para Costo */
+}
+.metric-card.cost .metric-value {
+    color: #e74c3c;
+}
+
+/* Ventas/Valor Potencial */
+.metric-card.sales {
+    border-left-color: #f39c12; /* Amarillo/Naranja para Ingreso */
+}
+.metric-card.sales .metric-value {
+    color: #f39c12;
+}
+
+/* Ganancia/Profit */
+.metric-card.profit {
+    border-left-color: #2ecc71; /* Verde para Ganancia */
+}
+.metric-card.profit .metric-value {
+    color: #2ecc71;
+}
+
+/* Media Query: Responsividad */
+@media (max-width: 900px) {
+    /* 1 columna para las tarjetas en pantallas medianas y pequeñas */
+    .report-summary {
+        grid-template-columns: 1fr; 
+    }
+}
+
+@media (max-width: 600px) {
+    .page-header {
+        /* Permite que el título y los botones se apilen en móviles */
+        flex-direction: column; 
+        align-items: flex-start;
+        gap: 15px; 
+    }
+    
+    .action-buttons {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .page-title {
+        font-size: 1.8em;
+    }
+    
+    .metric-value {
+        font-size: 2em;
+    }
+}
+

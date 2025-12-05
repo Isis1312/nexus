@@ -146,6 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
         
         $pdo->commit();
         
+        
         // Vaciar carrito
         $_SESSION['carrito_compras'] = [];
         $_SESSION['mensaje'] = "✅ Compra procesada exitosamente. Todos los productos han sido agregados al inventario.";
