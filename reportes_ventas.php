@@ -165,9 +165,7 @@ $meses_espanol = [
     <div class="content-wrapper">
         <div class="page-header">
             <h1 class="page-title">Reportes de Ventas</h1>
-            <a href="reportes.php" class="volver-button">
-             Volver
-            </a>
+            <a href="reportes.php" class="volver-button"> Volver</a>
         </div>
 
         <!-- Filtros -->

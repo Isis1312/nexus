@@ -338,6 +338,7 @@ function calcularResumenStock($datos) {
     <div class="content-wrapper">
         <div class="page-header">
             <h1 class="page-title">Reporte de Rotación de Inventario por Categoría</h1>
+                   <a href="reportes.php" class="volver-button"> Volver</a>
         </div>
         
         <div class="info-rotacion">

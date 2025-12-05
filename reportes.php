@@ -55,23 +55,23 @@ if (!$sistemaPermisos->puedeVer('reportes')) {
                     Reporte de rotacion de inventario
                 </a>
                 
-                <a href="reporte5.php" class="reporte-button">
+                <a href="reportes.php" class="reporte-button">
                     Reporte 5
                 </a>
                 
-                <a href="reporte6.php" class="reporte-button">
+                <a href="reportes.php" class="reporte-button">
                     Reporte 6
                 </a>
 
-                <a href="reporte7.php" class="reporte-button">
+                <a href="reportes.php" class="reporte-button">
                     Reporte 7
                 </a>
 
-                <a href="reporte8.php" class="reporte-button">
+                <a href="reportes.php" class="reporte-button">
                     Reporte 8
                 </a>
                 
-                <a href="reporte9.php" class="reporte-button">
+                <a href="reportes.php" class="reporte-button">
                     Reporte 9
                 </a>
                 
