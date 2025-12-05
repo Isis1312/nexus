@@ -8,17 +8,14 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 require_once 'conexion.php';
 require_once 'menu.php';
 
-// Inicializar sistema de permisos
 require_once 'permisos.php';
 $sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
 
-// Verificar si puede ver este módulo 
 if (!$sistemaPermisos->puedeVer('reportes')) {
     header('Location: inicio.php');
     exit();
 }
 
-// Primero, verificar la estructura de la tabla productos
 function verificarEstructuraProductos($pdo) {
     $query = "SHOW COLUMNS FROM productos";
     $stmt = $pdo->prepare($query);
@@ -31,12 +28,10 @@ function verificarEstructuraProductos($pdo) {
     foreach ($columnas as $columna) {
         $nombre = strtolower($columna['Field']);
         
-        // Buscar columnas relacionadas con stock
         if (strpos($nombre, 'stock') !== false) {
             $columnas_stock[] = $columna['Field'];
         }
         
-        // Buscar columnas relacionadas con mínimo
         if (strpos($nombre, 'minimo') !== false) {
             $columnas_minimo[] = $columna['Field'];
         }
@@ -51,8 +46,7 @@ function verificarEstructuraProductos($pdo) {
 
 $estructura = verificarEstructuraProductos($pdo);
 
-// Determinar qué columnas usar para stock
-$columna_stock = 'cantidad'; // Valor por defecto común
+$columna_stock = 'cantidad';
 if (in_array('stock', $estructura['stock'])) {
     $columna_stock = 'stock';
 } elseif (in_array('cantidad', $estructura['stock'])) {
@@ -63,8 +57,7 @@ if (in_array('stock', $estructura['stock'])) {
     $columna_stock = 'inventario';
 }
 
-// Determinar qué columnas usar para stock mínimo
-$columna_stock_minimo = 'stock_minimo'; // Valor por defecto
+$columna_stock_minimo = 'stock_minimo';
 if (in_array('stock_minimo', $estructura['minimo'])) {
     $columna_stock_minimo = 'stock_minimo';
 } elseif (in_array('cantidad_minima', $estructura['minimo'])) {
@@ -73,12 +66,10 @@ if (in_array('stock_minimo', $estructura['minimo'])) {
     $columna_stock_minimo = 'minimo';
 }
 
-// Obtener fecha actual para valores por defecto
 $current_year = date('Y');
 $current_month = date('m');
 $current_day = date('Y-m-d');
 
-// Procesar filtros si se enviaron
 $year = isset($_GET['year']) ? intval($_GET['year']) : $current_year;
 $month = isset($_GET['month']) ? intval($_GET['month']) : $current_month;
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
@@ -87,22 +78,18 @@ $tipo_analisis = isset($_GET['tipo_analisis']) ? $_GET['tipo_analisis'] : 'rotac
 $limite_resultados = isset($_GET['limite']) ? intval($_GET['limite']) : 20;
 $ordenar_por = isset($_GET['ordenar_por']) ? $_GET['ordenar_por'] : 'rotacion_promedio';
 
-// Función para obtener rotación por categoría basada en ventas
 function getRotacionPorCategoriaVentas($pdo, $start_date, $end_date, $columna_stock, $columna_stock_minimo) {
-    // Primero verificar si existe la columna de stock
     $query_check = "SHOW COLUMNS FROM productos WHERE Field = ?";
     $stmt_check = $pdo->prepare($query_check);
     $stmt_check->execute([$columna_stock]);
     $columna_existe = $stmt_check->fetch();
     
     if (!$columna_existe) {
-        // Si no existe la columna, usar 0 como valor por defecto
         $columna_stock_sql = "0";
         $columna_minimo_sql = "0";
     } else {
         $columna_stock_sql = "COALESCE(p.$columna_stock, 0)";
         
-        // Verificar columna de stock mínimo
         $query_check_minimo = "SHOW COLUMNS FROM productos WHERE Field = ?";
         $stmt_check_minimo = $pdo->prepare($query_check_minimo);
         $stmt_check_minimo->execute([$columna_stock_minimo]);
@@ -126,24 +113,22 @@ function getRotacionPorCategoriaVentas($pdo, $start_date, $end_date, $columna_st
                     ELSE 0 
                 END) as stock_actual_total,
                 
-                -- Calcular rotación (ventas / stock promedio)
                 CASE 
                     WHEN AVG($columna_stock_sql) > 0 
                     THEN ROUND(SUM(dv.cantidad) / AVG($columna_stock_sql), 2)
                     ELSE 0 
                 END as rotacion_promedio,
                 
-                -- Calcular días de inventario
+                -- Se usan :end_date_dias y :start_date_dias para resolver HY093
                 CASE 
                     WHEN SUM(dv.cantidad) > 0 
-                    THEN ROUND((AVG($columna_stock_sql) / (SUM(dv.cantidad) / GREATEST(DATEDIFF(:end_date, :start_date), 1))) * 30, 2)
+                    THEN ROUND((AVG($columna_stock_sql) / (SUM(dv.cantidad) / GREATEST(DATEDIFF(:end_date_dias, :start_date_dias), 1))) * 30, 2)
                     ELSE 999 
                 END as dias_inventario,
                 
-                -- Calcular velocidad de venta (unidades por día)
-                ROUND(SUM(dv.cantidad) / GREATEST(DATEDIFF(:end_date, :start_date), 1), 2) as velocidad_venta,
+                -- Se usan :end_date_vel y :start_date_vel para resolver HY093
+                ROUND(SUM(dv.cantidad) / GREATEST(DATEDIFF(:end_date_vel, :start_date_vel), 1), 2) as velocidad_venta,
                 
-                -- Clasificación de rotación
                 CASE 
                     WHEN (SUM(dv.cantidad) / GREATEST(AVG($columna_stock_sql), 1)) >= 3 THEN 'ALTA ROTACIÓN'
                     WHEN (SUM(dv.cantidad) / GREATEST(AVG($columna_stock_sql), 1)) >= 1.5 THEN 'ROTACIÓN MEDIA'
@@ -151,24 +136,18 @@ function getRotacionPorCategoriaVentas($pdo, $start_date, $end_date, $columna_st
                     ELSE 'SIN ROTACIÓN'
                 END as clasificacion_rotacion,
                 
-                -- Porcentaje de productos con stock bajo
                 ROUND(SUM(CASE WHEN $columna_stock_sql <= $columna_minimo_sql THEN 1 ELSE 0 END) * 100.0 / COUNT(p.id), 2) as porcentaje_stock_bajo,
                 
-                -- Producto más vendido de la categoría
                 (SELECT p2.nombre 
                  FROM productos p2 
+                 INNER JOIN detalle_venta dv_prod ON p2.id = dv_prod.id_producto 
+                 INNER JOIN ventas v_prod ON dv_prod.id_venta = v_prod.id_venta
                  WHERE p2.categoria_id = cp.id 
-                   AND p2.id IN (
-                       SELECT dv2.id_producto 
-                       FROM detalle_venta dv2 
-                       INNER JOIN ventas v2 ON dv2.id_venta = v2.id_venta
-                       WHERE v2.fecha BETWEEN :start_date2 AND :end_date2
-                   )
-                 GROUP BY p2.id 
-                 ORDER BY SUM(dv3.cantidad) DESC 
+                   AND v_prod.fecha BETWEEN :start_date2 AND :end_date2
+                 GROUP BY p2.id, p2.nombre 
+                 ORDER BY SUM(dv_prod.cantidad) DESC 
                  LIMIT 1) as producto_mas_vendido,
                 
-                -- Última venta de la categoría
                 MAX(v.fecha) as ultima_venta
                 
               FROM categoria_prod cp
@@ -182,9 +161,12 @@ function getRotacionPorCategoriaVentas($pdo, $start_date, $end_date, $columna_st
               ORDER BY rotacion_promedio DESC";
     
     $stmt = $pdo->prepare($query);
+    // Se agregan los 8 parámetros para coincidir con los 8 marcadores nombrados en la SQL
     $stmt->execute([
-        'start_date' => $start_date,
-        'end_date' => $end_date,
+        'start_date_dias' => $start_date,
+        'end_date_dias' => $end_date,
+        'start_date_vel' => $start_date,
+        'end_date_vel' => $end_date,
         'start_date2' => $start_date . ' 00:00:00',
         'end_date2' => $end_date . ' 23:59:59',
         'start_date3' => $start_date . ' 00:00:00',
@@ -194,20 +176,16 @@ function getRotacionPorCategoriaVentas($pdo, $start_date, $end_date, $columna_st
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Función para obtener análisis de stock por categoría
 function getAnalisisStockPorCategoria($pdo, $columna_stock, $columna_stock_minimo) {
-    // Verificar si existe la columna de stock
     $query_check = "SHOW COLUMNS FROM productos WHERE Field = ?";
     $stmt_check = $pdo->prepare($query_check);
     $stmt_check->execute([$columna_stock]);
     $columna_existe = $stmt_check->fetch();
     
     if (!$columna_existe) {
-        // Si no existe la columna, devolver array vacío
         return [];
     }
     
-    // Verificar columna de stock mínimo
     $query_check_minimo = "SHOW COLUMNS FROM productos WHERE Field = ?";
     $stmt_check_minimo = $pdo->prepare($query_check_minimo);
     $stmt_check_minimo->execute([$columna_stock_minimo]);
@@ -225,13 +203,11 @@ function getAnalisisStockPorCategoria($pdo, $columna_stock, $columna_stock_minim
                 MIN(p.$columna_stock) as stock_minimo_cat,
                 MAX(p.$columna_stock) as stock_maximo_cat,
                 
-                -- Análisis de niveles de stock
                 SUM(CASE WHEN p.$columna_stock = 0 THEN 1 ELSE 0 END) as productos_sin_stock,
                 SUM(CASE WHEN p.$columna_stock > 0 AND p.$columna_stock <= $columna_minimo_sql THEN 1 ELSE 0 END) as productos_stock_bajo,
                 SUM(CASE WHEN p.$columna_stock > $columna_minimo_sql AND p.$columna_stock <= ($columna_minimo_sql * 2) THEN 1 ELSE 0 END) as productos_stock_adecuado,
                 SUM(CASE WHEN p.$columna_stock > ($columna_minimo_sql * 2) THEN 1 ELSE 0 END) as productos_stock_alto,
                 
-                -- Valores monetarios (si existen las columnas)
                 SUM(CASE 
                     WHEN p.precio_costo IS NOT NULL THEN p.precio_costo * p.$columna_stock
                     WHEN p.costo_promedio_bs IS NOT NULL THEN p.costo_promedio_bs * p.$columna_stock
@@ -246,11 +222,9 @@ function getAnalisisStockPorCategoria($pdo, $columna_stock, $columna_stock_minim
                     ELSE 0 
                 END) as valor_inventario_venta,
                 
-                -- Porcentajes
                 ROUND(SUM(CASE WHEN p.$columna_stock = 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(p.id), 2) as porcentaje_sin_stock,
                 ROUND(SUM(CASE WHEN p.$columna_stock > 0 AND p.$columna_stock <= $columna_minimo_sql THEN 1 ELSE 0 END) * 100.0 / COUNT(p.id), 2) as porcentaje_stock_bajo,
                 
-                -- Clasificación de inventario
                 CASE 
                     WHEN AVG(p.$columna_stock) = 0 THEN 'INVENTARIO CRÍTICO'
                     WHEN AVG(p.$columna_stock) <= 5 THEN 'INVENTARIO BAJO'
@@ -270,7 +244,6 @@ function getAnalisisStockPorCategoria($pdo, $columna_stock, $columna_stock_minim
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Función para obtener tendencia de ventas por categoría
 function getTendenciaVentasCategoria($pdo, $start_date, $end_date, $categoria_id = null) {
     $params = [
         'start_date' => $start_date . ' 00:00:00',
@@ -292,11 +265,9 @@ function getTendenciaVentasCategoria($pdo, $start_date, $end_date, $categoria_id
                 COUNT(DISTINCT v.id_venta) as facturas_mes,
                 COUNT(DISTINCT p.id) as productos_vendidos_mes,
                 
-                -- Calcular variación mes a mes
                 LAG(SUM(dv.cantidad), 1) OVER (PARTITION BY cp.id ORDER BY DATE_FORMAT(v.fecha, '%Y-%m')) as unidades_mes_anterior,
                 LAG(SUM(dv.subtotal_bs), 1) OVER (PARTITION BY cp.id ORDER BY DATE_FORMAT(v.fecha, '%Y-%m')) as ingresos_mes_anterior,
                 
-                -- Calcular crecimiento
                 CASE 
                     WHEN LAG(SUM(dv.cantidad), 1) OVER (PARTITION BY cp.id ORDER BY DATE_FORMAT(v.fecha, '%Y-%m')) > 0
                     THEN ROUND((SUM(dv.cantidad) - LAG(SUM(dv.cantidad), 1) OVER (PARTITION BY cp.id ORDER BY DATE_FORMAT(v.fecha, '%Y-%m'))) / 
@@ -325,7 +296,6 @@ function getTendenciaVentasCategoria($pdo, $start_date, $end_date, $categoria_id
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Función para obtener categorías (para select)
 function getCategorias($pdo) {
     $query = "SELECT id, nombre_categoria 
               FROM categoria_prod 
@@ -337,14 +307,12 @@ function getCategorias($pdo) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Obtener datos según el tipo de análisis
 $rotacion_categorias = [];
 $analisis_stock = [];
 $tendencia_ventas = [];
 $categorias = getCategorias($pdo);
 $resumen_general = null;
 
-// Información de depuración
 $debug_info = [
     'columna_stock_detectada' => $columna_stock,
     'columna_stock_minimo_detectada' => $columna_stock_minimo,
@@ -362,7 +330,6 @@ if ($tipo_analisis === 'rotacion_ventas') {
     $tendencia_ventas = getTendenciaVentasCategoria($pdo, $start_date, $end_date, $categoria_tendencia);
 }
 
-// Función para calcular resumen de rotación
 function calcularResumenRotacion($datos) {
     if (empty($datos)) return null;
     
@@ -422,7 +389,6 @@ function calcularResumenRotacion($datos) {
     return $resumen;
 }
 
-// Función para calcular resumen de stock
 function calcularResumenStock($datos) {
     if (empty($datos)) return null;
     
@@ -452,7 +418,6 @@ function calcularResumenStock($datos) {
     return $resumen;
 }
 
-// Meses en español
 $meses_espanol = [
     1 => 'Enero',
     2 => 'Febrero',
@@ -473,7 +438,6 @@ $meses_espanol = [
 <head>
     <meta charset="UTF-8">
     <title>Reporte de Rotación de Inventario por Categoría</title>
-    <link rel="stylesheet" href="css/reportes.css">
     <link rel="stylesheet" href="css/reportes_rotacion.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -505,12 +469,10 @@ $meses_espanol = [
 <body>
 <main class="main-content">
     <div class="content-wrapper">
-        <!-- Header -->
         <div class="page-header">
             <h1 class="page-title">Reporte de Rotación de Inventario por Categoría</h1>
         </div>
         
-        <!-- Información de depuración -->
         <?php if(isset($_GET['debug'])): ?>
         <div class="debug-info">
             <h4>Información de detección de columnas:</h4>
@@ -522,7 +484,6 @@ $meses_espanol = [
         </div>
         <?php endif; ?>
         
-        <!-- Información del reporte -->
         <div class="info-rotacion">
             <h4>¿Qué es la Rotación de Inventario?</h4>
             <p>La rotación de inventario mide cuántas veces se vende y reemplaza el inventario en un período determinado.</p>
@@ -538,7 +499,6 @@ $meses_espanol = [
             </div>
         </div>
 
-        <!-- Filtros -->
         <div class="filtros-container">
             <div class="filtros-card">
                 <h3>Filtrar Reporte de Rotación</h3>
@@ -610,7 +570,6 @@ $meses_espanol = [
             </div>
         </div>
 
-        <!-- Resumen General -->
         <?php if($resumen_general): ?>
         <div class="rotacion-container">
             <div class="rotacion-header">
@@ -693,7 +652,6 @@ $meses_espanol = [
                 <?php endif; ?>
             </div>
             
-            <!-- Distribución de Rotación -->
             <?php if($tipo_analisis === 'rotacion_ventas'): ?>
             <div class="tabla-container">
                 <h3>Distribución de Categorías por Nivel de Rotación</h3>
@@ -739,7 +697,6 @@ $meses_espanol = [
         </div>
         <?php endif; ?>
         
-        <!-- Reporte de Rotación por Ventas -->
         <?php if($tipo_analisis === 'rotacion_ventas'): ?>
         <div class="rotacion-container">
             <div class="rotacion-header">
@@ -749,7 +706,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Leyenda de colores -->
             <div class="leyenda-rotacion">
                 <div class="leyenda-item">
                     <div class="leyenda-color" style="background: #28a745;"></div>
@@ -769,7 +725,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Tabla de Rotación -->
             <div class="tabla-container">
                 <div class="table-responsive">
                     <table class="tabla-rotacion">
@@ -797,13 +752,11 @@ $meses_espanol = [
                                     </td>
                                 </tr>
                             <?php else: 
-                                // Ordenar datos según el filtro
                                 $datos_ordenados = $rotacion_categorias;
                                 usort($datos_ordenados, function($a, $b) use ($ordenar_por) {
                                     return ($b[$ordenar_por] ?? 0) <=> ($a[$ordenar_por] ?? 0);
                                 });
                                 
-                                // Limitar resultados
                                 $datos_mostrar = array_slice($datos_ordenados, 0, $limite_resultados);
                                 
                                 foreach($datos_mostrar as $categoria): 
@@ -875,7 +828,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Gráfico de rotación -->
             <?php if(!empty($rotacion_categorias)): ?>
             <div class="grafico-rotacion-container">
                 <canvas id="graficoRotacionCategorias"></canvas>
@@ -884,7 +836,6 @@ $meses_espanol = [
         </div>
         <?php endif; ?>
         
-        <!-- Reporte de Análisis de Stock -->
         <?php if($tipo_analisis === 'analisis_stock'): ?>
         <div class="rotacion-container">
             <div class="rotacion-header">
@@ -894,7 +845,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Tabla de Análisis de Stock -->
             <div class="tabla-container">
                 <div class="table-responsive">
                     <table class="tabla-rotacion">
@@ -923,13 +873,11 @@ $meses_espanol = [
                                     </td>
                                 </tr>
                             <?php else: 
-                                // Ordenar datos según el filtro
                                 $datos_ordenados = $analisis_stock;
                                 usort($datos_ordenados, function($a, $b) use ($ordenar_por) {
                                     return ($b[$ordenar_por] ?? 0) <=> ($a[$ordenar_por] ?? 0);
                                 });
                                 
-                                // Limitar resultados
                                 $datos_mostrar = array_slice($datos_ordenados, 0, $limite_resultados);
                                 
                                 foreach($datos_mostrar as $categoria): 
@@ -989,7 +937,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Gráfico de distribución de stock -->
             <?php if(!empty($analisis_stock)): ?>
             <div class="grafico-rotacion-container">
                 <canvas id="graficoDistribucionStock"></canvas>
@@ -998,7 +945,6 @@ $meses_espanol = [
         </div>
         <?php endif; ?>
         
-        <!-- Reporte de Tendencia de Ventas -->
         <?php if($tipo_analisis === 'tendencia_ventas'): ?>
         <div class="rotacion-container">
             <div class="rotacion-header">
@@ -1008,7 +954,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Tabla de Tendencia -->
             <div class="tabla-container">
                 <div class="table-responsive">
                     <table class="tabla-rotacion">
@@ -1081,7 +1026,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Gráfico de tendencia -->
             <?php if(!empty($tendencia_ventas)): ?>
             <div class="grafico-rotacion-container">
                 <canvas id="graficoTendenciaVentas"></canvas>
@@ -1093,19 +1037,16 @@ $meses_espanol = [
 </main>
 
 <script>
-// Mostrar/ocultar filtros según tipo de análisis
 $(document).ready(function() {
     $('#tipo-analisis').change(function() {
         const tipo = $(this).val();
         
-        // Mostrar/ocultar filtro de categoría
         if (tipo === 'tendencia_ventas') {
             $('#filtro-categoria').show();
         } else {
             $('#filtro-categoria').hide();
         }
         
-        // Mostrar/ocultar filtros de fecha para análisis de stock
         if (tipo === 'analisis_stock') {
             $('#filtro-fechas').hide();
             $('#filtro-fechas-fin').hide();
@@ -1115,23 +1056,17 @@ $(document).ready(function() {
         }
     });
     
-    // Inicializar estado
     $('#tipo-analisis').trigger('change');
     
-    // Generar gráficos si existen
     generarGraficosRotacion();
 });
 
-// Función para exportar a Excel (ejemplo, implementar según necesidades)
 function exportarExcel() {
     alert('Funcionalidad de exportación a Excel - Implementar según necesidades');
-    // window.location.href = 'exportar_rotacion_excel.php?' + window.location.search;
 }
 
-// Generar gráficos de rotación
 function generarGraficosRotacion() {
     <?php if($tipo_analisis === 'rotacion_ventas' && !empty($rotacion_categorias)): ?>
-    // Gráfico para rotación por categoría
     const ctx1 = document.getElementById('graficoRotacionCategorias');
     if (ctx1) {
         const top10Categorias = <?= json_encode(array_slice($rotacion_categorias, 0, 10)) ?>;
@@ -1211,12 +1146,10 @@ function generarGraficosRotacion() {
     <?php endif; ?>
     
     <?php if($tipo_analisis === 'analisis_stock' && !empty($analisis_stock)): ?>
-    // Gráfico para distribución de stock
     const ctx2 = document.getElementById('graficoDistribucionStock');
     if (ctx2) {
         const top10Stock = <?= json_encode(array_slice($analisis_stock, 0, 10)) ?>;
         
-        // Preparar datos para gráfico de barras apiladas
         const datasets = [
             {
                 label: 'Sin Stock',
@@ -1284,10 +1217,8 @@ function generarGraficosRotacion() {
     <?php endif; ?>
     
     <?php if($tipo_analisis === 'tendencia_ventas' && !empty($tendencia_ventas)): ?>
-    // Gráfico para tendencia de ventas
     const ctx3 = document.getElementById('graficoTendenciaVentas');
     if (ctx3) {
-        // Agrupar datos por mes para múltiples categorías
         <?php 
         $categorias_unicas = [];
         $meses_unicos = [];
@@ -1306,7 +1237,6 @@ function generarGraficosRotacion() {
         const categorias = <?= json_encode($categorias_unicas) ?>;
         const meses = <?= json_encode($meses_unicos) ?>;
         
-        // Crear dataset para cada categoría
         const datasets = categorias.map((categoria, index) => {
             const colores = [
                 'rgba(0, 139, 139, 0.7)',
@@ -1319,7 +1249,6 @@ function generarGraficosRotacion() {
             
             const color = colores[index % colores.length];
             
-            // Obtener datos para esta categoría
             const datos = meses.map(mes => {
                 const item = <?= json_encode($tendencia_ventas) ?>.find(t => 
                     t.categoria === categoria && t.mes_nombre === mes
