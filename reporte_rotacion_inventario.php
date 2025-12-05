@@ -438,7 +438,7 @@ $meses_espanol = [
 <head>
     <meta charset="UTF-8">
     <title>Reporte de Rotación de Inventario por Categoría</title>
-    <link rel="stylesheet" href="css/reportes_rotacion.css">
+    <link rel="stylesheet" href="css/reportes/repo_rotacion.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
