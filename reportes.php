@@ -72,6 +72,28 @@ function getReporteDiario($pdo, $day) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// Obtener productos más vendidos del mes
+function getProductosMasVendidos($pdo, $year, $month) {
+    $query = "SELECT 
+                p.nombre,
+                p.codigo,
+                SUM(dv.cantidad) as total_vendido,
+                SUM(dv.subtotal_bs) as total_ingresos_bs,
+                ROUND(AVG(dv.precio_unitario_bs), 2) as precio_promedio
+              FROM detalle_venta dv
+              JOIN productos p ON dv.id_producto = p.id
+              JOIN ventas v ON dv.id_venta = v.id_venta
+              WHERE YEAR(v.fecha) = :year 
+                AND MONTH(v.fecha) = :month
+                AND p.estado = 'active'
+              GROUP BY p.id
+              ORDER BY total_vendido DESC
+              LIMIT 10";
+    
+    $stmt = $pdo->prepare($query);
+    $stmt->execute(['year' => $year, 'month' => $month]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // Obtener resumen general del mes
 function getResumenMensual($pdo, $year, $month) {
@@ -205,6 +227,7 @@ $productos_proximos_minimo = [];
 
 if ($reporte_tipo === 'mensual') {
     $reporte_mensual = getReporteMensual($pdo, $year, $month) ?: [];
+    $productos_mas_vendidos = getProductosMasVendidos($pdo, $year, $month) ?: [];
     $resumen_mensual = getResumenMensual($pdo, $year, $month) ?: [];
     $ventas_por_metodo = getVentasPorMetodoPago($pdo, $year, $month) ?: [];
 } elseif ($reporte_tipo === 'diario') {
@@ -215,7 +238,7 @@ if ($reporte_tipo === 'mensual') {
     $productos_proximos_minimo = getProductosProximosMinimo($pdo) ?: [];
 }
 
-// Calcular totales del mes 
+// Calcular totales del mes (SOLUCIÓN AL ERROR)
 $total_mensual_bs = 0;
 $total_mensual_facturas = 0;
 $total_productos_mensual = 0;
@@ -230,7 +253,7 @@ if (is_array($reporte_mensual)) {
     }
 }
 
-// Meses 
+// Meses en español
 $meses_espanol = [
     1 => 'Enero',
     2 => 'Febrero',
@@ -394,7 +417,36 @@ $meses_espanol = [
                 </div>
             </div>
             
-            
+            <!-- Productos Más Vendidos -->
+            <?php if(!empty($productos_mas_vendidos)): ?>
+            <div class="tabla-container">
+                <h3>Productos Más Vendidos</h3>
+                <div class="table-responsive">
+                    <table class="tabla-reporte">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Código</th>
+                                <th>Cantidad Vendida</th>
+                                <th>Total Ingresos (Bs)</th>
+                                <th>Precio Promedio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($productos_mas_vendidos as $producto): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($producto['nombre'] ?? '') ?></td>
+                                <td><?= $producto['codigo'] ?? '' ?></td>
+                                <td><?= $producto['total_vendido'] ?? 0 ?></td>
+                                <td>Bs. <?= number_format($producto['total_ingresos_bs'] ?? 0, 2, ',', '.') ?></td>
+                                <td>Bs. <?= number_format($producto['precio_promedio'] ?? 0, 2, ',', '.') ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
             
             <!-- Métodos de Pago -->
             <?php if(!empty($ventas_por_metodo)): ?>
