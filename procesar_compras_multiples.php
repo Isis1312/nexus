@@ -32,14 +32,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
             $unidades_empaque = $item['unidades_empaque'];
             $precio_total = $item['precio_total'];
             
-            // Insertar en compras_proveedores
+           
             $stmt = $pdo->prepare("
                 INSERT INTO compras_proveedores 
-                (id_producto_proveedor, cantidad_empaques, unidades_empaque, fecha_compra, fecha_vencimiento, usuario_id) 
-                VALUES (?, ?, ?, ?, ?, ?)
+                (id_producto_proveedor, precio_compra_total, cantidad_empaques, unidades_empaque, fecha_compra, fecha_vencimiento, usuario_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $id_producto_proveedor,
+                $precio_total, 
                 $cantidad_empaques,
                 $unidades_empaque,
                 $fecha_compra,
@@ -61,21 +62,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
             ");
             $stmt->execute([$precio_por_unidad, $fecha_compra, $id_producto_proveedor]);
             
-            // Verificar si el producto ya existe en inventario
+            
+            // ***************************************************************
+            // MODIFICACIÓN CLAVE: Quitar 'AND estado = 'active'' del SELECT
+            // ***************************************************************
             $stmt = $pdo->prepare("
                 SELECT id, cantidad FROM productos 
-                WHERE id_producto_proveedor = ? AND estado = 'active'
+                WHERE id_producto_proveedor = ?
             ");
             $stmt->execute([$id_producto_proveedor]);
             $producto_existente = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($producto_existente) {
-                // Actualizar producto existente
+                // Actualizar producto existente: SUMAR STOCK y FORZAR estado a 'active'
                 $nueva_cantidad = $producto_existente['cantidad'] + $total_unidades;
                 $stmt = $pdo->prepare("
                     UPDATE productos 
                     SET cantidad = ?, precio_costo = ?, precio_venta = ROUND(? * 1.30, 2),
-                        fecha_vencimiento = ?, updated_at = NOW()
+                        fecha_vencimiento = ?, updated_at = NOW(), estado = 'active'
                     WHERE id = ?
                 ");
                 $stmt->execute([
@@ -158,5 +162,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
 } else {
     header('Location: productos_proveedores.php?error=Carrito+vacio+o+solicitud+invalida');
     exit();
-}
-?>
+    }
