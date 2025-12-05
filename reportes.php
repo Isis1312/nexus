@@ -131,6 +131,87 @@ function getVentasPorMetodoPago($pdo, $year, $month) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// Obtener productos con niveles críticos de inventario
+function getProductosNivelExistencia($pdo) {
+    $query = "SELECT 
+                p.id,
+                p.nombre,
+                p.codigo,
+                p.categoria,
+                p.existencia,
+                p.minimo_inventario,
+                p.maximo_inventario,
+                p.precio_venta_bs,
+                p.precio_venta_usd,
+                (p.existencia * p.precio_venta_bs) as valor_total_bs,
+                CASE 
+                    WHEN p.existencia <= p.minimo_inventario THEN 'CRITICO'
+                    WHEN p.existencia <= p.minimo_inventario * 1.5 THEN 'BAJO'
+                    WHEN p.existencia >= p.maximo_inventario THEN 'EXCESO'
+                    ELSE 'NORMAL'
+                END as estado_inventario,
+                ROUND((p.existencia - p.minimo_inventario), 0) as diferencia_minimo,
+                ROUND((p.maximo_inventario - p.existencia), 0) as diferencia_maximo,
+                ROUND((p.existencia / p.maximo_inventario * 100), 1) as porcentaje_inventario
+              FROM productos p
+              WHERE p.estado = 'active'
+                AND (p.existencia <= p.minimo_inventario 
+                     OR p.existencia >= p.maximo_inventario 
+                     OR p.existencia <= p.minimo_inventario * 1.5)
+              ORDER BY 
+                CASE 
+                    WHEN p.existencia <= p.minimo_inventario THEN 1
+                    WHEN p.existencia <= p.minimo_inventario * 1.5 THEN 2
+                    WHEN p.existencia >= p.maximo_inventario THEN 3
+                    ELSE 4
+                END,
+                p.existencia ASC,
+                p.nombre ASC";
+    
+    $stmt = $pdo->prepare($query);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Obtener resumen de niveles de inventario
+function getResumenNivelesInventario($pdo) {
+    $query = "SELECT 
+                COUNT(CASE WHEN existencia <= minimo_inventario THEN 1 END) as criticos,
+                COUNT(CASE WHEN existencia > minimo_inventario AND existencia <= minimo_inventario * 1.5 THEN 1 END) as bajos,
+                COUNT(CASE WHEN existencia >= maximo_inventario THEN 1 END) as exceso,
+                COUNT(CASE WHEN existencia > minimo_inventario * 1.5 AND existencia < maximo_inventario THEN 1 END) as normales,
+                COUNT(*) as total_productos,
+                SUM(CASE WHEN existencia <= minimo_inventario THEN (minimo_inventario - existencia) * precio_venta_bs ELSE 0 END) as valor_reposicion_critico,
+                SUM(CASE WHEN existencia >= maximo_inventario THEN (existencia - maximo_inventario) * precio_venta_bs ELSE 0 END) as valor_exceso_inventario
+              FROM productos 
+              WHERE estado = 'active'";
+    
+    $stmt = $pdo->prepare($query);
+    $stmt->execute();
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Obtener productos próximos a mínimo (para alertas)
+function getProductosProximosMinimo($pdo) {
+    $query = "SELECT 
+                p.nombre,
+                p.codigo,
+                p.existencia,
+                p.minimo_inventario,
+                p.maximo_inventario,
+                ROUND((p.existencia / p.minimo_inventario * 100), 1) as porcentaje_minimo
+              FROM productos p
+              WHERE p.estado = 'active'
+                AND p.existencia > p.minimo_inventario
+                AND p.existencia <= p.minimo_inventario * 1.2
+              ORDER BY (p.existencia / p.minimo_inventario) ASC
+              LIMIT 10";
+    
+    $stmt = $pdo->prepare($query);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 // Ejecutar consultas según tipo de reporte
 $reporte_tipo = isset($_GET['tipo']) ? $_GET['tipo'] : 'mensual';
 
@@ -139,14 +220,22 @@ $reporte_mensual = [];
 $productos_mas_vendidos = [];
 $ventas_por_metodo = [];
 $resumen_mensual = [];
+$reporte_diario = [];
+$productos_nivel_existencia = [];
+$resumen_niveles_inventario = [];
+$productos_proximos_minimo = [];
 
 if ($reporte_tipo === 'mensual') {
     $reporte_mensual = getReporteMensual($pdo, $year, $month) ?: [];
     $productos_mas_vendidos = getProductosMasVendidos($pdo, $year, $month) ?: [];
     $resumen_mensual = getResumenMensual($pdo, $year, $month) ?: [];
     $ventas_por_metodo = getVentasPorMetodoPago($pdo, $year, $month) ?: [];
-} else {
+} elseif ($reporte_tipo === 'diario') {
     $reporte_diario = getReporteDiario($pdo, $day) ?: [];
+} elseif ($reporte_tipo === 'inventario') {
+    $productos_nivel_existencia = getProductosNivelExistencia($pdo) ?: [];
+    $resumen_niveles_inventario = getResumenNivelesInventario($pdo) ?: [];
+    $productos_proximos_minimo = getProductosProximosMinimo($pdo) ?: [];
 }
 
 // Calcular totales del mes (SOLUCIÓN AL ERROR)
@@ -207,6 +296,7 @@ $meses_espanol = [
                             <select name="tipo" class="form-select" onchange="cambiarTipoReporte(this.value)">
                                 <option value="mensual" <?= $reporte_tipo === 'mensual' ? 'selected' : '' ?>>Mensual</option>
                                 <option value="diario" <?= $reporte_tipo === 'diario' ? 'selected' : '' ?>>Diario</option>
+                                <option value="inventario" <?= $reporte_tipo === 'inventario' ? 'selected' : '' ?>>Nivel de Existencias</option>
                             </select>
                         </div>
                         
@@ -470,6 +560,192 @@ $meses_espanol = [
             </div>
         </div>
         <?php endif; ?>
+        
+        <!-- Reporte de Nivel de Existencias -->
+        <?php if($reporte_tipo === 'inventario'): ?>
+        <div class="reporte-container">
+            <div class="reporte-header">
+                <h2>Reporte de Nivel de Existencias</h2>
+                <div class="periodo-info">
+                    <span>Estado actual del inventario</span>
+                </div>
+            </div>
+            
+            <!-- Resumen Estadístico -->
+            <div class="estadisticas-grid">
+                <div class="estadistica-card inventario critico">
+                    <div class="estadistica-label">Productos Críticos</div>
+                    <div class="estadistica-value" style="color: #dc3545;"><?= $resumen_niveles_inventario['criticos'] ?? 0 ?></div>
+                </div>
+                
+                <div class="estadistica-card inventario bajo">
+                    <div class="estadistica-label">Productos Bajos</div>
+                    <div class="estadistica-value" style="color: #ffc107;"><?= $resumen_niveles_inventario['bajos'] ?? 0 ?></div>
+                </div>
+                
+                <div class="estadistica-card inventario exceso">
+                    <div class="estadistica-label">Productos en Exceso</div>
+                    <div class="estadistica-value" style="color: #6f42c1;"><?= $resumen_niveles_inventario['exceso'] ?? 0 ?></div>
+                </div>
+                
+                <div class="estadistica-card inventario normal">
+                    <div class="estadistica-label">Productos Normales</div>
+                    <div class="estadistica-value" style="color: #28a745;"><?= $resumen_niveles_inventario['normales'] ?? 0 ?></div>
+                </div>
+            </div>
+            
+            <!-- Alertas -->
+            <?php if(($resumen_niveles_inventario['criticos'] ?? 0) > 0): ?>
+            <div class="alerta-inventario alerta-critica">
+                <strong>⚠️ ALERTA CRÍTICA:</strong> Hay <?= $resumen_niveles_inventario['criticos'] ?? 0 ?> productos con inventario por debajo del mínimo requerido.
+            </div>
+            <?php endif; ?>
+            
+            <?php if(($resumen_niveles_inventario['bajos'] ?? 0) > 0): ?>
+            <div class="alerta-inventario alerta-advertencia">
+                <strong>⚠️ ADVERTENCIA:</strong> Hay <?= $resumen_niveles_inventario['bajos'] ?? 0 ?> productos con inventario cercano al mínimo.
+            </div>
+            <?php endif; ?>
+            
+            <!-- Tabla de Productos con Niveles Críticos -->
+            <div class="tabla-container">
+                <h3>Productos con Niveles de Inventario Críticos</h3>
+                <div class="table-responsive">
+                    <table class="tabla-reporte">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Código</th>
+                                <th>Categoría</th>
+                                <th>Existencia</th>
+                                <th>Mínimo</th>
+                                <th>Máximo</th>
+                                <th>Estado</th>
+                                <th>Diferencia</th>
+                                <th>% Inventario</th>
+                                <th>Valor (Bs)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if(empty($productos_nivel_existencia)): ?>
+                                <tr>
+                                    <td colspan="10" class="empty-state">No hay productos con niveles críticos de inventario</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach($productos_nivel_existencia as $producto): 
+                                    $estado = $producto['estado_inventario'] ?? 'NORMAL';
+                                    $color_estado = [
+                                        'CRITICO' => '#dc3545',
+                                        'BAJO' => '#ffc107',
+                                        'EXCESO' => '#6f42c1',
+                                        'NORMAL' => '#28a745'
+                                    ][$estado] ?? '#6c757d';
+                                    
+                                    $diferencia = '';
+                                    if ($estado === 'CRITICO' || $estado === 'BAJO') {
+                                        $diferencia = 'Faltan: ' . ($producto['diferencia_minimo'] > 0 ? $producto['diferencia_minimo'] : '0');
+                                    } elseif ($estado === 'EXCESO') {
+                                        $diferencia = 'Exceden: ' . ($producto['diferencia_maximo'] < 0 ? abs($producto['diferencia_maximo']) : '0');
+                                    }
+                                ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($producto['nombre'] ?? '') ?></td>
+                                    <td><?= $producto['codigo'] ?? '' ?></td>
+                                    <td><?= $producto['categoria'] ?? '' ?></td>
+                                    <td><strong><?= $producto['existencia'] ?? 0 ?></strong></td>
+                                    <td><?= $producto['minimo_inventario'] ?? 0 ?></td>
+                                    <td><?= $producto['maximo_inventario'] ?? 0 ?></td>
+                                    <td>
+                                        <span class="nivel-badge nivel-<?= strtolower($estado) ?>">
+                                            <?= $estado ?>
+                                        </span>
+                                    </td>
+                                    <td><?= $diferencia ?></td>
+                                    <td>
+                                        <?= $producto['porcentaje_inventario'] ?? 0 ?>%
+                                        <div class="progreso-inventario">
+                                            <div class="progreso-inventario-fill progreso-<?= strtolower($estado) ?>" 
+                                                 style="width: <?= min(100, $producto['porcentaje_inventario'] ?? 0) ?>%">
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>Bs. <?= number_format($producto['valor_total_bs'] ?? 0, 2, ',', '.') ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Productos Próximos a Mínimo -->
+            <?php if(!empty($productos_proximos_minimo)): ?>
+            <div class="tabla-container">
+                <h3>Productos Próximos al Mínimo de Inventario (Alerta Temprana)</h3>
+                <div class="table-responsive">
+                    <table class="tabla-reporte">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Código</th>
+                                <th>Existencia Actual</th>
+                                <th>Mínimo Requerido</th>
+                                <th>% del Mínimo</th>
+                                <th>Faltan para Mínimo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($productos_proximos_minimo as $producto): 
+                                $porcentaje = $producto['porcentaje_minimo'] ?? 0;
+                                $color = $porcentaje <= 105 ? '#dc3545' : ($porcentaje <= 120 ? '#ffc107' : '#28a745');
+                            ?>
+                            <tr>
+                                <td><?= htmlspecialchars($producto['nombre'] ?? '') ?></td>
+                                <td><?= $producto['codigo'] ?? '' ?></td>
+                                <td><?= $producto['existencia'] ?? 0 ?></td>
+                                <td><?= $producto['minimo_inventario'] ?? 0 ?></td>
+                                <td style="color: <?= $color ?>; font-weight: bold;">
+                                    <?= $porcentaje ?>%
+                                </td>
+                                <td>
+                                    <?= max(0, ($producto['minimo_inventario'] ?? 0) - ($producto['existencia'] ?? 0)) ?>
+                                    unidades
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+            <!-- Resumen de Valores -->
+            <?php if(isset($resumen_niveles_inventario['valor_reposicion_critico']) && $resumen_niveles_inventario['valor_reposicion_critico'] > 0): ?>
+            <div class="metodos-pago-container">
+                <h3>Resumen Financiero de Inventario</h3>
+                <div class="metodos-grid">
+                    <div class="metodo-card" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));">
+                        <div class="metodo-nombre">Valor Requerido para Reposición</div>
+                        <div class="metodo-cantidad" style="color: #dc3545;">Productos Críticos y Bajos</div>
+                        <div class="metodo-total" style="color: #dc3545;">
+                            Bs. <?= number_format($resumen_niveles_inventario['valor_reposicion_critico'] ?? 0, 2, ',', '.') ?>
+                        </div>
+                    </div>
+                    
+                    <?php if(isset($resumen_niveles_inventario['valor_exceso_inventario']) && $resumen_niveles_inventario['valor_exceso_inventario'] > 0): ?>
+                    <div class="metodo-card" style="background: linear-gradient(135deg, rgba(111, 66, 193, 0.1), rgba(111, 66, 193, 0.05));">
+                        <div class="metodo-nombre">Valor en Exceso de Inventario</div>
+                        <div class="metodo-cantidad" style="color: #6f42c1;">Productos sobre Máximo</div>
+                        <div class="metodo-total" style="color: #6f42c1;">
+                            Bs. <?= number_format($resumen_niveles_inventario['valor_exceso_inventario'] ?? 0, 2, ',', '.') ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
     </div>
 </main>
 
@@ -479,6 +755,11 @@ function cambiarTipoReporte(tipo) {
         $('#filtro-mes').hide();
         $('#filtro-ano').hide();
         $('#filtro-dia').show();
+    } else if (tipo === 'inventario') {
+        // Para inventario no mostramos filtros de fecha
+        $('#filtro-mes').hide();
+        $('#filtro-ano').hide();
+        $('#filtro-dia').hide();
     } else {
         $('#filtro-mes').show();
         $('#filtro-ano').show();
