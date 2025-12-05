@@ -32,6 +32,8 @@ if (isset($_GET['buscar_producto'])) {
     $producto = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($producto) {
+        // Asegurar que el precio de venta esté en $
+        $producto['precio_venta_usd'] = floatval($producto['precio_venta']); 
         echo json_encode(['success' => true, 'producto' => $producto]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Producto no disponible']);
@@ -56,7 +58,7 @@ if (!$sistemaPermisos->puedeVer('ventas')) {
 
 // Obtener tasa del dólar desde JSON
 $tasas_file = 'js/tasas_cache.json';
-
+$tasa_usd = 1.0; // Valor por defecto
 
 if (file_exists($tasas_file)) {
     $tasas_data = json_decode(file_get_contents($tasas_file), true);
@@ -93,19 +95,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
         // Datos de la factura
         $fecha = date('Y-m-d');
         $metodo_pago = $_POST['metodo_pago'];
-        $subtotal_bs = floatval($_POST['subtotal_bs']);
+        $subtotal_usd = floatval($_POST['subtotal_usd']); // Ahora recibimos el subtotal en USD
         
-        // Calcular impuestos
-        $iva_porcentaje = 16; // IVA fijo
-        $iva_bs = $subtotal_bs * ($iva_porcentaje / 100);
+        // Calcular impuestos (solo IGTF)
+        // IGTF se calcula sobre el subtotal USD (Efectivo)
+        $igtf_porcentaje = ($metodo_pago === 'Efectivo') ? 3 : 0; 
+        $igtf_usd = $subtotal_usd * ($igtf_porcentaje / 100);
         
-        $igtf_porcentaje = ($metodo_pago === 'Efectivo') ? 3 : 0; // IGTF solo para efectivo
-        $igtf_bs = $subtotal_bs * ($igtf_porcentaje / 100);
-        
-        $total_bs = $subtotal_bs + $iva_bs + $igtf_bs;
-        $total_usd = $total_bs / $tasa_usd;
+        $total_usd = $subtotal_usd + $igtf_usd;
+        $total_bs = $total_usd * $tasa_usd;
         
         // Insertar venta
+        // NOTA: Se está guardando el total_bs y total_usd. Usaremos total_usd como base para el registro.
         $stmt = $pdo->prepare("INSERT INTO ventas 
             (cliente, fecha, metodo_pago, total_bs, total_usd, tasa_usd, 
              nro_factura, id_cliente) 
@@ -130,23 +131,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
         foreach ($productos as $producto) {
             $id_producto = $producto['id'];
             $cantidad = $producto['cantidad'];
-            $precio_unitario_bs = $producto['precio_venta'];
+            $precio_unitario_usd = $producto['precio_venta_usd']; // Precio unitario en USD
+            $precio_unitario_bs = $precio_unitario_usd * $tasa_usd;
+            $subtotal_usd_producto = $precio_unitario_usd * $cantidad;
             $subtotal_bs_producto = $precio_unitario_bs * $cantidad;
             
             // Insertar detalle
             $stmt_detalle = $pdo->prepare("INSERT INTO detalle_venta 
                 (id_venta, id_producto, codigo_producto, nombre_producto, cantidad, 
-                 precio_unitario_bs, subtotal_bs) 
+                 precio_unitario_usd, subtotal_usd) 
                 VALUES (?, ?, ?, ?, ?, ?, ?)");
             
+            // Se asume que la tabla detalle_venta tiene columnas para USD
             $stmt_detalle->execute([
                 $id_venta,
                 $id_producto,
                 $producto['codigo'],
                 $producto['nombre'],
                 $cantidad,
-                $precio_unitario_bs,
-                $subtotal_bs_producto
+                $precio_unitario_usd,
+                $subtotal_usd_producto
             ]);
             
             // Actualizar stock
@@ -162,7 +166,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
     } catch (Exception $e) {
         $pdo->rollBack();
         $_SESSION['error'] = "❌ Error al facturar: " . $e->getMessage();
-        header('Location: facturacion.php');
+        // Redirigir de vuelta a la página de facturación con el error
+        header('Location: facturacion.php'); 
         exit();
     }
 }
@@ -179,7 +184,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
 <body>
 <main class="main-content">
     <div class="content-wrapper">
-        <!-- Header -->
         <div class="page-header">
             <h1 class="page-title">Nueva Factura</h1>
             <a href="facturas.php" class="btn-facturas-lista">
@@ -187,7 +191,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
             </a>
         </div>
 
-        <!-- Mostrar mensajes -->
         <?php if (isset($_SESSION['mensaje'])): ?>
             <div class="alert alert-success" id="mensaje-exito">
                 <?= $_SESSION['mensaje']; unset($_SESSION['mensaje']); ?>
@@ -200,7 +203,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
             </div>
         <?php endif; ?>
 
-        <!-- Controles superiores -->
         <div class="controls-container-factura">
             <div class="info-factura">
                 <div class="info-item">
@@ -218,9 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
             </div>
         </div>
 
-        <!-- Formulario de facturación -->
         <div class="factura-container">
-            <!-- Datos del cliente -->
             <div class="seccion-cliente">
                 <h3>Datos del Cliente</h3>
                 <div class="busqueda-cliente">
@@ -256,7 +256,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
                 </div>
             </div>
 
-            <!-- Agregar productos -->
             <div class="seccion-productos">
                 <h3>Productos</h3>
                 <div class="busqueda-producto">
@@ -270,7 +269,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
                     </div>
                 </div>
                 
-                <!-- Tabla de productos -->
                 <div class="tabla-productos-container">
                     <table id="tabla-productos" class="tabla-productos">
                         <thead>
@@ -278,42 +276,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
                                 <th>Código</th>
                                 <th>Producto</th>
                                 <th>Cantidad</th>
-                                <th>Precio Unitario ($)</th>
+                                <th>P. Unitario ($)</th>
+                                <th>P. Unitario (Bs)</th>
                                 <th>Subtotal ($)</th>
+                                <th>Subtotal (Bs)</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Los productos se agregarán aquí dinámicamente -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Totales -->
             <div class="seccion-totales">
                 <div class="totales-container">
                     <div class="total-row">
                         <span class="total-label">Subtotal:</span>
-                        <span id="subtotal-bs" class="total-value">$. 0,00</span>
+                        <span id="subtotal-usd" class="total-value-usd">$. 0,00</span>
+                        <span id="subtotal-bs" class="total-value">Bs. 0,00</span>
                     </div>
-                  <!-- <div class="total-row">
-                        <span class="total-label">IVA (16%):</span>
-                        <span id="iva-bs" class="total-value">Bs. 0,00</span>
-                    </div>-->
+                  
                     <div id="igtf-row" class="total-row" style="display: none;">
                         <span class="total-label">IGTF (3%):</span>
-                        <span id="igtf-bs" class="total-value">$. 0,00</span>
+                        <span id="igtf-usd" class="total-value-usd">$. 0,00</span>
+                        <span id="igtf-bs" class="total-value">Bs. 0,00</span>
                     </div>
+                    
                     <div class="total-row total-final">
                         <span class="total-label">TOTAL:</span>
-                        <span id="total-bs" class="total-value">$. 0,00</span>
-                        <span id="total-usd" class="total-value-usd">Bs. 0,00</span>
+                        <span id="total-usd" class="total-value-usd">$. 0,00</span>
+                        <span id="total-bs" class="total-value">Bs. 0,00</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Método de pago -->
             <div class="seccion-pago">
                 <h3>Método de Pago</h3>
                 <div class="metodos-pago">
@@ -336,16 +333,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
                 </div>
             </div>
 
-            <!-- Botones de acción -->
             <div class="seccion-acciones">
                 <form id="form-facturar" method="POST">
                     <input type="hidden" id="id_cliente_form" name="id_cliente">
                     <input type="hidden" id="cliente_nombre_form" name="cliente_nombre">
                     <input type="hidden" id="productos_json" name="productos_json" value="[]">
                     <input type="hidden" id="metodo_pago_form" name="metodo_pago">
-                    <input type="hidden" id="subtotal_bs_form" name="subtotal_bs" value="0">
-                    
-                    <button type="button" class="btn-cancelar" onclick="cancelarFactura()">
+                    <input type="hidden" id="subtotal_usd_form" name="subtotal_usd" value="0"> <button type="button" class="btn-cancelar" onclick="cancelarFactura()">
                         ❌ Cancelar
                     </button>
                     <button type="submit" class="btn-facturar" name="facturar" id="btn-facturar" disabled>
@@ -357,7 +351,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
     </div>
 </main>
 
-<!-- Modal Agregar Cliente -->
 <div id="modalAgregar" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -398,7 +391,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facturar'])) {
 <script>
 let productos = [];
 let tasa_usd = <?= $tasa_usd ?>;
-let subtotal_bs = 0;
+let subtotal_usd = 0; // Se usará USD como base para los cálculos
 
 function buscarCliente() {
     const cedula = $('#cedula-cliente').val().trim();
@@ -464,12 +457,14 @@ function buscarProducto() {
                     return;
                 }
                 
+                const precio_venta_usd = parseFloat(producto.precio_venta);
+                
                 const productoObj = {
                     id: producto.id,
                     codigo: producto.codigo,
                     nombre: producto.nombre,
                     cantidad: 1,
-                    precio_venta: parseFloat(producto.precio_venta),
+                    precio_venta_usd: precio_venta_usd, // Precio en USD
                     stock: parseInt(producto.cantidad)
                 };
                 
@@ -504,11 +499,14 @@ function actualizarTablaProductos() {
     const tbody = $('#tabla-productos tbody');
     tbody.empty();
     
-    subtotal_bs = 0;
+    subtotal_usd = 0;
     
     productos.forEach((producto, index) => {
-        const subtotal = producto.precio_venta * producto.cantidad;
-        subtotal_bs += subtotal;
+        const precio_unitario_bs = producto.precio_venta_usd * tasa_usd;
+        const subtotal_usd_producto = producto.precio_venta_usd * producto.cantidad;
+        const subtotal_bs_producto = subtotal_usd_producto * tasa_usd;
+        
+        subtotal_usd += subtotal_usd_producto;
         
         const row = `
             <tr id="producto-${index}">
@@ -523,8 +521,10 @@ function actualizarTablaProductos() {
                         <button type="button" class="btn-cantidad" onclick="cambiarCantidad(${index}, 1)">+</button>
                     </div>
                 </td>
-                <td>$. ${producto.precio_venta.toFixed(2).replace('.', ',')}</td>
-                <td>$. ${subtotal.toFixed(2).replace('.', ',')}</td>
+                <td>$. ${producto.precio_venta_usd.toFixed(2).replace('.', ',')}</td>
+                <td>Bs. ${precio_unitario_bs.toFixed(2).replace('.', ',')}</td>
+                <td>$. ${subtotal_usd_producto.toFixed(2).replace('.', ',')}</td>
+                <td>Bs. ${subtotal_bs_producto.toFixed(2).replace('.', ',')}</td>
                 <td>
                     <button type="button" class="btn-eliminar-producto" onclick="eliminarProducto(${index})">
                         🗑️ Eliminar
@@ -566,25 +566,30 @@ function eliminarProducto(index) {
 }
 
 function actualizarTotales() {
-    const iva_porcentaje = 0.16;
-    const iva_bs = subtotal_bs * (iva_porcentaje / 100);
-    
     let igtf_porcentaje = 0;
     if ($('input[name="metodo_pago"]:checked').val() === 'Efectivo') {
         igtf_porcentaje = 3;
     }
-    const igtf_bs = subtotal_bs * (igtf_porcentaje / 100);
     
-    const total_bs = subtotal_bs + iva_bs + igtf_bs;
-    const total_usd = total_bs * tasa_usd;
+    const igtf_usd = subtotal_usd * (igtf_porcentaje / 100);
+    const igtf_bs = igtf_usd * tasa_usd;
     
-    $('#subtotal-bs').text('$. ' + subtotal_bs.toFixed(2).replace('.', ','));
-    $('#iva-bs').text('$. ' + iva_bs.toFixed(2).replace('.', ','));
+    const total_usd = subtotal_usd + igtf_usd;
+    const total_bs = total_usd * tasa_usd;
+    
+    // Subtotales
+    $('#subtotal-usd').text('$. ' + subtotal_usd.toFixed(2).replace('.', ','));
+    $('#subtotal-bs').text('Bs. ' + (subtotal_usd * tasa_usd).toFixed(2).replace('.', ','));
+    
+    // IGTF
+    $('#igtf-usd').text('$. ' + igtf_usd.toFixed(2).replace('.', ','));
     $('#igtf-bs').text('Bs. ' + igtf_bs.toFixed(2).replace('.', ','));
-    $('#total-bs').text('$. ' + total_bs.toFixed(2).replace('.', ','));
-    $('#total-usd').text('Bs. ' + total_usd.toFixed(2).replace('.', ','));
     
-    $('#subtotal_bs_form').val(subtotal_bs);
+    // Totales
+    $('#total-usd').text('$. ' + total_usd.toFixed(2).replace('.', ','));
+    $('#total-bs').text('Bs. ' + total_bs.toFixed(2).replace('.', ','));
+    
+    $('#subtotal_usd_form').val(subtotal_usd.toFixed(2)); // Enviar el subtotal en USD
     $('#productos_json').val(JSON.stringify(productos));
 }
 
@@ -658,7 +663,7 @@ $('#formAgregarCliente').submit(function(e) {
     const formData = $(this).serialize();
     
     $.ajax({
-        url: 'guardar_cliente.php',
+        url: 'guardar_cliente.php', // Asumiendo que existe este script para guardar clientes
         type: 'POST',
         data: formData,
         dataType: 'json',

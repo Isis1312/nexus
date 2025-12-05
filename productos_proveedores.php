@@ -20,7 +20,7 @@ if (!isset($_SESSION['carrito_compras'])) {
     $_SESSION['carrito_compras'] = [];
 }
 
-// Manejar acciones del carrito
+// --- LÓGICA DEL CARRITO (Agregar, Eliminar, Vaciar) ---
 if (isset($_GET['accion']) && isset($_GET['id_producto'])) {
     $id_producto = intval($_GET['id_producto']);
     
@@ -73,6 +73,7 @@ if (isset($_GET['accion']) && isset($_GET['id_producto'])) {
     exit();
 }
 
+// --- FILTROS Y BÚSQUEDA ---
 $id_proveedor = isset($_GET['id_proveedor']) ? intval($_GET['id_proveedor']) : 0;
 $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
 
@@ -122,22 +123,21 @@ if (!empty($params)) {
     $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// Obtener proveedores para filtro
 $proveedores_stmt = $pdo->query("SELECT id_proveedor, nombre_comercial FROM proveedores WHERE estado = 'activo'");
 $proveedores = $proveedores_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $total_productos = count($result);
 
-// Calcular estadísticas del carrito
+// --- CALCULAR ESTADÍSTICAS DEL CARRITO ---
 $total_carrito = 0;
 $total_productos_carrito = 0;
 $total_unidades_carrito = 0;
-$carrito_detalles = []; // Inicializar antes del bucle
 
 if (!empty($_SESSION['carrito_compras'])) {
     // Obtener detalles de los productos en el carrito
-    
-    // *** MODIFICACIÓN CLAVE: Iterar sobre el carrito donde la clave es el id_producto ***
-    foreach ($_SESSION['carrito_compras'] as $id_producto_carrito => $item) {
+    $carrito_detalles = [];
+    foreach ($_SESSION['carrito_compras'] as $item) {
         $stmt = $pdo->prepare("SELECT pp.*, p.nombre_comercial FROM productos_proveedor pp 
                               JOIN proveedores p ON pp.id_proveedor = p.id_proveedor 
                               WHERE pp.id_producto_proveedor = ?");
@@ -157,6 +157,8 @@ if (!empty($_SESSION['carrito_compras'])) {
         }
     }
 }
+
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -214,10 +216,10 @@ if (!empty($_SESSION['carrito_compras'])) {
                             <div style="margin-top: 5px;">
                                 <button type="submit" class="btn btn-primary" style="padding: 8px 15px; font-size: 0.85em;">Buscar</button>
                     
-                    <button type="button" class="btn btn-primary" onclick="abrirModalCategoria()">➕ Agregar Categoría</button>
-                    <a href="agregar_producto_proveedor.php" class="btn btn-primary">➕ Agregar Producto de Proveedor</a>
-                    <a href="proveedores.php" class="btn btn-secondary">👥 Ver Proveedores</a>
-                                                <?php if (!empty($busqueda)): ?>
+                                <a href="categorias.php" class="btn btn-primary">➕ Agregar Categoría</a>
+                                <a href="agregar_producto_proveedor.php" class="btn btn-primary">➕ Agregar Producto de Proveedor</a>
+                                <a href="proveedores.php" class="btn btn-secondary">👥 Ver Proveedores</a>
+                                <?php if (!empty($busqueda)): ?>
                                     <a href="?<?php echo $id_proveedor > 0 ? 'id_proveedor=' . $id_proveedor : ''; ?>" class="clear-search">
                                         Limpiar búsqueda
                                     </a>
@@ -321,6 +323,7 @@ if (!empty($_SESSION['carrito_compras'])) {
         </div>
     </div>
 <?php endif; ?>
+
                 <?php if ($total_productos > 0): ?>
                     <?php if ($id_proveedor > 0 && isset($result[0])): ?>
                         <div class="proveedor-info">
@@ -429,10 +432,9 @@ if (!empty($_SESSION['carrito_compras'])) {
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
-                
-                
             </div>
-    </main>
+        </div>
+   </main>
 
     <div id="modalCompra" class="modal">
         <div class="modal-content">
@@ -559,14 +561,6 @@ if (!empty($_SESSION['carrito_compras'])) {
                         </div>
                     </div>
                     
-                    <div class="alert-info">
-                        <strong>⚠️ Confirmación:</strong><br>
-                        • Esta acción registrará todas las compras en el sistema<br>
-                        • Se actualizará el inventario automáticamente<br>
-                        • Se generará un historial de compras<br>
-                        • El carrito se vaciará después de la confirmación
-                    </div>
-                    
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="cerrarModalConfirmarCompra()">Cancelar</button>
                         <button type="submit" class="btn btn-success">✅ Confirmar y Procesar Todas las Compras</button>
@@ -576,35 +570,15 @@ if (!empty($_SESSION['carrito_compras'])) {
         </div>
     </div>
 
-    <div id="modalCategoria" class="modal">
+                
+
+            </div>
         </div>
+    </div>
 
  <script>
 let productoActual = null;
-let precioUnitarioActual = 0; // Se mantiene la variable pero ya no se usa, se recomienda eliminarla para limpiar código, pero la dejaremos por compatibilidad si es necesario.
-
-function abrirModalCompra(idProducto, nombreProducto, unidadMedida, precioUnitario) {
-    productoActual = idProducto;
-    // La variable precioUnitarioActual ya no se usa para cálculos, pero se mantiene la asignación por si el código futuro la requiere.
-    precioUnitarioActual = parseFloat(precioUnitario); 
-    
-    document.getElementById('carrito_id_producto').value = idProducto;
-    document.getElementById('carrito_nombre_producto').value = nombreProducto;
-    // Se elimina la línea que llenaba 'precio_unitario'
-    
-    // Resetear campos
-    document.getElementById('precio_compra_total').value = '';
-    document.getElementById('cantidad_empaques').value = '';
-    document.getElementById('unidades_empaque').value = '';
-    document.getElementById('cantidad_total').value = '';
-    document.getElementById('precio_compra_unidad').value = '';
-    document.getElementById('precio_venta_unidad').value = '';
-    
-    document.getElementById('modalCompra').style.display = 'block';
-    document.getElementById('precio_compra_total').focus();
-}
-
-// SE ELIMINÓ LA FUNCIÓN calcularEmpaques()
+let precioUnitarioActual = 0;
 
 function calcularTotal() {
     const precioCompraTotal = parseFloat(document.getElementById('precio_compra_total').value) || 0;
@@ -616,12 +590,21 @@ function calcularTotal() {
     // Calcular precio por unidad
     const precioPorUnidad = totalUnidades > 0 ? precioCompraTotal / totalUnidades : 0;
     
-    // CAMBIO: 42% a 30% de margen de ganancia (multiplicador 1.30)
+    // 30% de margen
     const precioVentaPorUnidad = precioPorUnidad * 1.30; 
     
     document.getElementById('cantidad_total').value = totalUnidades;
     document.getElementById('precio_compra_unidad').value = totalUnidades > 0 ? '$' + precioPorUnidad.toFixed(2) : '';
     document.getElementById('precio_venta_unidad').value = totalUnidades > 0 ? '$' + precioVentaPorUnidad.toFixed(2) : '';
+    
+    // Actualizar texto informativo (Si se hace en el HTML, esta parte ya no sería necesaria)
+    // Se comenta ya que se actualizó directamente en el HTML
+    /*
+    const infoElements = document.querySelectorAll('.alert-info');
+    infoElements.forEach(element => {
+        element.innerHTML = element.innerHTML.replace(/42%/g, '30%');
+    });
+    */
     
     // Estilo del campo total
     const totalInput = document.getElementById('cantidad_total');
@@ -641,7 +624,6 @@ function cerrarModalCompra() {
 }
 
 function abrirModalConfirmarCompra() {
-    // Cargar los detalles del carrito en el modal de confirmación
     cargarDetallesCarrito();
     document.getElementById('modalConfirmarCompra').style.display = 'block';
 }
@@ -651,12 +633,10 @@ function cerrarModalConfirmarCompra() {
 }
 
 function cargarDetallesCarrito() {
-    // Esta función está vacía en el código original, pero es la encargada de cargar el resumen.
-    // Debería llenarse con una llamada AJAX para obtener los datos más recientes del carrito si no se usa PHP para renderizarlo.
-    // Por ahora, se deja vacía ya que el resumen se carga con PHP estático al inicio de la página.
+    
 }
 
-// Validación de fechas en tiempo real
+// Validaciones de fecha
 document.getElementById('fecha_compra_total')?.addEventListener('change', function() {
     const hoy = new Date().toISOString().split('T')[0];
     if (this.value > hoy) {
@@ -673,30 +653,21 @@ document.getElementById('fecha_vencimiento_base')?.addEventListener('change', fu
     }
 });
 
+// Cierre de modales al hacer clic fuera
 window.onclick = function(event) {
     const modalCompra = document.getElementById('modalCompra');
     const modalCategoria = document.getElementById('modalCategoria');
     const modalConfirmar = document.getElementById('modalConfirmarCompra');
     
-    if (event.target === modalCompra) {
-        cerrarModalCompra();
-    }
-    if (event.target === modalCategoria) {
-        cerrarModalCategoria();
-    }
-    if (event.target === modalConfirmar) {
-        cerrarModalConfirmarCompra();
-    }
+    if (event.target === modalCompra) cerrarModalCompra();
+    if (event.target === modalCategoria) cerrarModalCategoria();
+    if (event.target === modalConfirmar) cerrarModalConfirmarCompra();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('success')) {
-        alert('✅ ' + urlParams.get('success'));
-    }
-    if (urlParams.has('error')) {
-        alert('❌ ' + urlParams.get('error'));
-    }
+    if (urlParams.has('success')) alert('✅ ' + urlParams.get('success'));
+    if (urlParams.has('error')) alert('❌ ' + urlParams.get('error'));
 });
 </script>
 </body>
