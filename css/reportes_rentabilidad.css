@@ -1,0 +1,267 @@
+/* ===== ESTILOS ESPECÍFICOS PARA REPORTE DE RENTABILIDAD ===== */
+
+/* Badges para niveles de rentabilidad */
+.nivel-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.nivel-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Colores específicos para rentabilidad */
+.margen-alto {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.15), rgba(40, 167, 69, 0.1));
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.margen-medio {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15), rgba(255, 193, 7, 0.1));
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.margen-bajo {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.15), rgba(220, 53, 69, 0.1));
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+/* Tarjetas de métricas financieras */
+.metrica-financiera {
+    background: linear-gradient(135deg, #ffffff, #f8fdff);
+    border-radius: 16px;
+    padding: 25px;
+    border: 1px solid rgba(0, 139, 139, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 139, 139, 0.08);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.metrica-financiera::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, #008B8B, #006666);
+}
+
+.metrica-financiera:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 139, 139, 0.12);
+}
+
+.metrica-financiera .valor {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #008B8B;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #008B8B, #006666);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.metrica-financiera .ganancia-positiva {
+    color: #28a745;
+    -webkit-text-fill-color: #28a745;
+}
+
+.metrica-financiera .ganancia-negativa {
+    color: #dc3545;
+    -webkit-text-fill-color: #dc3545;
+}
+
+.metrica-financiera .label {
+    color: #6c757d;
+    font-size: 1em;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+/* Indicadores de tendencia */
+.tendencia-indicador {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.tendencia-positiva {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.tendencia-negativa {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.tendencia-neutra {
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+}
+
+/* Tablas específicas para rentabilidad */
+.tabla-rentabilidad th {
+    background: linear-gradient(135deg, rgba(0, 139, 139, 0.1), rgba(0, 102, 102, 0.1));
+    color: #008B8B;
+    font-weight: 700;
+    border-bottom: 2px solid #008B8B;
+}
+
+.tabla-rentabilidad tr:hover {
+    background: rgba(0, 139, 139, 0.05);
+}
+
+/* Barras de progreso para márgenes */
+.barra-margen {
+    height: 8px;
+    background: rgba(0, 139, 139, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+    position: relative;
+}
+
+.barra-margen-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.barra-margen-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        transparent 100%);
+    animation: shine 2s infinite;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.margen-0-20 { background: linear-gradient(135deg, #dc3545, #c82333); }
+.margen-20-40 { background: linear-gradient(135deg, #ffc107, #e0a800); }
+.margen-40-100 { background: linear-gradient(135deg, #28a745, #218838); }
+
+/* Tarjetas de recomendación */
+.recomendacion-card {
+    background: linear-gradient(135deg, #ffffff, #f8fdff);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 15px 0;
+    border-left: 5px solid;
+    box-shadow: 0 4px 15px rgba(0, 139, 139, 0.08);
+    transition: all 0.3s ease;
+}
+
+.recomendacion-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 139, 139, 0.12);
+}
+
+.recomendacion-positiva {
+    border-left-color: #28a745;
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.05), rgba(40, 167, 69, 0.02));
+}
+
+.recomendacion-advertencia {
+    border-left-color: #ffc107;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.05), rgba(255, 193, 7, 0.02));
+}
+
+.recomendacion-alerta {
+    border-left-color: #dc3545;
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.05), rgba(220, 53, 69, 0.02));
+}
+
+/* Filtros específicos para rentabilidad */
+.filtros-rentabilidad {
+    background: linear-gradient(135deg, #ffffff, #f8fdff);
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 30px;
+    border: 1px solid rgba(0, 139, 139, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 139, 139, 0.08);
+}
+
+.filtros-rentabilidad h3 {
+    color: #008B8B;
+    margin-bottom: 20px;
+    font-size: 1.4em;
+    font-weight: 700;
+}
+
+/* Animaciones para cambios de valores */
+.valor-cambiante {
+    transition: all 0.5s ease;
+    position: relative;
+}
+
+.valor-cambiante.actualizando::before {
+    content: '↻';
+    position: absolute;
+    right: -25px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive específico para rentabilidad */
+@media (max-width: 768px) {
+    .metrica-financiera {
+        padding: 20px;
+    }
+    
+    .metrica-financiera .valor {
+        font-size: 2em;
+    }
+    
+    .filtros-rentabilidad {
+        padding: 20px 15px;
+    }
+    
+    .recomendacion-card {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .nivel-badge {
+        font-size: 0.75em;
+        padding: 3px 8px;
+    }
+    
+    .metrica-financiera .valor {
+        font-size: 1.8em;
+    }
+}
