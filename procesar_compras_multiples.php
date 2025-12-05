@@ -35,12 +35,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
            
             $stmt = $pdo->prepare("
                 INSERT INTO compras_proveedores 
-                (id_producto_proveedor, precio_compra_total, cantidad_empaques, unidades_empaque, fecha_compra, fecha_vencimiento, usuario_id) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (id_producto_proveedor, cantidad_empaques, unidades_empaque, fecha_compra, fecha_vencimiento, usuario_id) 
+                VALUES (?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $id_producto_proveedor,
-                $precio_total, 
+                // Se ha quitado $precio_total que intentaba insertarse en la columna inexistente 'precio_compra_total'
                 $cantidad_empaques,
                 $unidades_empaque,
                 $fecha_compra,
@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
                 }
             }
             
-            // Registrar en historial
+            // Registrar en historial (Aquí es donde se guarda el precio total, en la columna 'precio_total')
             $stmt = $pdo->prepare("
                 INSERT INTO historial_compras 
                 (id_compra, id_producto_proveedor, cantidad_empaques, unidades_empaque, 
@@ -164,3 +164,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
     header('Location: productos_proveedores.php?error=Carrito+vacio+o+solicitud+invalida');
     exit();
     }
+
+?>
