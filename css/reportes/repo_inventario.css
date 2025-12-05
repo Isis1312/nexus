@@ -1,21 +1,18 @@
-/* Estilos generales */
+
 .main-content {
-    /* Contenedor principal para la estructura general de la página */
     display: flex;
     min-height: 100vh;
 }
 
 .content-wrapper {
-    /* Contenedor que centra y da padding al contenido */
     padding: 25px;
     color: #2b3139;
     width: 100%;
     background: #f8fafc;
 }
 
-/* --- Header y Título --- */
+
 .page-header {
-    /* Encabezado que contiene el título y los botones de acción */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -34,7 +31,7 @@
 /* --- Contenedor de Botones de Acción --- */
 .action-buttons {
     display: flex;
-    gap: 15px; /* Espacio entre el botón Volver y Actualizar */
+    gap: 15px;
 }
 
 /* --- Estilos del Botón Base (Volver y Actualizar) --- */
@@ -63,10 +60,9 @@
 }
 
 
-/* --- Estilos de las Tarjetas de Métricas (report-summary) --- */
+/* --- Estilos de las Tarjetas de Métricas -*/
 .report-summary {
     display: grid;
-    /* 2 columnas en el grid para pantallas grandes */
     grid-template-columns: repeat(2, 1fr); 
     gap: 25px;
     margin-top: 20px;
@@ -78,7 +74,7 @@
     padding: 25px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
     transition: transform 0.3s, box-shadow 0.3s;
-    border-left: 5px solid; /* Usado para el color temático */
+    border-left: 5px solid;
 }
 
 .metric-card:hover {
@@ -101,43 +97,69 @@
     line-height: 1.2;
 }
 
-/* --- Colores Temáticos por Métrica --- */
 
-/* Unidades */
 .metric-card.units {
-    border-left-color: #3498db; /* Azul */
+    border-left-color: #3498db;
 }
 .metric-card.units .metric-value {
     color: #3498db;
 }
-
-/* Costo/Inversión */
 .metric-card.cost {
-    border-left-color: #e74c3c; /* Rojo/Naranja para Costo */
+    border-left-color: #e74c3c;
 }
 .metric-card.cost .metric-value {
     color: #e74c3c;
 }
 
-/* Ventas/Valor Potencial */
+
 .metric-card.sales {
-    border-left-color: #f39c12; /* Amarillo/Naranja para Ingreso */
+    border-left-color: #f39c12;
 }
 .metric-card.sales .metric-value {
     color: #f39c12;
 }
 
-/* Ganancia/Profit */
+
 .metric-card.profit {
-    border-left-color: #2ecc71; /* Verde para Ganancia */
+    border-left-color: #2ecc71;
 }
 .metric-card.profit .metric-value {
     color: #2ecc71;
 }
 
+/* --- Estilos del Gráfico --- */
+
+.chart-container-wrapper {
+    display: flex;
+    justify-content: center; /* Centrar horizontalmente el contenedor del gráfico */
+    margin-top: 40px;
+    padding-bottom: 40px;
+}
+
+.chart-card {
+
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+
+    max-width: 600px;
+    width: 100%; 
+    height: auto; 
+}
+
+.chart-title {
+    font-size: 1.5em;
+    font-weight: 600;
+    color: #008B8B;
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+
 /* Media Query: Responsividad */
 @media (max-width: 900px) {
-    /* 1 columna para las tarjetas en pantallas medianas y pequeñas */
     .report-summary {
         grid-template-columns: 1fr; 
     }
@@ -145,7 +167,6 @@
 
 @media (max-width: 600px) {
     .page-header {
-        /* Permite que el título y los botones se apilen en móviles */
         flex-direction: column; 
         align-items: flex-start;
         gap: 15px; 
@@ -163,5 +184,8 @@
     .metric-value {
         font-size: 2em;
     }
+    
+    .chart-card {
+        max-width: 100%; /* El gráfico ocupa todo el ancho disponible en móviles */
+    }
 }
-

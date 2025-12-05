@@ -24,7 +24,7 @@ $sql = "
     FROM
         productos p
     WHERE
-        p.estado = 'active'; -- Solo contamos productos activos según su BD
+        p.estado = 'active';
 ";
 
 try {
@@ -33,8 +33,10 @@ try {
 } catch (\PDOException $e) {
     die("Error al ejecutar la consulta del inventario: " . $e->getMessage());
 }
-?>
 
+// Datos para el gráfico
+$valor_costo = floatval($resumen['valor_total_inventario_costo']);
+$ganancia_bruta = floatval($resumen['ganancia_bruta_potencial']);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -43,6 +45,7 @@ try {
     <title>Reporte de Valorización de Inventario</title>
 
     <link rel="stylesheet" href="css/reportes/repo_inventario.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
    <main class="main-content">
@@ -78,9 +81,70 @@ try {
                     </div>
                 </div>
 
+                <div class="chart-container-wrapper">
+                    <div class="chart-card">
+                        <h2 class="chart-title">Distribución de Valor Potencial (Costo vs. Ganancia Bruta)</h2>
+                        <canvas id="inventoryValueChart"></canvas>
+                    </div>
+                </div>
+
 
             </div>
         </div>
     </main>
+
+    <script>
+    const ctx = document.getElementById('inventoryValueChart');
+    
+    // Datos PHP pasados a JS
+    const valorCosto = <?php echo json_encode($valor_costo); ?>;
+    const gananciaBruta = <?php echo json_encode($ganancia_bruta); ?>;
+
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Valor Costo (Inversión)', 'Ganancia Bruta Potencial'],
+            datasets: [{
+                data: [valorCosto, gananciaBruta],
+                backgroundColor: [
+                    '#e74c3c', // Rojo/Naranja para Costo
+                    '#2ecc71'  // Verde para Ganancia
+                ],
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            // Formatear el valor a moneda
+                            const value = context.parsed;
+                            label += new Intl.NumberFormat('es-ES', { 
+                                style: 'currency', 
+                                currency: 'USD',
+                                minimumFractionDigits: 2 
+                            }).format(value);
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    </script>
 </body>
 </html>
