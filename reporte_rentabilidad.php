@@ -8,15 +8,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 require_once 'conexion.php';
 require_once 'menu.php';
 
-// Inicializar sistema de permisos
-require_once 'permisos.php';
-$sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
-
-// Verificar si puede ver este módulo 
-if (!$sistemaPermisos->puedeVer('reportes')) {
-    header('Location: inicio.php');
-    exit();
-}
 
 // Primero, verificar la estructura de la tabla productos
 function verificarEstructuraProductos($pdo) {
@@ -496,7 +487,7 @@ $meses_espanol = [
 <head>
     <meta charset="UTF-8">
     <title>Reporte de Rentabilidad</title>
-    <link rel="stylesheet" href="css/reportes.css">
+    <link rel="stylesheet" href="css/reportes/repo_rentabilidad.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -530,6 +521,7 @@ $meses_espanol = [
         <!-- Header -->
         <div class="page-header">
             <h1 class="page-title">Reporte de Rentabilidad</h1>
+            <a href="reportes.php" class="volver-button"> Volver</a>
         </div>
 
         <!-- Información de depuración (opcional, puede eliminar) -->

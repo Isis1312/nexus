@@ -6,12 +6,12 @@
 
 /* Header */
 .page-header {
-    display: flex;
-    justify-content: space-between;
+    display: flex; 
+    justify-content: space-between; 
     align-items: center;
     margin-bottom: 30px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid rgba(0, 139, 139, 0.3);
+    padding-bottom: 20px;
+    border-bottom: 3px solid rgba(0, 139, 139, 0.2);
 }
 
 .page-title {
@@ -325,5 +325,52 @@
     
     .page-title {
         font-size: 1.5em;
+    }
+}
+
+/* --- 1. MODIFICACIÓN: Asegurar que el page-header use flexbox para alinear elementos --- */
+.page-header {
+    display: flex; /* Esencial para el alineamiento */
+    justify-content: space-between; /* Mueve el título a la izquierda y el botón a la derecha */
+    align-items: center; /* Centra verticalmente el título y el botón */
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid rgba(0, 139, 139, 0.2);
+}
+
+/* --- 2. ESTILOS DEL BOTÓN VOLVER  */
+.volver-button {
+    /* Estilo visual */
+    background: #008B8B; 
+    color: white; 
+    border: none;
+    border-radius: 8px; 
+    padding: 10px 18px; 
+    
+    /* Fuente y alineamiento */
+    text-decoration: none;
+    font-size: 1em; 
+    font-weight: 600;
+    white-space: nowrap; 
+    
+
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.volver-button:hover {
+   
+    background: #006969; 
+    transform: translateY(-1px); 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+@media (max-width: 600px) {
+    .page-header {
+     
+        flex-direction: column; 
+        align-items: flex-start;
+        gap: 10px; /* Espacio entre el título y el botón */
     }
 }

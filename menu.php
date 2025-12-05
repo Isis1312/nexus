@@ -65,13 +65,6 @@ if (!isset($current_page)) {
                 </li>
                 <?php endif; ?>
 
-                <!-- Agregar en el menú de reportes -->
-                <li class="menu-item">
-                     <a href="reporte_rentabilidad.php" class="menu-link">
-                     <i class="menu-icon">💰</i>
-                    <span class="menu-text">Rentabilidad</span>
-                 </a>
-                </li>
 
                 <!-- Productos - Solo si puede ver -->
                 <?php if ($sistemaPermisos->puedeVer('Inventario')): ?>

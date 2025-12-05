@@ -42,13 +42,16 @@ try {
     <meta charset="UTF-8">
     <title>Reporte de Valorización de Inventario</title>
 
-    <link rel="stylesheet" href="css/repo_inventario.css">
+    <link rel="stylesheet" href="css/reportes/repo_inventario.css">
 </head>
 <body>
    <main class="main-content">
         <div class="content-wrapper">
             <div class="page-header">
                     <h1 class="page-title">Resumen de valorización del inventario actual</h1>
+                    <a href="reportes.php" class="volver-button">
+                    Volver
+                    </a>
                 </div>
 
 
