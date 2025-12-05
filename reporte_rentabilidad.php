@@ -613,6 +613,7 @@ $meses_espanol = [
                         Bs. <?= number_format($resumen_rentabilidad['ganancia_total'] ?? 0, 2, ',', '.') ?>
                     </div>
                 </div>
+                 
                 
                 <div class="estadistica-card">
                     <div class="estadistica-label">Margen Promedio</div>
