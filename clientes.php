@@ -5,10 +5,13 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     exit();
 }
 
-// Incluir la conexión a la base de datos
+if (isset($_SESSION['error'])) {
+    if (!isset($error)) {
+        $error = $_SESSION['error'];
+    }
+    unset($_SESSION['error']); 
+}
 require_once 'conexion.php';
-
-// Inicializar sistema de permisos
 require_once 'permisos.php';
 $sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
 

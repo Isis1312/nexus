@@ -54,11 +54,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
+
     if (!$esAjax) {
         if ($origen === 'facturacion') {
             header('Location: facturacion.php');
         } else {
-            header('Location: clientes.php');
+            
+            header('Location: clientes.php'); 
         }
         exit();
     }

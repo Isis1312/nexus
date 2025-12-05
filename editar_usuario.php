@@ -12,11 +12,7 @@ require_once 'conexion.php';
 require_once 'permisos.php';
 $sistemaPermisos = new SistemaPermisos($_SESSION['permisos']);
 
-// Verificar si puede ver este módulo 
-if (!$sistemaPermisos->puedeVer('gestion_usuario')) {
-    header('Location: inicio.php');
-    exit();
-}
+
 
 $mensaje = '';
 $error = '';
@@ -60,10 +56,6 @@ try {
 
 // Procesar formulario de edición
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Verificar permisos para acciones específicas
-    if (isset($_POST['editar_usuario']) && !puede('gestion_usuarios', 'editar')) {
-        die('Acción no permitida');
-    }
     
     if (isset($_POST['editar_usuario'])) {
         $nombre = trim($_POST['nombre']);
