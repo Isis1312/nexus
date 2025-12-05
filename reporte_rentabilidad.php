@@ -496,10 +496,14 @@ $meses_espanol = [
 <head>
     <meta charset="UTF-8">
     <title>Reporte de Rentabilidad</title>
+    <!-- CONEXIÓN CORRECTA DE CSS -->
     <link rel="stylesheet" href="css/reportes.css">
+    <link rel="stylesheet" href="css/reportes_rentabilidad.css">
+    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* Estilos inline adicionales */
         .debug-info {
             background: #f8f9fa;
             border-left: 4px solid #007bff;
@@ -592,11 +596,6 @@ $meses_espanol = [
                             <button type="submit" class="btn-generar">
                                 Generar Reporte
                             </button>
-                            <?php if(!isset($_GET['debug'])): ?>
-                                <a href="?<?= http_build_query(array_merge($_GET, ['debug' => 1])) ?>" class="btn-generar" style="background: #6c757d; margin-left: 10px;">
-                                    Ver Info Debug
-                                </a>
-                            <?php endif; ?>
                         </div>
                     </div>
                 </form>
