@@ -51,8 +51,8 @@ if (!$sistemaPermisos->puedeVer('reportes')) {
                     Reporte rentabilidad
                 </a>
                 
-                <a href="reporte4.php" class="reporte-button">
-                    Reporte 4
+                <a href="reporte_rotacion_inventario.php" class="reporte-button">
+                    Reporte de rotacion de inventario
                 </a>
                 
                 <a href="reporte5.php" class="reporte-button">
