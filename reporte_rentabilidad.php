@@ -540,6 +540,7 @@ $meses_espanol = [
         <!-- Header -->
         <div class="page-header">
             <h1 class="page-title">Reporte de Rentabilidad</h1>
+                   <a href="reportes.php" class="volver-button"> Volver</a>
         </div>
 
         <!-- Información de depuración (opcional, puede eliminar) -->
