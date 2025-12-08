@@ -31,13 +31,17 @@ if (isset($_GET['accion']) && isset($_GET['id_producto'])) {
                 $unidades_empaque = intval($_GET['unidades_empaque']);
                 $precio_total = floatval($_GET['precio_total']);
                 
-                // *** MODIFICACIÓN CLAVE: Usar id_producto como clave del array ***
+                // Verificar datos válidos
+                if ($cantidad_empaques <= 0 || $unidades_empaque <= 0 || $precio_total <= 0) {
+                    $_SESSION['error'] = "Datos inválidos para agregar al carrito";
+                    header('Location: productos_proveedores.php');
+                    exit();
+                }
                 
                 // Verificar si el producto ya está en el carrito
                 if (isset($_SESSION['carrito_compras'][$id_producto])) {
                     // Actualizar cantidad
                     $_SESSION['carrito_compras'][$id_producto]['cantidad_empaques'] += $cantidad_empaques;
-                    // Mantenemos las unidades_empaque por si se actualizan o se confirma que son las mismas
                     $_SESSION['carrito_compras'][$id_producto]['unidades_empaque'] = $unidades_empaque; 
                     $_SESSION['carrito_compras'][$id_producto]['precio_total'] += $precio_total;
                 } else {
@@ -55,7 +59,6 @@ if (isset($_GET['accion']) && isset($_GET['id_producto'])) {
             break;
             
         case 'eliminar_carrito':
-            // *** MODIFICACIÓN CLAVE: Eliminar directamente por la clave (id_producto) ***
             if (isset($_SESSION['carrito_compras'][$id_producto])) {
                 unset($_SESSION['carrito_compras'][$id_producto]);
                 $_SESSION['mensaje'] = "Producto eliminado del carrito";
@@ -136,14 +139,11 @@ $total_unidades_carrito = 0;
 $carrito_detalles = [];
 
 if (!empty($_SESSION['carrito_compras'])) {
-    // Obtener detalles de los productos en el carrito
-    
-    // *** MODIFICACIÓN CLAVE: Iterar sobre el carrito donde la clave es el id_producto ***
     foreach ($_SESSION['carrito_compras'] as $id_producto_carrito => $item) {
         $stmt = $pdo->prepare("SELECT pp.*, p.nombre_comercial FROM productos_proveedor pp 
                               JOIN proveedores p ON pp.id_proveedor = p.id_proveedor 
                               WHERE pp.id_producto_proveedor = ?");
-        $stmt->execute([$id_producto_carrito]); // Usar la clave como ID del producto
+        $stmt->execute([$id_producto_carrito]);
         $producto = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($producto) {
@@ -160,8 +160,6 @@ if (!empty($_SESSION['carrito_compras'])) {
     }
 }
 
-
-
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -169,6 +167,150 @@ if (!empty($_SESSION['carrito_compras'])) {
     <meta charset="UTF-8">
     <title>Productos de Proveedores - NEXUS</title>
     <link rel="stylesheet" href="css/proveedores.css">
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .close-modal {
+            font-size: 28px;
+            cursor: pointer;
+            color: #aaa;
+        }
+        
+        .close-modal:hover {
+            color: #000;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .required:after {
+            content: " *";
+            color: red;
+        }
+        
+        .alert-info {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.85em;
+        }
+        
+        .input-with-symbol {
+            display: flex;
+            align-items: center;
+        }
+        
+        .currency-symbol {
+            background-color: #f8f9fa;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-right: none;
+            border-radius: 5px 0 0 5px;
+        }
+        
+        .with-symbol {
+            border-radius: 0 5px 5px 0;
+        }
+        
+        #detalles-resumen table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        #detalles-resumen th, #detalles-resumen td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+        
+        #detalles-resumen th {
+            background-color: #f8f9fa;
+        }
+    </style>
 </head>
 <body>
    <main class="main-content">
@@ -177,6 +319,12 @@ if (!empty($_SESSION['carrito_compras'])) {
                 <?php if (isset($_SESSION['mensaje'])): ?>
                     <div class="alert alert-success" style="margin-bottom: 20px;">
                         <?php echo $_SESSION['mensaje']; unset($_SESSION['mensaje']); ?>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (isset($_SESSION['error'])): ?>
+                    <div class="alert alert-danger" style="margin-bottom: 20px;">
+                        <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
                     </div>
                 <?php endif; ?>
                 
@@ -218,7 +366,6 @@ if (!empty($_SESSION['carrito_compras'])) {
                             <?php endif; ?>
                             <div style="margin-top: 5px;">
                                 <button type="submit" class="btn btn-primary" style="padding: 8px 15px; font-size: 0.85em;">Buscar</button>
-                    
                                 <a href="categorias.php" class="btn btn-primary">➕ Agregar Categoría</a>
                                 <a href="agregar_producto_proveedor.php" class="btn btn-primary">➕ Agregar Producto de Proveedor</a>
                                 <a href="proveedores.php" class="btn btn-secondary">👥 Ver Proveedores</a>
@@ -250,82 +397,81 @@ if (!empty($_SESSION['carrito_compras'])) {
                     </div>
                 </div>
 
-                
-<?php if (!empty($carrito_detalles)): ?>
-    <div class="carrito-container" style="margin-bottom: 30px; background: #fff; border-radius: 10px; padding: 20px; border: 2px solid #28a745;">
-        <h3 style="color: #28a745; margin-bottom: 15px;">🛒 Carrito de Compras</h3>
-        
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background: rgba(40, 167, 69, 0.1);">
-                        <th style="padding: 10px; text-align: left;">Producto</th>
-                        <th style="padding: 10px; text-align: center;">Empaques</th>
-                        <th style="padding: 10px; text-align: center;">Unid/Emp</th>
-                        <th style="padding: 10px; text-align: center;">Total Unid</th>
-                        <th style="padding: 10px; text-align: right;">Precio Total</th>
-                        <th style="padding: 10px; text-align: center;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($carrito_detalles as $item): ?>
-                        <tr style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 10px;">
-                                <strong><?php echo htmlspecialchars($item['nombre']); ?></strong><br>
-                                <small>Código: <?php echo $item['codigo_producto']; ?></small><br>
-                                <small>Proveedor: <?php echo $item['nombre_comercial']; ?></small>
-                            </td>
-                            <td style="padding: 10px; text-align: center;">
-                                <?php echo $item['cantidad_empaques']; ?>
-                            </td>
-                            <td style="padding: 10px; text-align: center;">
-                                <?php echo $item['unidades_empaque']; ?>
-                            </td>
-                            <td style="padding: 10px; text-align: center; font-weight: bold;">
-                                <?php echo $item['total_unidades']; ?>
-                            </td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold; color: #28a745;">
-                                $<?php echo number_format($item['precio_total'], 2); ?>
-                            </td>
-                            <td style="padding: 10px; text-align: center;">
-                                <a href="?accion=eliminar_carrito&id_producto=<?php echo $item['id_producto_proveedor']; ?>" 
-                                   class="btn btn-danger btn-sm" 
-                                   onclick="return confirm('¿Eliminar este producto del carrito?')">
-                                    ❌ Eliminar
-                                </a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-                <tfoot>
-                    <tr style="background: rgba(40, 167, 69, 0.05); font-weight: bold;">
-                        <td colspan="3" style="padding: 10px; text-align: right;">TOTALES:</td>
-                        <td style="padding: 10px; text-align: center; color: #28a745;">
-                            <?php echo $total_unidades_carrito; ?> unidades
-                        </td>
-                        <td style="padding: 10px; text-align: right; color: #28a745; font-size: 1.1em;">
-                            $<?php echo number_format($total_carrito, 2); ?>
-                        </td>
-                        <td style="padding: 10px; text-align: center;">
-                            <div style="display: flex; gap: 10px; justify-content: center;">
-                                <form method="GET" action="" style="display: inline;">
-                                    <input type="hidden" name="accion" value="vaciar_carrito">
-                                    <button type="submit" class="btn btn-secondary btn-sm"
-                                            onclick="return confirm('¿Está seguro de vaciar todo el carrito?')">
-                                        🗑️ Vaciar
-                                    </button>
-                                </form>
-                                <button class="btn btn-success btn-sm" onclick="abrirModalConfirmarCompra()">
-                                    ✅ Confirmar Compra
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-    </div>
-<?php endif; ?>
+                <?php if (!empty($carrito_detalles)): ?>
+                    <div class="carrito-container" style="margin-bottom: 30px; background: #fff; border-radius: 10px; padding: 20px; border: 2px solid #28a745;">
+                        <h3 style="color: #28a745; margin-bottom: 15px;">🛒 Carrito de Compras</h3>
+                        
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: rgba(40, 167, 69, 0.1);">
+                                        <th style="padding: 10px; text-align: left;">Producto</th>
+                                        <th style="padding: 10px; text-align: center;">Empaques</th>
+                                        <th style="padding: 10px; text-align: center;">Unid/Emp</th>
+                                        <th style="padding: 10px; text-align: center;">Total Unid</th>
+                                        <th style="padding: 10px; text-align: right;">Precio Total</th>
+                                        <th style="padding: 10px; text-align: center;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($carrito_detalles as $item): ?>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 10px;">
+                                                <strong><?php echo htmlspecialchars($item['nombre']); ?></strong><br>
+                                                <small>Código: <?php echo $item['codigo_producto']; ?></small><br>
+                                                <small>Proveedor: <?php echo $item['nombre_comercial']; ?></small>
+                                            </td>
+                                            <td style="padding: 10px; text-align: center;">
+                                                <?php echo $item['cantidad_empaques']; ?>
+                                            </td>
+                                            <td style="padding: 10px; text-align: center;">
+                                                <?php echo $item['unidades_empaque']; ?>
+                                            </td>
+                                            <td style="padding: 10px; text-align: center; font-weight: bold;">
+                                                <?php echo $item['total_unidades']; ?>
+                                            </td>
+                                            <td style="padding: 10px; text-align: right; font-weight: bold; color: #28a745;">
+                                                $<?php echo number_format($item['precio_total'], 2); ?>
+                                            </td>
+                                            <td style="padding: 10px; text-align: center;">
+                                                <a href="?accion=eliminar_carrito&id_producto=<?php echo $item['id_producto_proveedor']; ?>" 
+                                                   class="btn btn-danger btn-sm" 
+                                                   onclick="return confirm('¿Eliminar este producto del carrito?')">
+                                                    ❌ Eliminar
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="background: rgba(40, 167, 69, 0.05); font-weight: bold;">
+                                        <td colspan="3" style="padding: 10px; text-align: right;">TOTALES:</td>
+                                        <td style="padding: 10px; text-align: center; color: #28a745;">
+                                            <?php echo $total_unidades_carrito; ?> unidades
+                                        </td>
+                                        <td style="padding: 10px; text-align: right; color: #28a745; font-size: 1.1em;">
+                                            $<?php echo number_format($total_carrito, 2); ?>
+                                        </td>
+                                        <td style="padding: 10px; text-align: center;">
+                                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                                <form method="GET" action="" style="display: inline;">
+                                                    <input type="hidden" name="accion" value="vaciar_carrito">
+                                                    <button type="submit" class="btn btn-secondary btn-sm"
+                                                            onclick="return confirm('¿Está seguro de vaciar todo el carrito?')">
+                                                        🗑️ Vaciar
+                                                    </button>
+                                                </form>
+                                                <button class="btn btn-success btn-sm" onclick="abrirModalConfirmarCompra()">
+                                                    ✅ Confirmar Compra
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
                 <?php if ($total_productos > 0): ?>
                     <?php if ($id_proveedor > 0 && isset($result[0])): ?>
@@ -358,7 +504,6 @@ if (!empty($_SESSION['carrito_compras'])) {
                                         <th>Proveedor</th>
                                     <?php endif; ?>
                                     <th>Precio de compra</th>
-                                    <th>Unidad</th>
                                     <th>Fecha Compra</th>
                                     <th>Acciones</th>
                                 </tr>
@@ -366,10 +511,7 @@ if (!empty($_SESSION['carrito_compras'])) {
                             <tbody>
                                 <?php foreach($result as $row): ?>
                                     <?php 
-                                    // Verificar si el producto está en el carrito (se verifica la clave ahora)
                                     $en_carrito = isset($_SESSION['carrito_compras'][$row['id_producto_proveedor']]);
-                                    
-                                    // Obtener la información del carrito directamente por la clave
                                     $carrito_item = $en_carrito ? $_SESSION['carrito_compras'][$row['id_producto_proveedor']] : null;
                                     ?>
                                     <tr id="producto-<?php echo $row['id_producto_proveedor']; ?>">
@@ -384,7 +526,13 @@ if (!empty($_SESSION['carrito_compras'])) {
                                             <?php endif; ?>
                                         </td>
                                         <td><?php echo $row['nombre_categoria']; ?></td>
-                                        <td><?php echo $row['nombre_subcategoria'] ?: '—'; ?></td>
+                                        <td>
+                                            <?php if (!empty($row['nombre_subcategoria'])): ?>
+                                                <?php echo $row['nombre_subcategoria']; ?>
+                                            <?php else: ?>
+                                                <span style="color: #999; font-style: italic;">—</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <?php if ($id_proveedor == 0): ?>
                                             <td>
                                                 <?php echo $row['proveedor']; ?>
@@ -409,7 +557,7 @@ if (!empty($_SESSION['carrito_compras'])) {
                                                 <button class="btn-comprar" 
                                                         onclick="abrirModalCompra(<?php echo $row['id_producto_proveedor']; ?>, 
                                                                                  '<?php echo addslashes($row['nombre']); ?>', 
-                                                                                 'unidad_medida_no_usada', 
+                                                                                 '<?php echo $row['unidad_medida']; ?>', 
                                                                                  <?php echo $row['precio_compra']; ?>)">
                                                     🛒 Comprar
                                                 </button>
@@ -461,8 +609,9 @@ if (!empty($_SESSION['carrito_compras'])) {
                             <span class="currency-symbol">$</span>
                             <input type="number" id="precio_compra_total" name="precio_total" 
                                    step="0.01" class="form-control with-symbol" 
-                                   required min="0" placeholder="0.00"
-                                   oninput="calcularTotal()"> </div>
+                                   required min="0.01" placeholder="0.00"
+                                   oninput="calcularTotal()">
+                        </div>
                     </div>
 
                     <div class="form-row">
@@ -531,7 +680,31 @@ if (!empty($_SESSION['carrito_compras'])) {
                     <div id="resumen-compra">
                         <h4>Resumen de la Compra</h4>
                         <div id="detalles-resumen" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
-                            </div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Empaques</th>
+                                        <th>Unid/Emp</th>
+                                        <th>Total Unid</th>
+                                        <th>Precio Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($carrito_detalles as $item): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($item['nombre']); ?></td>
+                                        <td style="text-align: center;"><?php echo $item['cantidad_empaques']; ?></td>
+                                        <td style="text-align: center;"><?php echo $item['unidades_empaque']; ?></td>
+                                        <td style="text-align: center; font-weight: bold;"><?php echo $item['total_unidades']; ?></td>
+                                        <td style="text-align: right; font-weight: bold; color: #28a745;">
+                                            $<?php echo number_format($item['precio_total'], 2); ?>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                         
                         <div class="resumen-total" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                             <div class="form-row">
@@ -573,24 +746,14 @@ if (!empty($_SESSION['carrito_compras'])) {
         </div>
     </div>
 
-                
-
-            </div>
-        </div>
-    </div>
-
- <script>
+<script>
 let productoActual = null;
-let precioUnitarioActual = 0;
 
 function abrirModalCompra(idProducto, nombreProducto, unidadMedida, precioUnitario) {
     productoActual = idProducto;
-    // La variable precioUnitarioActual ya no se usa para cálculos, pero se mantiene la asignación por si el código futuro la requiere.
-    precioUnitarioActual = parseFloat(precioUnitario); 
     
     document.getElementById('carrito_id_producto').value = idProducto;
     document.getElementById('carrito_nombre_producto').value = nombreProducto;
-    // Se elimina la línea que llenaba 'precio_unitario'
     
     // Resetear campos
     document.getElementById('precio_compra_total').value = '';
@@ -604,13 +767,17 @@ function abrirModalCompra(idProducto, nombreProducto, unidadMedida, precioUnitar
     document.getElementById('precio_compra_total').focus();
 }
 
-
 function calcularTotal() {
     const precioCompraTotal = parseFloat(document.getElementById('precio_compra_total').value) || 0;
     const empaques = parseInt(document.getElementById('cantidad_empaques').value) || 0;
     const unidadesPorEmpaque = parseInt(document.getElementById('unidades_empaque').value) || 0;
     
     const totalUnidades = empaques * unidadesPorEmpaque;
+    
+    // Validar límites
+    if (totalUnidades > 200) {
+        alert('⚠️ Advertencia: El total de unidades (' + totalUnidades + ') supera el límite recomendado de 200 unidades por producto.');
+    }
     
     // Calcular precio por unidad
     const precioPorUnidad = totalUnidades > 0 ? precioCompraTotal / totalUnidades : 0;
@@ -621,8 +788,6 @@ function calcularTotal() {
     document.getElementById('cantidad_total').value = totalUnidades;
     document.getElementById('precio_compra_unidad').value = totalUnidades > 0 ? '$' + precioPorUnidad.toFixed(2) : '';
     document.getElementById('precio_venta_unidad').value = totalUnidades > 0 ? '$' + precioVentaPorUnidad.toFixed(2) : '';
-    
-
     
     // Estilo del campo total
     const totalInput = document.getElementById('cantidad_total');
@@ -638,20 +803,19 @@ function calcularTotal() {
 function cerrarModalCompra() {
     document.getElementById('modalCompra').style.display = 'none';
     productoActual = null;
-    precioUnitarioActual = 0;
 }
 
 function abrirModalConfirmarCompra() {
-    cargarDetallesCarrito();
+    // Validar que haya productos en el carrito
+    if (<?php echo $total_productos_carrito; ?> === 0) {
+        alert('El carrito está vacío');
+        return;
+    }
     document.getElementById('modalConfirmarCompra').style.display = 'block';
 }
 
 function cerrarModalConfirmarCompra() {
     document.getElementById('modalConfirmarCompra').style.display = 'none';
-}
-
-function cargarDetallesCarrito() {
-    
 }
 
 // Validaciones de fecha
@@ -680,10 +844,36 @@ window.onclick = function(event) {
     if (event.target === modalConfirmar) cerrarModalConfirmarCompra();
 }
 
+// Mostrar alertas de URL
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('success')) alert('✅ ' + urlParams.get('success'));
-    if (urlParams.has('error')) alert('❌ ' + urlParams.get('error'));
+    if (urlParams.has('success')) {
+        alert('✅ ' + decodeURIComponent(urlParams.get('success')));
+    }
+    if (urlParams.has('error')) {
+        alert('❌ ' + decodeURIComponent(urlParams.get('error')));
+    }
+});
+
+// Prevenir envío de formulario con datos inválidos
+document.getElementById('formAgregarCarrito')?.addEventListener('submit', function(e) {
+    const precioTotal = parseFloat(document.getElementById('precio_compra_total').value) || 0;
+    const totalUnidades = parseInt(document.getElementById('cantidad_total').value) || 0;
+    
+    if (precioTotal <= 0) {
+        e.preventDefault();
+        alert('El precio total debe ser mayor a 0');
+        document.getElementById('precio_compra_total').focus();
+        return false;
+    }
+    
+    if (totalUnidades <= 0) {
+        e.preventDefault();
+        alert('La cantidad total de unidades debe ser mayor a 0');
+        return false;
+    }
+    
+    return true;
 });
 </script>
 </body>

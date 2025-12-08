@@ -50,6 +50,7 @@ try {
                 p.id,
                 p.codigo,
                 p.nombre,
+                p.id_producto_proveedor, 
                 pr.nombre_comercial as marca,
                 cp.nombre_categoria,
                 s.nombre_subcategoria,
@@ -115,6 +116,22 @@ if (isset($_SESSION['error'])) {
     $error = $_SESSION['error'];
     unset($_SESSION['error']);
 }
+
+$productos_unicos = [];
+$codigos_vistos = [];
+
+foreach ($productos as $producto) {
+    $codigo = $producto['codigo'];
+    if (!in_array($codigo, $codigos_vistos)) {
+        $codigos_vistos[] = $codigo;
+        $productos_unicos[] = $producto;
+    } else {
+        // Opcional: registrar el duplicado para debugging
+        error_log("Producto duplicado encontrado: " . $codigo . " - " . $producto['nombre']);
+    }
+}
+
+$productos = $productos_unicos;
 
 ?>
 
@@ -259,7 +276,13 @@ if (isset($_SESSION['error'])) {
                                     <td><?= htmlspecialchars($producto['nombre']) ?></td>
                                     <td><?= htmlspecialchars($producto['marca']) ?></td>
                                     <td><?= htmlspecialchars($producto['nombre_categoria']) ?></td>
-                                    <td><?= htmlspecialchars($producto['nombre_subcategoria'] ?? '—') ?></td>
+                                    <td>
+                                        <?php if (!empty($producto['nombre_subcategoria'])): ?>
+                                            <?= htmlspecialchars($producto['nombre_subcategoria']) ?>
+                                        <?php else: ?>
+                                            <span style="color: #999; font-style: italic;">— Sin subcategoría —</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <span class="<?= $producto['cantidad'] < 20 ? 'cantidad-baja' : '' ?>">
                                             <?= $producto['cantidad'] ?> unidades
@@ -296,7 +319,7 @@ if (isset($_SESSION['error'])) {
                                                 <?php endif; ?>
                                             </span>
                                         <?php else: ?>
-                                            N/A
+                                            <span style="color: #999; font-style: italic;">— Sin fecha —</span>
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -409,7 +432,7 @@ if (isset($_SESSION['error'])) {
             notificaciones.forEach(notif => {
                 notif.style.display = 'none';
             });
-        }, 1000);
+        }, 10000);
     });
     </script>
 </body>

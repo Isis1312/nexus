@@ -14,33 +14,69 @@ if (!$sistemaPermisos->puedeVer('proveedores')) {
     exit();
 }
 
-$mensaje = '';
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras'])) {
-    $pdo->beginTransaction();
+// Verifica que la solicitud sea POST y que el carrito no esté vacío
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    
+    // Validar que haya productos en el carrito
+    if (empty($_SESSION['carrito_compras'])) {
+        $error = "El carrito de compras está vacío.";
+        header('Location: productos_proveedores.php?error=' . urlencode($error));
+        exit();
+    }
+    
+    // Validaciones básicas de fechas
+    if (empty($_POST['fecha_compra']) || empty($_POST['fecha_vencimiento_base'])) {
+        $error = "Faltan datos de fecha esenciales para la compra.";
+        header('Location: productos_proveedores.php?error=' . urlencode($error));
+        exit();
+    }
+    
+    $transactionActive = false;
     
     try {
+        // INICIO DE LA TRANSACCIÓN
+        if (!$pdo->inTransaction()) {
+            $pdo->beginTransaction();
+            $transactionActive = true;
+        }
+        
         $fecha_compra = $_POST['fecha_compra'];
         $fecha_vencimiento_base = $_POST['fecha_vencimiento_base'];
-        $usuario_id = $_SESSION['id_usuario'];
+        $usuario_id = $_SESSION['id_usuario'] ?? 1;
         
-        // Procesar cada producto del carrito
-        foreach ($_SESSION['carrito_compras'] as $item) {
+        // Validar fecha de compra no sea futura
+        $hoy = date('Y-m-d');
+        if ($fecha_compra > $hoy) {
+            throw new Exception("La fecha de compra no puede ser futura");
+        }
+        
+        // 1. Procesar cada producto del carrito
+        foreach ($_SESSION['carrito_compras'] as $id_producto => $item) {
             $id_producto_proveedor = $item['id_producto'];
             $cantidad_empaques = $item['cantidad_empaques'];
             $unidades_empaque = $item['unidades_empaque'];
             $precio_total = $item['precio_total'];
+            $total_unidades = $cantidad_empaques * $unidades_empaque;
             
-           
+            // Validar datos básicos
+            if ($cantidad_empaques <= 0 || $unidades_empaque <= 0 || $precio_total <= 0) {
+                throw new Exception("Datos inválidos para el producto ID: $id_producto_proveedor");
+            }
+            
+            // Cálculo del costo unitario
+            $precio_costo_unitario = $precio_total / $total_unidades;
+
+            // 2. Insertar en compras_proveedores (Registro principal de la compra)
             $stmt = $pdo->prepare("
                 INSERT INTO compras_proveedores 
-                (id_producto_proveedor, cantidad_empaques, unidades_empaque, fecha_compra, fecha_vencimiento, usuario_id) 
+                (id_producto_proveedor, cantidad_empaques, unidades_empaque, 
+                 fecha_compra, fecha_vencimiento, usuario_id) 
                 VALUES (?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $id_producto_proveedor,
-                // Se ha quitado $precio_total que intentaba insertarse en la columna inexistente 'precio_compra_total'
                 $cantidad_empaques,
                 $unidades_empaque,
                 $fecha_compra,
@@ -49,89 +85,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
             ]);
             
             $id_compra = $pdo->lastInsertId();
-            
-            // Calcular precio por unidad
-            $total_unidades = $cantidad_empaques * $unidades_empaque;
-            $precio_por_unidad = $precio_total / $total_unidades;
-            
-            // Actualizar producto proveedor con precio y fecha
-            $stmt = $pdo->prepare("
-                UPDATE productos_proveedor 
-                SET precio_compra = ?, fecha_compra = ?, actualizacion = NOW() 
-                WHERE id_producto_proveedor = ?
-            ");
-            $stmt->execute([$precio_por_unidad, $fecha_compra, $id_producto_proveedor]);
-            
-            
-            // ***************************************************************
-            // MODIFICACIÓN CLAVE: Quitar 'AND estado = 'active'' del SELECT
-            // ***************************************************************
-            $stmt = $pdo->prepare("
-                SELECT id, cantidad FROM productos 
-                WHERE id_producto_proveedor = ?
-            ");
-            $stmt->execute([$id_producto_proveedor]);
-            $producto_existente = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($producto_existente) {
-                // Actualizar producto existente: SUMAR STOCK y FORZAR estado a 'active'
-                $nueva_cantidad = $producto_existente['cantidad'] + $total_unidades;
-                $stmt = $pdo->prepare("
-                    UPDATE productos 
-                    SET cantidad = ?, precio_costo = ?, precio_venta = ROUND(? * 1.30, 2),
-                        fecha_vencimiento = ?, updated_at = NOW(), estado = 'active'
-                    WHERE id = ?
-                ");
-                $stmt->execute([
-                    $nueva_cantidad,
-                    $precio_por_unidad,
-                    $precio_por_unidad,
-                    $fecha_vencimiento_base,
-                    $producto_existente['id']
-                ]);
-            } else {
-                // Insertar nuevo producto en inventario
-                $stmt = $pdo->prepare("
-                    SELECT pp.*, p.nombre_comercial 
-                    FROM productos_proveedor pp
-                    JOIN proveedores p ON pp.id_proveedor = p.id_proveedor
-                    WHERE pp.id_producto_proveedor = ?
-                ");
-                $stmt->execute([$id_producto_proveedor]);
-                $producto_proveedor = $stmt->fetch(PDO::FETCH_ASSOC);
-                
-                if ($producto_proveedor) {
-                    $stmt = $pdo->prepare("
-                        INSERT INTO productos 
-                        (codigo, nombre, categoria_id, subcategoria_id, proveedor_id, 
-                         id_producto_proveedor, fecha_vencimiento, cantidad, precio_costo, 
-                         precio_venta, estado,
-                         created_at, updated_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW(), NOW())
-                    ");
-                    $stmt->execute([
-                        $producto_proveedor['codigo_producto'],
-                        $producto_proveedor['nombre'],
-                        $producto_proveedor['id_categoria'],
-                        $producto_proveedor['id_subcategoria'],
-                        $producto_proveedor['id_proveedor'],
-                        $id_producto_proveedor,
-                        $fecha_vencimiento_base,
-                        $total_unidades,
-                        $precio_por_unidad,
-                        round($precio_por_unidad * 1.30, 2),
-                    ]);
-                }
-            }
-            
-            // Registrar en historial (Aquí es donde se guarda el precio total, en la columna 'precio_total')
-            $stmt = $pdo->prepare("
+
+            // 3. Registrar en historial_compras (Detalle de la compra)
+            $stmt_historial = $pdo->prepare("
                 INSERT INTO historial_compras 
                 (id_compra, id_producto_proveedor, cantidad_empaques, unidades_empaque, 
                  total_unidades, precio_total, fecha_compra, fecha_vencimiento, usuario_id) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([
+            $stmt_historial->execute([
                 $id_compra,
                 $id_producto_proveedor,
                 $cantidad_empaques,
@@ -142,27 +104,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['carrito_compras']
                 $fecha_vencimiento_base,
                 $usuario_id
             ]);
+
+            // 4. LÓGICA CLAVE: Llamar al SP con 3 argumentos (INCLUYENDO FECHA VENCIMIENTO)
+            $stmt_inventario = $pdo->prepare("
+                CALL sp_insertar_producto_desde_proveedor(?, ?, ?)
+            ");
+            $stmt_inventario->execute([
+                $id_producto_proveedor,     // Arg 1: id_producto_proveedor
+                $total_unidades,            // Arg 2: p_cantidad_comprada
+                $fecha_vencimiento_base     // Arg 3: p_fecha_vencimiento (NUEVO)
+            ]);
+            
+            // Verificar si el procedimiento almacenado fue exitoso
+            if ($stmt_inventario->errorCode() !== '00000') {
+                $errorInfo = $stmt_inventario->errorInfo();
+                throw new Exception("Error en SP para producto ID $id_producto_proveedor: " . $errorInfo[2]);
+            }
         }
         
-        $pdo->commit();
+        // CONFIRMAR TRANSACCIÓN
+        if ($pdo->inTransaction()) {
+            $pdo->commit();
+            $transactionActive = false;
+        }
         
-        
-        // Vaciar carrito
+        // Vaciar carrito y notificar éxito
         $_SESSION['carrito_compras'] = [];
-        $_SESSION['mensaje'] = "✅ Compra procesada exitosamente. Todos los productos han sido agregados al inventario.";
+        $_SESSION['mensaje'] = "✅ Compra procesada exitosamente. El inventario ha sido actualizado.";
         
         header('Location: productos_proveedores.php?success=Compra+procesada+exitosamente');
         exit();
         
     } catch (Exception $e) {
-        $pdo->rollBack();
+        // MANEJO SEGURO DE TRANSACCIONES
+        if ($pdo->inTransaction()) {
+            try {
+                $pdo->rollBack();
+                $transactionActive = false;
+            } catch (Exception $rollbackException) {
+                error_log("Error al hacer rollback: " . $rollbackException->getMessage());
+            }
+        }
+        
         $error = "Error al procesar la compra: " . $e->getMessage();
+        error_log($error);
+        
+        // Opcional: mantener el carrito para que el usuario pueda corregir
+        // $_SESSION['carrito_compras'] = [];
+        
         header('Location: productos_proveedores.php?error=' . urlencode($error));
         exit();
     }
 } else {
-    header('Location: productos_proveedores.php?error=Carrito+vacio+o+solicitud+invalida');
+    // Si no hay datos de POST, redirigir
+    header('Location: productos_proveedores.php');
     exit();
-    }
-
+}
 ?>
