@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 08-12-2025 a las 16:48:16
+-- Tiempo de generación: 09-12-2025 a las 15:50:05
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -26,17 +26,20 @@ DELIMITER $$
 -- Procedimientos
 --
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_insertar_producto_desde_proveedor` (IN `p_id_producto_proveedor` INT, IN `p_cantidad_comprada` INT, IN `p_fecha_vencimiento` DATE)   BEGIN
-    DECLARE v_codigo VARCHAR(50);
+    DECLARE v_codigo_num VARCHAR(50);
+    DECLARE v_codigo_original VARCHAR(50);
     DECLARE v_nombre VARCHAR(255);
     DECLARE v_descripcion TEXT;
     DECLARE v_id_categoria INT;
-    DECLARE v_id_subcategoria INT;  -- NUEVA VARIABLE
+    DECLARE v_id_subcategoria INT;
     DECLARE v_id_proveedor INT;
     DECLARE v_precio_compra DECIMAL(10,2);
     DECLARE v_unidad_medida VARCHAR(20);
     DECLARE v_es_perecedero TINYINT(1);
     DECLARE v_existe_producto INT;
     DECLARE v_producto_id INT;
+    DECLARE v_stock_actual INT;
+    DECLARE v_mensaje_error VARCHAR(500);
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -55,50 +58,140 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_insertar_producto_desde_proveedo
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Producto del proveedor no existe';
     END IF;
 
-    -- Obtener datos del producto (INCLUYENDO SUBCATEGORÍA)
+    -- Obtener datos del producto
     SELECT 
-        codigo_producto, nombre, descripcion, id_categoria, id_subcategoria,
-        id_proveedor, precio_compra, unidad_medida, es_perecedero
+        codigo_producto,
+        nombre, 
+        descripcion, 
+        id_categoria, 
+        id_subcategoria,
+        id_proveedor, 
+        precio_compra, 
+        unidad_medida, 
+        es_perecedero
     INTO 
-        v_codigo, v_nombre, v_descripcion, v_id_categoria, v_id_subcategoria,
-        v_id_proveedor, v_precio_compra, v_unidad_medida, v_es_perecedero
+        v_codigo_original,
+        v_nombre, 
+        v_descripcion, 
+        v_id_categoria, 
+        v_id_subcategoria,
+        v_id_proveedor, 
+        v_precio_compra, 
+        v_unidad_medida, 
+        v_es_perecedero
     FROM productos_proveedor
     WHERE id_producto_proveedor = p_id_producto_proveedor;
 
-    -- Verificar si ya existe en productos
-    SELECT COUNT(*), COALESCE(id, 0) INTO v_existe_producto, v_producto_id
-    FROM productos
-    WHERE codigo = v_codigo;
+    -- Extraer solo números del código (versión compatible)
+    IF v_codigo_original LIKE 'PROD-%' THEN
+        -- Si empieza con PROD-, extraer solo la parte numérica
+        SET v_codigo_num = SUBSTRING(v_codigo_original, LOCATE('-', v_codigo_original) + 1);
+    ELSE
+        -- Intentar extraer números manualmente
+        SET v_codigo_num = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+            REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(v_codigo_original, 
+            'A', ''), 'B', ''), 'C', ''), 'D', ''), 'E', ''), 
+            'F', ''), 'G', ''), 'H', ''), 'I', ''), 'J', '');
+        SET v_codigo_num = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+            REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(v_codigo_num, 
+            'K', ''), 'L', ''), 'M', ''), 'N', ''), 'O', ''), 
+            'P', ''), 'Q', ''), 'R', ''), 'S', ''), 'T', '');
+        SET v_codigo_num = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+            REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(v_codigo_num, 
+            'U', ''), 'V', ''), 'W', ''), 'X', ''), 'Y', ''), 
+            'Z', ''), 'a', ''), 'b', ''), 'c', ''), 'd', '');
+        SET v_codigo_num = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+            REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(v_codigo_num, 
+            'e', ''), 'f', ''), 'g', ''), 'h', ''), 'i', ''), 
+            'j', ''), 'k', ''), 'l', ''), 'm', ''), 'n', '');
+        SET v_codigo_num = REPLACE(REPLACE(REPLACE(REPLACE(v_codigo_num, 
+            'o', ''), 'p', ''), 'q', ''), 'r', '');
+        SET v_codigo_num = REPLACE(REPLACE(REPLACE(REPLACE(v_codigo_num, 
+            's', ''), 't', ''), 'u', ''), 'v', '');
+        SET v_codigo_num = REPLACE(REPLACE(REPLACE(REPLACE(v_codigo_num, 
+            'w', ''), 'x', ''), 'y', ''), 'z', '');
+        SET v_codigo_num = REPLACE(REPLACE(REPLACE(v_codigo_num, 
+            '-', ''), '_', ''), ' ', '');
+    END IF;
+    
+    -- Si no hay números, usar el ID del producto
+    IF v_codigo_num = '' OR v_codigo_num IS NULL THEN
+        SET v_codigo_num = CAST(p_id_producto_proveedor AS CHAR);
+    END IF;
 
-    -- Actualizar o insertar
+    -- Verificar si ya existe el producto en inventario
+    SELECT COUNT(*), COALESCE(id, 0), COALESCE(cantidad, 0) 
+    INTO v_existe_producto, v_producto_id, v_stock_actual
+    FROM productos
+    WHERE codigo = v_codigo_num
+       OR id_producto_proveedor = p_id_producto_proveedor;
+
+    -- Validar límite de stock si el producto ya existe
     IF v_existe_producto > 0 THEN
+        -- Validar límite de stock (200 unidades máximo)
+        IF (v_stock_actual + p_cantidad_comprada) > 200 THEN
+            SET v_mensaje_error = CONCAT('No se puede exceder el límite de 200 unidades. Stock actual: ', 
+                                        v_stock_actual, ', Se intenta agregar: ', p_cantidad_comprada);
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_mensaje_error;
+        END IF;
+        
+        -- Actualizar producto existente
         UPDATE productos
         SET 
             cantidad = cantidad + p_cantidad_comprada,
             precio_costo = v_precio_compra,
             precio_venta = ROUND(v_precio_compra * 1.30, 2),
-            subcategoria_id = COALESCE(v_id_subcategoria, subcategoria_id),  -- Actualizar subcategoría si existe
+            subcategoria_id = COALESCE(v_id_subcategoria, subcategoria_id),
             fecha_vencimiento = CASE 
                 WHEN p_fecha_vencimiento IS NOT NULL THEN p_fecha_vencimiento
-                ELSE fecha_vencimiento  -- Mantener la existente si no se proporciona nueva
+                ELSE fecha_vencimiento
             END,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = v_producto_id;
+        
     ELSE
+        -- Para nuevo producto, validar límite inicial
+        IF p_cantidad_comprada > 200 THEN
+            SET v_mensaje_error = CONCAT('No se puede exceder el límite de 200 unidades para nuevo producto. Cantidad: ', p_cantidad_comprada);
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_mensaje_error;
+        END IF;
+        
+        -- Insertar nuevo producto
         INSERT INTO productos (
-            codigo, nombre, descripcion, categoria_id, subcategoria_id,
-            proveedor_id, id_producto_proveedor, precio_costo, precio_venta,
-            fecha_vencimiento, cantidad, created_at, updated_at
+            codigo, 
+            nombre, 
+            descripcion, 
+            categoria_id, 
+            subcategoria_id,
+            proveedor_id, 
+            id_producto_proveedor, 
+            precio_costo, 
+            precio_venta,
+            fecha_vencimiento, 
+            cantidad, 
+            created_at, 
+            updated_at, 
+            estado
         ) VALUES (
-            v_codigo, v_nombre, v_descripcion, v_id_categoria, v_id_subcategoria,
-            v_id_proveedor, p_id_producto_proveedor, v_precio_compra,
+            v_codigo_num, 
+            v_nombre, 
+            v_descripcion, 
+            v_id_categoria, 
+            v_id_subcategoria,
+            v_id_proveedor, 
+            p_id_producto_proveedor, 
+            v_precio_compra,
             ROUND(v_precio_compra * 1.30, 2),
             p_fecha_vencimiento,
-            p_cantidad_comprada, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            p_cantidad_comprada, 
+            CURRENT_TIMESTAMP, 
+            CURRENT_TIMESTAMP,
+            'active'
         );
     END IF;
 
     COMMIT;
+    
 END$$
 
 DELIMITER ;
@@ -224,7 +317,32 @@ INSERT INTO `compras_proveedores` (`id_compra`, `id_producto_proveedor`, `cantid
 (62, 1, 1, 1, '2025-12-08', '2026-01-07', 5, '2025-12-08 15:21:18', 0.00, 0.00, 0.00),
 (63, 5, 1, 1, '2025-12-08', '2026-01-31', 5, '2025-12-08 15:45:20', 0.00, 0.00, 0.00),
 (64, 6, 1, 1, '2025-12-08', '2026-01-31', 5, '2025-12-08 15:45:20', 0.00, 0.00, 0.00),
-(65, 1, 1, 1, '2025-12-08', '2026-01-31', 5, '2025-12-08 15:45:20', 0.00, 0.00, 0.00);
+(65, 1, 1, 1, '2025-12-08', '2026-01-31', 5, '2025-12-08 15:45:20', 0.00, 0.00, 0.00),
+(66, 5, 1, 1, '2025-12-09', '2026-02-28', 5, '2025-12-09 13:36:50', 0.00, 0.00, 0.00),
+(67, 1, 1, 1, '2025-12-09', '2026-02-28', 5, '2025-12-09 13:36:50', 0.00, 0.00, 0.00),
+(68, 4, 44, 2, '2025-12-09', '2026-02-28', 5, '2025-12-09 13:36:50', 0.00, 0.00, 0.00),
+(69, 6, 1, 1, '2025-12-09', '2026-02-28', 5, '2025-12-09 13:36:50', 0.00, 0.00, 0.00),
+(70, 5, 1, 1, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03', 0.00, 0.00, 0.00),
+(71, 4, 1, 1, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03', 0.00, 0.00, 0.00),
+(72, 8, 1, 1, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03', 0.00, 0.00, 0.00),
+(73, 6, 1, 1, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03', 0.00, 0.00, 0.00),
+(74, 1, 1, 1, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03', 0.00, 0.00, 0.00),
+(75, 2, 1, 1, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03', 0.00, 0.00, 0.00),
+(76, 7, 1, 1, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03', 0.00, 0.00, 0.00),
+(77, 5, 1, 1, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35', 0.00, 0.00, 0.00),
+(78, 1, 1, 1, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35', 0.00, 0.00, 0.00),
+(79, 4, 1, 1, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35', 0.00, 0.00, 0.00),
+(80, 6, 1, 1, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35', 0.00, 0.00, 0.00),
+(81, 8, 1, 1, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35', 0.00, 0.00, 0.00),
+(82, 2, 1, 1, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35', 0.00, 0.00, 0.00),
+(83, 7, 1, 1, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35', 0.00, 0.00, 0.00),
+(84, 5, 1, 1, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37', 0.00, 0.00, 0.00),
+(85, 1, 1, 1, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37', 0.00, 0.00, 0.00),
+(86, 6, 1, 1, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37', 0.00, 0.00, 0.00),
+(87, 4, 1, 1, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37', 0.00, 0.00, 0.00),
+(88, 8, 1, 1, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37', 0.00, 0.00, 0.00),
+(89, 2, 1, 1, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37', 0.00, 0.00, 0.00),
+(90, 7, 1, 1, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37', 0.00, 0.00, 0.00);
 
 -- --------------------------------------------------------
 
@@ -305,7 +423,32 @@ INSERT INTO `historial_compras` (`id_historial`, `id_compra`, `id_producto_prove
 (37, 62, 1, 1, 1, 1, 11.00, '2025-12-08', '2026-01-07', 5, '2025-12-08 15:21:18'),
 (38, 63, 5, 1, 1, 1, 14.00, '2025-12-08', '2026-01-31', 5, '2025-12-08 15:45:20'),
 (39, 64, 6, 1, 1, 1, 1.00, '2025-12-08', '2026-01-31', 5, '2025-12-08 15:45:20'),
-(40, 65, 1, 1, 1, 1, 1.00, '2025-12-08', '2026-01-31', 5, '2025-12-08 15:45:20');
+(40, 65, 1, 1, 1, 1, 1.00, '2025-12-08', '2026-01-31', 5, '2025-12-08 15:45:20'),
+(41, 66, 5, 1, 1, 1, 1.00, '2025-12-09', '2026-02-28', 5, '2025-12-09 13:36:50'),
+(42, 67, 1, 1, 1, 1, 1.00, '2025-12-09', '2026-02-28', 5, '2025-12-09 13:36:50'),
+(43, 68, 4, 44, 2, 88, 12.00, '2025-12-09', '2026-02-28', 5, '2025-12-09 13:36:50'),
+(44, 69, 6, 1, 1, 1, 1.00, '2025-12-09', '2026-02-28', 5, '2025-12-09 13:36:50'),
+(45, 70, 5, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(46, 71, 4, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(47, 72, 8, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(48, 73, 6, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(49, 74, 1, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(50, 75, 2, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(51, 76, 7, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(52, 77, 5, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(53, 78, 1, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(54, 79, 4, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(55, 80, 6, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(56, 81, 8, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(57, 82, 2, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(58, 83, 7, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(59, 84, 5, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(60, 85, 1, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(61, 86, 6, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(62, 87, 4, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(63, 88, 8, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(64, 89, 2, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(65, 90, 7, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37');
 
 -- --------------------------------------------------------
 
@@ -400,9 +543,13 @@ CREATE TABLE `productos` (
 --
 
 INSERT INTO `productos` (`id`, `codigo`, `nombre`, `descripcion`, `categoria_id`, `subcategoria_id`, `proveedor_id`, `id_producto_proveedor`, `fecha_vencimiento`, `cantidad`, `precio_costo`, `precio_venta`, `created_at`, `updated_at`, `estado`) VALUES
-(50, 'PROD-001', 'Crema de Leche', NULL, 1, 1, 1, 5, '2026-01-31', 1, 0.95, 1.24, '2025-12-08 15:45:20', '2025-12-08 15:45:20', 'active'),
-(51, 'PROD-006', 'natilla', NULL, 1, NULL, 1, 6, '2026-01-31', 1, 1.50, 1.95, '2025-12-08 15:45:20', '2025-12-08 15:45:20', 'active'),
-(52, 'PROD-002', 'Leche Entera Pasteurizada', NULL, 1, 1, 1, 1, '2026-01-31', 1, 2.00, 2.60, '2025-12-08 15:45:20', '2025-12-08 15:45:20', 'active');
+(64, '001', 'Crema de Leche', NULL, 1, 1, 1, 5, '2026-01-08', 2, 0.95, 1.24, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
+(65, '002', 'Leche Entera Pasteurizada', NULL, 1, 1, 1, 1, '2026-01-08', 2, 2.00, 2.60, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
+(66, '003', 'Mantequilla con Sal', NULL, 1, NULL, 1, 4, '2026-01-08', 2, 0.20, 0.26, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
+(67, '006', 'natilla', NULL, 1, NULL, 1, 6, '2026-01-08', 2, 1.50, 1.95, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
+(68, '008', 'Queso', NULL, 1, 2, 2, 8, '2026-01-08', 2, 0.00, 0.00, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
+(69, '004', 'Queso Blanco Fresco', NULL, 1, 2, 1, 2, '2026-01-08', 2, 2.50, 3.25, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
+(70, '007', 'queso manchego', NULL, 1, 2, 1, 7, '2026-01-08', 2, 5.00, 6.50, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active');
 
 -- --------------------------------------------------------
 
@@ -431,17 +578,17 @@ CREATE TABLE `productos_proveedor` (
 --
 
 INSERT INTO `productos_proveedor` (`id_producto_proveedor`, `codigo_producto`, `nombre`, `descripcion`, `id_categoria`, `id_subcategoria`, `id_proveedor`, `precio_compra`, `unidad_medida`, `fecha_compra`, `es_perecedero`, `registro`, `actualizacion`) VALUES
-(1, 'PROD-002', 'Leche Entera Pasteurizada', NULL, 1, 1, 1, 2.00, 'litro', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-04 15:37:56'),
-(2, 'PROD-004', 'Queso Blanco Fresco', NULL, 1, 2, 1, 2.50, 'kilo', NULL, 1, '2025-10-29 21:55:16', '2025-12-05 03:02:37'),
-(3, 'PROD-005', 'Yogurt Natural', NULL, 3, 3, 1, 2.00, 'litro', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-04 15:39:27'),
-(4, 'PROD-003', 'Mantequilla con Sal', NULL, 1, NULL, 1, 0.20, 'unidad', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-04 15:39:27'),
-(5, 'PROD-001', 'Crema de Leche', NULL, 1, 1, 1, 0.95, 'litro', '2025-12-03', 1, '2025-10-29 21:55:16', '2025-12-03 22:45:00'),
-(6, 'PROD-006', 'natilla', NULL, 1, NULL, 1, 1.50, 'paquete', NULL, 1, '2025-11-03 14:55:54', '2025-11-12 14:53:00'),
-(7, 'PROD-007', 'queso manchego', NULL, 1, 2, 1, 5.00, 'kilo', NULL, 1, '2025-11-03 15:02:03', '2025-12-05 03:02:47'),
-(8, 'PROD-008', 'Queso', NULL, 1, 2, 2, 0.00, 'kilo', '2025-12-04', 1, '2025-11-12 13:42:00', '2025-12-04 01:39:08'),
-(9, 'PROD-009', 'Choclate con Leche', NULL, 6, NULL, 3, 25.00, 'unidad', '2025-12-04', 1, '2025-11-12 20:27:03', '2025-12-04 18:05:39'),
-(10, 'PROD-010', 'Samba', NULL, 6, NULL, 3, 2.50, 'unidad', '2025-12-04', 1, '2025-11-12 21:36:37', '2025-12-04 15:37:56'),
-(11, 'PROD-011', 'Cocosette', NULL, 6, NULL, 3, 5.00, 'unidad', '2025-12-04', 1, '2025-11-12 21:37:50', '2025-12-04 15:37:56');
+(1, '002', 'Leche Entera Pasteurizada', NULL, 1, 1, 1, 2.00, 'litro', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
+(2, '004', 'Queso Blanco Fresco', NULL, 1, 2, 1, 2.50, 'kilo', NULL, 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
+(3, '005', 'Yogurt Natural', NULL, 3, 3, 1, 2.00, 'litro', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
+(4, '003', 'Mantequilla con Sal', NULL, 1, NULL, 1, 0.20, 'unidad', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
+(5, '001', 'Crema de Leche', NULL, 1, 1, 1, 0.95, 'litro', '2025-12-03', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
+(6, '006', 'natilla', NULL, 1, NULL, 1, 1.50, 'paquete', NULL, 1, '2025-11-03 14:55:54', '2025-12-09 14:11:30'),
+(7, '007', 'queso manchego', NULL, 1, 2, 1, 5.00, 'kilo', NULL, 1, '2025-11-03 15:02:03', '2025-12-09 14:11:30'),
+(8, '008', 'Queso', NULL, 1, 2, 2, 0.00, 'kilo', '2025-12-04', 1, '2025-11-12 13:42:00', '2025-12-09 14:11:30'),
+(9, '009', 'Choclate con Leche', NULL, 6, NULL, 3, 25.00, 'unidad', '2025-12-04', 1, '2025-11-12 20:27:03', '2025-12-09 14:11:30'),
+(10, '010', 'Samba', NULL, 6, NULL, 3, 2.50, 'unidad', '2025-12-04', 1, '2025-11-12 21:36:37', '2025-12-09 14:11:30'),
+(11, '011', 'Cocosette', NULL, 6, NULL, 3, 5.00, 'unidad', '2025-12-04', 1, '2025-11-12 21:37:50', '2025-12-09 14:11:30');
 
 -- --------------------------------------------------------
 
@@ -744,7 +891,7 @@ ALTER TABLE `clientes`
 -- AUTO_INCREMENT de la tabla `compras_proveedores`
 --
 ALTER TABLE `compras_proveedores`
-  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
+  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_venta`
@@ -756,7 +903,7 @@ ALTER TABLE `detalle_venta`
 -- AUTO_INCREMENT de la tabla `historial_compras`
 --
 ALTER TABLE `historial_compras`
-  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
 
 --
 -- AUTO_INCREMENT de la tabla `modulos`
@@ -768,7 +915,7 @@ ALTER TABLE `modulos`
 -- AUTO_INCREMENT de la tabla `productos`
 --
 ALTER TABLE `productos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
 
 --
 -- AUTO_INCREMENT de la tabla `productos_proveedor`
