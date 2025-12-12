@@ -117,8 +117,8 @@ if (isset($_SESSION['error'])) {
     unset($_SESSION['error']);
 }
 
-$productos_unicos = [];
-$codigos_vistos = [];
+/*$productos_unicos = [];
+ $codigos_vistos = [];
 
 foreach ($productos as $producto) {
     $codigo = $producto['codigo'];
@@ -126,13 +126,13 @@ foreach ($productos as $producto) {
         $codigos_vistos[] = $codigo;
         $productos_unicos[] = $producto;
     } else {
-        // Opcional: registrar el duplicado para debugging
-        error_log("Producto duplicado encontrado: " . $codigo . " - " . $producto['nombre']);
-    }
-}
+        echo "El stock está desactualizado.";
+       error_log("Producto duplicado encontrado: " . $codigo . " - " . $producto['nombre']);
+   }
+ }
 
-$productos = $productos_unicos;
-
+ $productos = $productos_unicos;
+*/
 ?>
 
 <!DOCTYPE html>
