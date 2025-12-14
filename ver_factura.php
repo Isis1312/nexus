@@ -94,7 +94,7 @@ try {
     <meta charset="UTF-8">
     <title>Factura <?= $factura['nro_factura'] ?></title>
     <link rel="stylesheet" href="css/ver_factura.css">
-<<<<<<< HEAD
+    
     <style>
         /* Ajuste de estilos para el diseño compacto y sin menú */
         body {
@@ -142,9 +142,7 @@ try {
         }
         
     </style>
-=======
 
->>>>>>> 42cfa9fa6ea8702a42e7e3ce11b1340f26b0fcd6
 </head>
 <body>
     
