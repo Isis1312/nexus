@@ -17,17 +17,21 @@ if (!$sistemaPermisos->puedeVer('proveedores')) {
 
 // Obtener historial de compras
 try {
+    // Consulta ajustada para trabajar con la nueva estructura, uniendo con el Maestro
     $sql = "
         SELECT 
             hc.*,
             pp.nombre as producto_nombre,
             pp.codigo_producto,
             p.nombre_comercial as proveedor_nombre,
+            -- Obtener datos del Maestro (compras_proveedores)
+            cm.fecha_compra,
             u.nombre as usuario_nombre
         FROM historial_compras hc
         JOIN productos_proveedor pp ON hc.id_producto_proveedor = pp.id_producto_proveedor
         JOIN proveedores p ON pp.id_proveedor = p.id_proveedor
-        JOIN usuario u ON hc.usuario_id = u.id_usuario
+        JOIN compras_proveedores cm ON hc.id_compra = cm.id_compra
+        JOIN usuario u ON cm.usuario_id = u.id_usuario -- Unir a usuario a través del Maestro
         ORDER BY hc.fecha_registro DESC
     ";
     $stmt = $pdo->query($sql);
@@ -59,15 +63,14 @@ try {
                     <p>Registro de todas las compras realizadas a proveedores</p>
                 </div>
 
-                <!-- Estadísticas -->
                 <div class="stats-container">
                     <div class="stat-card">
                         <span class="stat-number"><?php echo $total_compras; ?></span>
-                        <span class="stat-label">Total Compras</span>
+                        <span class="stat-label">Total Partidas Compradas</span>
                     </div>
                     <div class="stat-card">
                         <span class="stat-number">$<?php echo number_format($total_invertido, 2); ?></span>
-                        <span class="stat-label">Total Invertido</span>
+                        <span class="stat-label">Total Invertido (Detalle)</span>
                     </div>
                     <div class="stat-card">
                         <span class="stat-number"><?php echo $total_unidades; ?></span>
@@ -80,6 +83,7 @@ try {
                         <table class="table">
                             <thead>
                                 <tr>
+                                    <th># Compra (Maestro)</th>
                                     <th>Fecha Compra</th>
                                     <th>Producto</th>
                                     <th>Proveedor</th>
@@ -94,6 +98,11 @@ try {
                             <tbody>
                                 <?php foreach ($historial as $row): ?>
                                     <tr>
+                                        <td>
+                                            <span class="badge badge-info">
+                                                #<?php echo $row['id_compra']; ?>
+                                            </span>
+                                        </td>
                                         <td>
                                             <span class="badge badge-info">
                                                 <?php echo date('d/m/Y', strtotime($row['fecha_compra'])); ?>

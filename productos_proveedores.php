@@ -16,6 +16,13 @@ if (!$sistemaPermisos->puedeVer('proveedores')) {
     exit();
 }
 
+// --- CONFIGURACIÓN DE PÁGINA ---
+$titulo = "Gestión de Productos de Proveedores";
+$mensaje = $_SESSION['mensaje'] ?? '';
+$error = $_SESSION['error'] ?? '';
+unset($_SESSION['mensaje'], $_SESSION['error']);
+
+
 // --- FILTROS Y BÚSQUEDA ---
 $id_proveedor = isset($_GET['id_proveedor']) ? intval($_GET['id_proveedor']) : 0;
 $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
@@ -36,71 +43,90 @@ $params = [];
 $where_conditions = [];
 
 if ($id_proveedor > 0) {
-    $where_conditions[] = "pp.id_proveedor = ?";
-    $params[] = $id_proveedor;
-    $titulo = "Productos del Proveedor";
-} else {
-    $titulo = "Todos los Productos de Proveedores";
+    $where_conditions[] = "pp.id_proveedor = :id_proveedor";
+    $params[':id_proveedor'] = $id_proveedor;
+    
+    // Obtener el nombre del proveedor para el título (USO DE $pdo)
+    try {
+        $stmt_prov = $pdo->prepare("SELECT nombre_comercial FROM proveedores WHERE id_proveedor = :id");
+        $stmt_prov->execute([':id' => $id_proveedor]);
+        $prov_nombre = $stmt_prov->fetchColumn();
+        if ($prov_nombre) {
+            $titulo = "Productos de: " . htmlspecialchars($prov_nombre);
+        }
+    } catch (PDOException $e) {
+        $error .= " Error al obtener el nombre del proveedor: " . $e->getMessage();
+    }
 }
 
 if (!empty($busqueda)) {
-    $where_conditions[] = "(pp.nombre LIKE ? OR pp.codigo_producto LIKE ? OR pp.descripcion LIKE ?)";
-    $params[] = "%$busqueda%";
-    $params[] = "%$busqueda%";
-    $params[] = "%$busqueda%";
-    $titulo = "Búsqueda: \"$busqueda\"";
+    $where_conditions[] = "(pp.nombre LIKE :busqueda OR pp.codigo_producto LIKE :busqueda OR pp.descripcion LIKE :busqueda)";
+    $params[':busqueda'] = '%' . $busqueda . '%';
 }
 
-if (!empty($where_conditions)) {
-    $sql_base .= " WHERE " . implode(" AND ", $where_conditions);
+if (count($where_conditions) > 0) {
+    $sql_base .= " WHERE " . implode(' AND ', $where_conditions);
 }
 
-$sql_base .= " ORDER BY pp.nombre";
+$sql_base .= " ORDER BY p.nombre_comercial, pp.nombre";
 
-if (!empty($params)) {
-    $stmt = $pdo->prepare($sql_base);
+// --- CONSULTA DE DATOS ---
+try {
+    $stmt = $pdo->prepare($sql_base); // CORRECCIÓN: usar $pdo
     $stmt->execute($params);
     $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} else {
-    $stmt = $pdo->query($sql_base);
-    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $total_productos = count($result);
+} catch (PDOException $e) {
+    $error = "Error al obtener los productos: " . $e->getMessage();
+    $result = [];
+    $total_productos = 0;
 }
 
-// --- CONSULTA PARA ESTADÍSTICAS (Resuelve N/A) ---
-if ($id_proveedor > 0) {
-    $stats_sql = "
-        SELECT 
-            COALESCE(SUM(p.cantidad), 0) AS total_stock,
-            COALESCE(SUM(hc.precio_total), 0) AS total_invertido,
-            COALESCE(SUM(hc.total_unidades), 0) AS total_unidades_compradas
-        FROM productos_proveedor pp_stats
-        LEFT JOIN productos p ON pp_stats.id_producto_proveedor = p.id_producto_proveedor
-        LEFT JOIN historial_compras hc ON pp_stats.id_producto_proveedor = hc.id_producto_proveedor
-        WHERE pp_stats.id_proveedor = :id_proveedor
-    ";
-    $stats_stmt = $pdo->prepare($stats_sql);
-    $stats_stmt->execute(['id_proveedor' => $id_proveedor]);
-} else {
-    $stats_sql = "
-        SELECT 
-            COALESCE((SELECT SUM(cantidad) FROM productos WHERE estado = 'active'), 0) AS total_stock,
-            COALESCE((SELECT SUM(precio_total) FROM historial_compras), 0) AS total_invertido,
-            COALESCE((SELECT SUM(total_unidades) FROM historial_compras), 0) AS total_unidades_compradas
-    ";
-    $stats_stmt = $pdo->query($stats_sql);
+// --- ESTADÍSTICAS GLOBALES/PROVEEDOR ---
+// CORRECCIÓN: La función ahora recibe $pdo
+function getStats($pdo, $id_proveedor) {
+    $stats = [
+        'total_stock' => 0,
+        'total_invertido' => 0.0,
+        'total_unidades_compradas' => 0
+    ];
+    $params = [];
+    $where = '';
+    
+    if ($id_proveedor > 0) {
+        $where = "WHERE pp.id_proveedor = :id_proveedor";
+        $params[':id_proveedor'] = $id_proveedor;
+    }
+
+    // Stock total actual (usando p.cantidad en lugar de p.stock)
+    $sql_stock = "SELECT SUM(p.cantidad) FROM productos p 
+                  JOIN productos_proveedor pp ON p.id_producto_proveedor = pp.id_producto_proveedor $where";
+    $stmt_stock = $pdo->prepare($sql_stock); // CORRECCIÓN: usar $pdo
+    $stmt_stock->execute($params);
+    $stats['total_stock'] = (int)$stmt_stock->fetchColumn() ?: 0;
+    
+    // Total invertido histórico (total_precio_total de historial_compras)
+    $sql_invertido = "SELECT SUM(hc.precio_total) FROM historial_compras hc 
+                      JOIN productos_proveedor pp ON hc.id_producto_proveedor = pp.id_producto_proveedor $where";
+    $stmt_invertido = $pdo->prepare($sql_invertido); // CORRECCIÓN: usar $pdo
+    $stmt_invertido->execute($params);
+    $stats['total_invertido'] = (float)$stmt_invertido->fetchColumn() ?: 0.0;
+
+    // Total unidades compradas histórico (total_unidades de historial_compras)
+    $sql_unidades = "SELECT SUM(hc.total_unidades) FROM historial_compras hc
+                     JOIN productos_proveedor pp ON hc.id_producto_proveedor = pp.id_producto_proveedor $where";
+    $stmt_unidades = $pdo->prepare($sql_unidades); // CORRECCIÓN: usar $pdo
+    $stmt_unidades->execute($params);
+    $stats['total_unidades_compradas'] = (int)$stmt_unidades->fetchColumn() ?: 0;
+
+    return $stats;
 }
-$stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
 
-// Obtener proveedores para filtro
-$proveedores_stmt = $pdo->query("SELECT id_proveedor, nombre_comercial FROM proveedores WHERE estado = 'activo'");
-$proveedores = $proveedores_stmt->fetchAll(PDO::FETCH_ASSOC);
+$stats = getStats($pdo, $id_proveedor); // CORRECCIÓN: pasar $pdo
 
-$total_productos = count($result);
-
-// Mensajes de sesión
-$mensaje = $_SESSION['mensaje'] ?? '';
-$error = $_SESSION['error'] ?? '';
-unset($_SESSION['mensaje'], $_SESSION['error']);
+// --- LISTA DE PROVEEDORES (para el filtro) ---
+$stmt_proveedores = $pdo->query("SELECT id_proveedor, nombre_comercial FROM proveedores WHERE estado = 'activo'"); // CORRECCIÓN: usar $pdo
+$proveedores = $stmt_proveedores->fetchAll(PDO::FETCH_ASSOC);
 
 $fecha_hoy = date('Y-m-d');
 ?>
@@ -171,6 +197,21 @@ $fecha_hoy = date('Y-m-d');
             cursor: not-allowed;
             transform: none;
         }
+        
+        /* Nuevo estilo para la fila de totales en el pie de la tabla (TFOOT) */
+        .tabla-compras tfoot td {
+            font-size: 1.1em;
+            background-color: #f0f8ff; 
+            border-top: 3px solid #008B8B; 
+        }
+        /* Resaltar los valores totales de inversión y unidades */
+        .tabla-compras tfoot #total_precio_compra,
+        .tabla-compras tfoot #total_unidades_compra {
+            color: #008B8B;
+            font-weight: bold;
+            font-size: 1.2em;
+            background-color: #e0f7fa; /* Fondo más claro para los totales clave */
+        }
     </style>
 </head>
 <body>
@@ -205,11 +246,11 @@ $fecha_hoy = date('Y-m-d');
                     </div>
                     <div class="stat-card">
                         <span class="stat-number">$<?php echo number_format($stats['total_invertido'], 2, ',', '.'); ?></span>
-                        <span class="stat-label">Total en Compras</span>
+                        <span class="stat-label">Total Histórico en Compras</span> 
                     </div>
                     <div class="stat-card">
                         <span class="stat-number"><?php echo number_format($stats['total_unidades_compradas'], 0, ',', '.'); ?></span>
-                        <span class="stat-label">Unidades Compradas</span>
+                        <span class="stat-label">Unidades Históricas Compradas</span> 
                     </div>
                 </div>
 
@@ -347,7 +388,21 @@ $fecha_hoy = date('Y-m-d');
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
-                            </table>
+                                <tfoot>
+                                    <tr>
+                                        <?php $colspan_total_label = ($id_proveedor == 0) ? 4 : 3; ?>
+                                        <td colspan="<?= $colspan_total_label ?>" style="text-align: right;"><strong>TOTALES DE ESTA COMPRA:</strong></td>
+                                        
+                                        <td id="total_empaques_compra">0</td>
+                                        
+                                        <td id="total_unidades_compra" style="color: #008B8B; background-color: #e0f7fa;">0</td>
+                                        
+                                        <td id="total_precio_compra" style="color: #008B8B;">$0.00</td>
+                                        
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+                                </table>
                         </div>
                     </form>
                     
@@ -383,8 +438,13 @@ $fecha_hoy = date('Y-m-d');
             }
         });
         actualizarBotonProcesar();
+        calcularTotalCompra(); // Calcular totales iniciales
     });
 
+    /**
+     * Calcula los costos unitarios y el precio de venta sugerido para una fila.
+     * Marca la fila como seleccionada si tiene cantidades y precios válidos.
+     */
     function calcularFila(id) {
         const empaquesInput = document.getElementById(`empaques_${id}`);
         const unidadesInput = document.getElementById(`unidades_${id}`);
@@ -404,7 +464,7 @@ $fecha_hoy = date('Y-m-d');
 
         if (totalUnidades > 0 && precioTotal > 0) {
             costoUnitario = precioTotal / totalUnidades;
-            // Margen del 30% para el precio de venta
+            // Margen del 30% para el precio de venta sugerido
             precioVenta = costoUnitario * 1.30; 
         }
 
@@ -412,17 +472,11 @@ $fecha_hoy = date('Y-m-d');
         precioVentaSpan.textContent = `$${precioVenta.toFixed(2)}`;
         
         // Determinar si el producto es válido para la compra
-        const esValido = empaques > 0 && precioTotal > 0 && totalUnidades > 0 && totalUnidades <= 200;
+        const esValido = empaques > 0 && precioTotal > 0 && totalUnidades > 0;
         
-        // Manejar el límite de stock de lote (200 unidades)
-        if (totalUnidades > 200) {
-             costoUnitarioSpan.style.color = '#dc3545';
-             precioVentaSpan.style.color = '#dc3545';
-        } else {
-             costoUnitarioSpan.style.color = '#e74c3c';
-             precioVentaSpan.style.color = '#28a745';
-        }
-
+        // Manejo de colores de costo/venta (opcional, para visual)
+        costoUnitarioSpan.style.color = esValido ? '#e74c3c' : '#bdc3c7';
+        precioVentaSpan.style.color = esValido ? '#28a745' : '#bdc3c7';
 
         // Registrar el estado para el envío
         if (esValido) {
@@ -434,8 +488,41 @@ $fecha_hoy = date('Y-m-d');
         }
         
         actualizarBotonProcesar();
+        calcularTotalCompra(); // Llama a la función de totales para actualizar el TFOOT
     }
     
+    /**
+     * Calcula y actualiza los totales de la compra actual en el pie de la tabla.
+     */
+    function calcularTotalCompra() {
+        let totalPrecioCompra = 0;
+        let totalEmpaques = 0;
+        let totalUnidades = 0;
+
+        // Recorrer todos los inputs de precio_total y empaques
+        document.querySelectorAll('input[id^="precio_total_"]').forEach(inputPrecio => {
+            const id = parseInt(inputPrecio.id.replace('precio_total_', ''));
+            const empaquesInput = document.getElementById(`empaques_${id}`);
+            const unidadesXEmpaqueInput = document.getElementById(`unidades_${id}`);
+
+            const precioTotal = parseFloat(inputPrecio.value) || 0;
+            const empaques = parseInt(empaquesInput.value) || 0;
+            const unidadesXEmpaque = parseInt(unidadesXEmpaqueInput.value) || 1;
+
+            // Solo sumar si el producto está marcado como válido para la compra
+            if (productosListosParaComprar.has(id)) {
+                 totalPrecioCompra += precioTotal;
+                 totalEmpaques += empaques;
+                 totalUnidades += (empaques * unidadesXEmpaque);
+            }
+        });
+        
+        // Actualizar los elementos en el pie de la tabla (tfoot)
+        document.getElementById('total_empaques_compra').textContent = totalEmpaques.toString();
+        document.getElementById('total_unidades_compra').textContent = totalUnidades.toString(); 
+        document.getElementById('total_precio_compra').textContent = `$${totalPrecioCompra.toFixed(2)}`;
+    }
+
     function actualizarBotonProcesar() {
         const totalProductosValidos = productosListosParaComprar.size;
         

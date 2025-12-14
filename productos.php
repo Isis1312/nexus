@@ -1,5 +1,5 @@
 <?php
-// nexus/productos.php - Versión Consolidada y con Filtro Visual Final
+
 session_start();
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header('Location: login.php');
@@ -63,26 +63,7 @@ if (isset($_GET['eliminar'])) {
     exit();
 }
 
-// --- Lógica para Notificaciones (Tasa de Dólar) ---
-$dolar_subida = 0;
-try {
-    $stmt_tasas = $pdo->query("
-        SELECT tasa_usd 
-        FROM ventas 
-        WHERE tasa_usd > 0
-        ORDER BY fecha DESC, id_venta DESC 
-        LIMIT 2
-    ");
-    $tasas = $stmt_tasas->fetchAll(PDO::FETCH_COLUMN);
-
-    if (count($tasas) >= 2) {
-        $tasa_actual = floatval($tasas[0]);
-        $tasa_anterior = floatval($tasas[1]);
-        $dolar_subida = round($tasa_actual - $tasa_anterior, 4);
-    }
-} catch (PDOException $e) {
-    error_log("Error al obtener tasas: " . $e->getMessage());
-}
+// --- Lógica para Notificaciones (La lógica de tasa de dólar ha sido ELIMINADA) ---
 
 
 // Obtener productos del inventario (Consulta CONSOLIDADA por CÓDIGO)
@@ -150,11 +131,9 @@ foreach ($productos as &$producto) {
     }
 }
 
-// Contar notificaciones totales para el badge
+// Contar notificaciones totales para el badge (SOLO STOCK Y VENCIMIENTO)
 $total_notificaciones = count($productos_stock_bajo) + count($productos_proximos_vencer);
-if ($dolar_subida != 0) {
-    $total_notificaciones++;
-}
+
 
 // Mostrar mensajes de sesión
 if (isset($_SESSION['mensaje'])) {
@@ -277,9 +256,6 @@ $productos_vistos = [];
     .item-vencimiento {
         color: #ffc107;
     }
-    .item-dolar-subida {
-        color: <?= $dolar_subida > 0 ? '#28a745' : ($dolar_subida < 0 ? '#dc3545' : '#6c757d') ?>;
-    }
 </style>
 <body>
     <?php require_once 'menu.php'; ?>
@@ -302,20 +278,11 @@ $productos_vistos = [];
                         </div>
                         
                         <?php 
-                        // 1. Notificación de Dólar
-                        if ($dolar_subida != 0): ?>
-                            <div class="dropdown-item">
-                                <strong>Tasa USD:</strong>
-                                <?php if ($dolar_subida > 0): ?>
-                                    <span class="item-dolar-subida">▲ Subió $<?= number_format(abs($dolar_subida), 4) ?></span>
-                                <?php elseif ($dolar_subida < 0): ?>
-                                    <span class="item-dolar-subida">▼ Bajó $<?= number_format(abs($dolar_subida), 4) ?></span>
-                                <?php endif; ?>
-                            </div>
-                        <?php endif; ?>
+                        // La notificación de Tasa USD ha sido ELIMINADA de aquí.
+                        ?>
 
                         <?php 
-                        // 2. Notificación de Stock Bajo
+                        // 1. Notificación de Stock Bajo
                         if (!empty($productos_stock_bajo)): ?>
                             <div class="dropdown-header item-stock-bajo">
                                 ⚠ Stock Bajo (<?= count($productos_stock_bajo) ?> productos)
@@ -329,7 +296,7 @@ $productos_vistos = [];
                         <?php endif; ?>
 
                         <?php 
-                        // 3. Notificación de Vencimiento
+                        // 2. Notificación de Vencimiento
                         if (!empty($productos_proximos_vencer)): ?>
                             <div class="dropdown-header item-vencimiento">
                                 📅 Próximos a Vencer (<?= count($productos_proximos_vencer) ?> productos)
