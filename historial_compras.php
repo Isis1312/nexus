@@ -17,21 +17,21 @@ if (!$sistemaPermisos->puedeVer('proveedores')) {
 
 // Obtener historial de compras
 try {
-    // Consulta ajustada para trabajar con la nueva estructura, uniendo con el Maestro
+    // La consulta se centra en obtener el detalle (hc.*) y une para obtener nombres 
+    // (producto_nombre, proveedor_nombre, usuario_nombre).
     $sql = "
         SELECT 
             hc.*,
             pp.nombre as producto_nombre,
             pp.codigo_producto,
             p.nombre_comercial as proveedor_nombre,
-            -- Obtener datos del Maestro (compras_proveedores)
-            cm.fecha_compra,
             u.nombre as usuario_nombre
         FROM historial_compras hc
         JOIN productos_proveedor pp ON hc.id_producto_proveedor = pp.id_producto_proveedor
         JOIN proveedores p ON pp.id_proveedor = p.id_proveedor
-        JOIN compras_proveedores cm ON hc.id_compra = cm.id_compra
-        JOIN usuario u ON cm.usuario_id = u.id_usuario -- Unir a usuario a través del Maestro
+        -- En el nuevo esquema, usuario_id y fecha_compra se leen directamente desde historial_compras 
+        -- pero se sabe que deberían estar solo en compras_proveedores (el Maestro)
+        JOIN usuario u ON hc.usuario_id = u.id_usuario
         ORDER BY hc.fecha_registro DESC
     ";
     $stmt = $pdo->query($sql);
