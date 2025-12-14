@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 14-12-2025 a las 18:06:26
+-- Tiempo de generación: 14-12-2025 a las 21:50:17
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -349,7 +349,8 @@ INSERT INTO `compras_proveedores` (`id_compra`, `fecha_compra`, `usuario_id`, `f
 (99, '2025-12-14', 5, '2025-12-14 03:55:44', 0.10),
 (100, '2025-12-14', 5, '2025-12-14 04:07:58', 1.00),
 (101, '2025-12-14', 5, '2025-12-14 04:37:50', 1.00),
-(102, '2025-12-14', 5, '2025-12-14 17:04:25', 8.00);
+(102, '2025-12-14', 5, '2025-12-14 17:04:25', 8.00),
+(104, '2025-12-14', 5, '2025-12-14 20:28:53', 8.00);
 
 -- --------------------------------------------------------
 
@@ -370,6 +371,15 @@ CREATE TABLE `detalle_venta` (
   `subtotal_usd` decimal(10,2) NOT NULL,
   `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `detalle_venta`
+--
+
+INSERT INTO `detalle_venta` (`id_detalle`, `id_venta`, `id_producto`, `codigo_producto`, `nombre_producto`, `cantidad`, `precio_unitario_bs`, `precio_unitario_usd`, `subtotal_bs`, `subtotal_usd`, `fecha_registro`) VALUES
+(13, 11, 95, '001', 'Crema de Leche', 1.00, 0.00, 1.30, 0.00, 1.30, '2025-12-14 20:48:50'),
+(14, 11, 97, '002', 'Leche Entera Pasteurizada', 1.00, 0.00, 1.30, 0.00, 1.30, '2025-12-14 20:48:50'),
+(15, 11, 98, '003', 'Mantequilla con Sal', 2.00, 0.00, 1.30, 0.00, 2.60, '2025-12-14 20:48:50');
 
 -- --------------------------------------------------------
 
@@ -494,7 +504,15 @@ INSERT INTO `historial_compras` (`id_historial`, `id_compra`, `id_producto_prove
 (103, 102, 6, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25'),
 (104, 102, 8, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25'),
 (105, 102, 2, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25'),
-(106, 102, 7, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25');
+(106, 102, 7, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25'),
+(108, 104, 12, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
+(109, 104, 8, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
+(110, 104, 5, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
+(111, 104, 1, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
+(112, 104, 4, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
+(113, 104, 6, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
+(114, 104, 2, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
+(115, 104, 7, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53');
 
 -- --------------------------------------------------------
 
@@ -589,14 +607,14 @@ CREATE TABLE `productos` (
 --
 
 INSERT INTO `productos` (`id`, `codigo`, `nombre`, `descripcion`, `categoria_id`, `subcategoria_id`, `proveedor_id`, `id_producto_proveedor`, `fecha_vencimiento`, `cantidad`, `precio_costo`, `precio_venta`, `created_at`, `updated_at`, `estado`) VALUES
-(95, '001', 'Crema de Leche', '', 1, 1, 1, 5, '2026-01-13', 1, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 17:04:25', 'active'),
-(96, '005', 'jamon cerrano', '', 19, NULL, 2, 12, '2026-01-13', 1, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 17:04:25', 'active'),
-(97, '002', 'Leche Entera Pasteurizada', '', 1, 1, 1, 1, '2026-01-13', 1, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 17:04:25', 'active'),
-(98, '003', 'Mantequilla con Sal', '', 1, NULL, 1, 4, '2026-01-13', 1, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 17:04:25', 'active'),
-(99, '006', 'natilla', '', 1, NULL, 1, 6, '2026-01-13', 1, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 17:04:25', 'active'),
-(100, '008', 'Queso', '', 1, 2, 2, 8, '2026-01-13', 1, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 17:04:25', 'active'),
-(101, '004', 'Queso Blanco Fresco', '', 1, 2, 1, 2, '2026-01-13', 1, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 17:04:25', 'active'),
-(102, '007', 'queso manchego', '', 1, 2, 1, 7, '2026-01-13', 1, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 17:04:25', 'active');
+(95, '001', 'Crema de Leche', '', 1, 1, 1, 5, '2026-01-13', 1, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 20:48:50', 'active'),
+(96, '005', 'jamon cerrano', '', 19, NULL, 2, 12, '2026-01-13', 2, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 20:28:53', 'active'),
+(97, '002', 'Leche Entera Pasteurizada', '', 1, 1, 1, 1, '2026-01-13', 1, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 20:48:50', 'active'),
+(98, '003', 'Mantequilla con Sal', '', 1, NULL, 1, 4, '2026-01-13', 0, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 20:48:50', 'active'),
+(99, '006', 'natilla', '', 1, NULL, 1, 6, '2026-01-13', 2, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 20:28:53', 'active'),
+(100, '008', 'Queso', '', 1, 2, 2, 8, '2026-01-13', 2, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 20:28:53', 'active'),
+(101, '004', 'Queso Blanco Fresco', '', 1, 2, 1, 2, '2026-01-13', 2, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 20:28:53', 'active'),
+(102, '007', 'queso manchego', '', 1, 2, 1, 7, '2026-01-13', 2, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 20:28:53', 'active');
 
 -- --------------------------------------------------------
 
@@ -764,7 +782,8 @@ CREATE TABLE `ventas` (
 
 INSERT INTO `ventas` (`id_venta`, `cliente`, `fecha`, `metodo_pago`, `total_bs`, `id_cliente`, `total_usd`, `total_eur`, `tasa_usd`, `tasa_eur`, `nro_factura`) VALUES
 (9, 'Isis Sofia', '2025-12-05', 'Efectivo', 1349.12, 1, 5.36, NULL, 251.8900, 0.0000, 'FAC-004538'),
-(10, 'jose pernalete', '2025-12-14', 'Pago Móvil', 2112.16, 5, 7.80, NULL, 270.7900, 0.0000, 'FAC-004539');
+(10, 'jose pernalete', '2025-12-14', 'Pago Móvil', 2112.16, 5, 7.80, NULL, 270.7900, 0.0000, 'FAC-004539'),
+(11, 'Isis Sofia', '2025-12-14', 'Pago Móvil', 1408.11, 1, 5.20, NULL, 270.7900, 0.0000, 'FAC-004540');
 
 -- --------------------------------------------------------
 
@@ -925,19 +944,19 @@ ALTER TABLE `clientes`
 -- AUTO_INCREMENT de la tabla `compras_proveedores`
 --
 ALTER TABLE `compras_proveedores`
-  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
+  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=105;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_venta`
 --
 ALTER TABLE `detalle_venta`
-  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT de la tabla `historial_compras`
 --
 ALTER TABLE `historial_compras`
-  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=107;
+  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=116;
 
 --
 -- AUTO_INCREMENT de la tabla `modulos`
@@ -949,7 +968,7 @@ ALTER TABLE `modulos`
 -- AUTO_INCREMENT de la tabla `productos`
 --
 ALTER TABLE `productos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=104;
 
 --
 -- AUTO_INCREMENT de la tabla `productos_proveedor`
@@ -985,7 +1004,7 @@ ALTER TABLE `usuario`
 -- AUTO_INCREMENT de la tabla `ventas`
 --
 ALTER TABLE `ventas`
-  MODIFY `id_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- Restricciones para tablas volcadas
