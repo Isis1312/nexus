@@ -94,28 +94,7 @@ try {
     <meta charset="UTF-8">
     <title>Factura <?= $factura['nro_factura'] ?></title>
     <link rel="stylesheet" href="css/ver_factura.css">
-    <style>
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .metodo-pago-detalle {
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 0.9em;
-            font-weight: 600;
-            display: inline-block;
-            background-color: #f0f0f0;
-            color: #333;
-        }
-        .metodo-pago-detalle.efectivo {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .metodo-pago-detalle.pago-móvil, 
-        .metodo-pago-detalle.transferencia {
-            background-color: #d1ecf1;
-            color: #0c5460;
-        }
-    </style>
+
 </head>
 <body>
 
