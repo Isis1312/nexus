@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 09-12-2025 a las 15:50:05
+-- Tiempo de generación: 14-12-2025 a las 03:20:45
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -218,7 +218,8 @@ INSERT INTO `categoria_prod` (`id`, `nombre_categoria`, `estado`, `created_at`) 
 (2, 'Enlatados', 'inactive', '2025-11-12 15:01:55'),
 (5, 'Salsas', 'active', '2025-11-12 15:01:55'),
 (7, 'Snack', 'active', '2025-11-12 15:01:55'),
-(18, 'Bebidas', 'active', '2025-12-05 03:01:41');
+(18, 'Bebidas', 'active', '2025-12-05 03:01:41'),
+(19, 'embutidos', 'active', '2025-12-13 23:25:29');
 
 -- --------------------------------------------------------
 
@@ -342,7 +343,8 @@ INSERT INTO `compras_proveedores` (`id_compra`, `id_producto_proveedor`, `cantid
 (87, 4, 1, 1, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37', 0.00, 0.00, 0.00),
 (88, 8, 1, 1, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37', 0.00, 0.00, 0.00),
 (89, 2, 1, 1, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37', 0.00, 0.00, 0.00),
-(90, 7, 1, 1, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37', 0.00, 0.00, 0.00);
+(90, 7, 1, 1, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37', 0.00, 0.00, 0.00),
+(91, 5, 1, 1, '2025-12-13', '2026-01-12', 5, '2025-12-13 22:53:06', 1.00, 1.00, 1.00);
 
 -- --------------------------------------------------------
 
@@ -448,7 +450,12 @@ INSERT INTO `historial_compras` (`id_historial`, `id_compra`, `id_producto_prove
 (62, 87, 4, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
 (63, 88, 8, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
 (64, 89, 2, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
-(65, 90, 7, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37');
+(65, 90, 7, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(66, 91, 5, 1, 1, 1, 1.00, '2025-12-13', '2026-01-12', 5, '2025-12-13 22:53:06'),
+(67, 91, 1, 1, 1, 1, 1.00, '2025-12-13', '2026-01-12', 5, '2025-12-13 22:53:06'),
+(68, 91, 4, 1, 1, 1, 1.00, '2025-12-13', '2026-01-12', 5, '2025-12-13 22:53:06'),
+(69, 91, 6, 1, 1, 1, 1.00, '2025-12-13', '2026-01-12', 5, '2025-12-13 22:53:06'),
+(70, 91, 8, 1, 1, 1, 1.00, '2025-12-13', '2026-01-12', 5, '2025-12-13 22:53:06');
 
 -- --------------------------------------------------------
 
@@ -543,13 +550,12 @@ CREATE TABLE `productos` (
 --
 
 INSERT INTO `productos` (`id`, `codigo`, `nombre`, `descripcion`, `categoria_id`, `subcategoria_id`, `proveedor_id`, `id_producto_proveedor`, `fecha_vencimiento`, `cantidad`, `precio_costo`, `precio_venta`, `created_at`, `updated_at`, `estado`) VALUES
-(64, '001', 'Crema de Leche', NULL, 1, 1, 1, 5, '2026-01-08', 2, 0.95, 1.24, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
-(65, '002', 'Leche Entera Pasteurizada', NULL, 1, 1, 1, 1, '2026-01-08', 2, 2.00, 2.60, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
-(66, '003', 'Mantequilla con Sal', NULL, 1, NULL, 1, 4, '2026-01-08', 2, 0.20, 0.26, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
-(67, '006', 'natilla', NULL, 1, NULL, 1, 6, '2026-01-08', 2, 1.50, 1.95, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
-(68, '008', 'Queso', NULL, 1, 2, 2, 8, '2026-01-08', 2, 0.00, 0.00, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
-(69, '004', 'Queso Blanco Fresco', NULL, 1, 2, 1, 2, '2026-01-08', 2, 2.50, 3.25, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
-(70, '007', 'queso manchego', NULL, 1, 2, 1, 7, '2026-01-08', 2, 5.00, 6.50, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active');
+(64, '001', 'Crema de Leche', NULL, 1, 1, 1, 5, '2026-01-12', 3, 1.00, 1.30, '2025-12-09 14:39:35', '2025-12-13 22:53:06', 'active'),
+(65, '002', 'Leche Entera Pasteurizada', NULL, 1, 1, 1, 1, '2026-01-12', 3, 1.00, 1.30, '2025-12-09 14:39:35', '2025-12-13 22:53:06', 'active'),
+(66, '003', 'Mantequilla con Sal', NULL, 1, NULL, 1, 4, '2026-01-12', 3, 1.00, 1.30, '2025-12-09 14:39:35', '2025-12-13 22:53:06', 'active'),
+(67, '006', 'natilla', NULL, 1, NULL, 1, 6, '2026-01-12', 3, 1.00, 1.30, '2025-12-09 14:39:35', '2025-12-13 22:53:06', 'active'),
+(68, '008', 'Queso', NULL, 1, 2, 2, 8, '2026-01-12', 3, 1.00, 1.30, '2025-12-09 14:39:35', '2025-12-13 22:53:06', 'active'),
+(69, '004', 'Queso Blanco Fresco', NULL, 1, 2, 1, 2, '2026-01-08', 2, 2.50, 3.25, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active');
 
 -- --------------------------------------------------------
 
@@ -570,25 +576,27 @@ CREATE TABLE `productos_proveedor` (
   `fecha_compra` date DEFAULT NULL,
   `es_perecedero` tinyint(1) DEFAULT 0,
   `registro` timestamp NOT NULL DEFAULT current_timestamp(),
-  `actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `estado` enum('activo','inactivo') DEFAULT 'activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `productos_proveedor`
 --
 
-INSERT INTO `productos_proveedor` (`id_producto_proveedor`, `codigo_producto`, `nombre`, `descripcion`, `id_categoria`, `id_subcategoria`, `id_proveedor`, `precio_compra`, `unidad_medida`, `fecha_compra`, `es_perecedero`, `registro`, `actualizacion`) VALUES
-(1, '002', 'Leche Entera Pasteurizada', NULL, 1, 1, 1, 2.00, 'litro', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
-(2, '004', 'Queso Blanco Fresco', NULL, 1, 2, 1, 2.50, 'kilo', NULL, 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
-(3, '005', 'Yogurt Natural', NULL, 3, 3, 1, 2.00, 'litro', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
-(4, '003', 'Mantequilla con Sal', NULL, 1, NULL, 1, 0.20, 'unidad', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
-(5, '001', 'Crema de Leche', NULL, 1, 1, 1, 0.95, 'litro', '2025-12-03', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
-(6, '006', 'natilla', NULL, 1, NULL, 1, 1.50, 'paquete', NULL, 1, '2025-11-03 14:55:54', '2025-12-09 14:11:30'),
-(7, '007', 'queso manchego', NULL, 1, 2, 1, 5.00, 'kilo', NULL, 1, '2025-11-03 15:02:03', '2025-12-09 14:11:30'),
-(8, '008', 'Queso', NULL, 1, 2, 2, 0.00, 'kilo', '2025-12-04', 1, '2025-11-12 13:42:00', '2025-12-09 14:11:30'),
-(9, '009', 'Choclate con Leche', NULL, 6, NULL, 3, 25.00, 'unidad', '2025-12-04', 1, '2025-11-12 20:27:03', '2025-12-09 14:11:30'),
-(10, '010', 'Samba', NULL, 6, NULL, 3, 2.50, 'unidad', '2025-12-04', 1, '2025-11-12 21:36:37', '2025-12-09 14:11:30'),
-(11, '011', 'Cocosette', NULL, 6, NULL, 3, 5.00, 'unidad', '2025-12-04', 1, '2025-11-12 21:37:50', '2025-12-09 14:11:30');
+INSERT INTO `productos_proveedor` (`id_producto_proveedor`, `codigo_producto`, `nombre`, `descripcion`, `id_categoria`, `id_subcategoria`, `id_proveedor`, `precio_compra`, `unidad_medida`, `fecha_compra`, `es_perecedero`, `registro`, `actualizacion`, `estado`) VALUES
+(1, '002', 'Leche Entera Pasteurizada', NULL, 1, 1, 1, 2.00, 'litro', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30', 'activo'),
+(2, '004', 'Queso Blanco Fresco', NULL, 1, 2, 1, 2.50, 'kilo', NULL, 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30', 'activo'),
+(3, '005', 'Yogurt Natural', NULL, 3, 3, 1, 2.00, 'litro', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30', 'activo'),
+(4, '003', 'Mantequilla con Sal', NULL, 1, NULL, 1, 0.20, 'unidad', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30', 'activo'),
+(5, '001', 'Crema de Leche', NULL, 1, 1, 1, 0.95, 'litro', '2025-12-03', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30', 'activo'),
+(6, '006', 'natilla', NULL, 1, NULL, 1, 1.50, 'paquete', NULL, 1, '2025-11-03 14:55:54', '2025-12-09 14:11:30', 'activo'),
+(7, '007', 'queso manchego', NULL, 1, 2, 1, 5.00, 'kilo', NULL, 1, '2025-11-03 15:02:03', '2025-12-09 14:11:30', 'activo'),
+(8, '008', 'Queso', NULL, 1, 2, 2, 0.00, 'kilo', '2025-12-04', 1, '2025-11-12 13:42:00', '2025-12-09 14:11:30', 'activo'),
+(9, '009', 'Choclate con Leche', NULL, 6, NULL, 3, 25.00, 'unidad', '2025-12-04', 1, '2025-11-12 20:27:03', '2025-12-09 14:11:30', 'activo'),
+(10, '010', 'Samba', NULL, 6, NULL, 3, 2.50, 'unidad', '2025-12-04', 1, '2025-11-12 21:36:37', '2025-12-09 14:11:30', 'activo'),
+(11, '011', 'Cocosette', NULL, 6, NULL, 3, 5.00, 'unidad', '2025-12-04', 1, '2025-11-12 21:37:50', '2025-12-09 14:11:30', 'activo'),
+(12, '005', 'jamon cerrano', NULL, 19, NULL, 2, 0.00, 'paquete', NULL, 0, '2025-12-13 23:27:05', '2025-12-13 23:27:05', 'activo');
 
 -- --------------------------------------------------------
 
@@ -616,7 +624,8 @@ CREATE TABLE `proveedores` (
 INSERT INTO `proveedores` (`id_proveedor`, `nombres`, `nombre_comercial`, `rif`, `telefono`, `email`, `direccion`, `estado`, `registro`, `actualizacion`) VALUES
 (1, 'jose andres pernalete', 'lacteos vaquita.C.A', 'J-307970578', '04122201285', 'jose00pg2@gmail.com', 'avenida españa entre calle 6 y 7', 'activo', '2022-10-19 19:39:05', '2025-11-03 03:37:45'),
 (2, 'Juan Perez', 'Lacteos Los Andes', 'J-123456789', '1234-5678', 'contacto@economia.com', 'Av. Principal #123', 'activo', '2025-10-30 00:16:41', '2025-11-03 03:37:54'),
-(3, 'juan jose rodriguez rivero', 'savoy', 'J-307970566', '04122201285', 'pernaletegimenezjose@gmail.com', 'avenida españa entre calle 6 y 7', 'activo', '2025-11-03 03:11:38', '2025-11-03 03:37:19');
+(3, 'juan jose rodriguez rivero', 'savoy', 'J-307970566', '04122201285', 'pernaletegimenezjose@gmail.com', 'avenida españa entre calle 6 y 7', 'activo', '2025-11-03 03:11:38', '2025-11-03 03:37:19'),
+(4, 'jose', 'cocacola', 'J-296653252', '0121201220', 'jjjjj@gmail.com', 'fvvvf', 'inactivo', '2025-12-13 23:59:02', '2025-12-14 00:12:42');
 
 -- --------------------------------------------------------
 
@@ -879,7 +888,7 @@ ALTER TABLE `ventas`
 -- AUTO_INCREMENT de la tabla `categoria_prod`
 --
 ALTER TABLE `categoria_prod`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT de la tabla `clientes`
@@ -891,7 +900,7 @@ ALTER TABLE `clientes`
 -- AUTO_INCREMENT de la tabla `compras_proveedores`
 --
 ALTER TABLE `compras_proveedores`
-  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
+  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_venta`
@@ -903,7 +912,7 @@ ALTER TABLE `detalle_venta`
 -- AUTO_INCREMENT de la tabla `historial_compras`
 --
 ALTER TABLE `historial_compras`
-  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
+  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
 
 --
 -- AUTO_INCREMENT de la tabla `modulos`
@@ -921,13 +930,13 @@ ALTER TABLE `productos`
 -- AUTO_INCREMENT de la tabla `productos_proveedor`
 --
 ALTER TABLE `productos_proveedor`
-  MODIFY `id_producto_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id_producto_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT de la tabla `proveedores`
 --
 ALTER TABLE `proveedores`
-  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `roles`

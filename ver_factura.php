@@ -6,7 +6,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 require_once 'conexion.php';
-require_once 'menu.php';
+// require_once 'menu.php'; // COMENTADO: No se necesita el menú lateral
 
 // Inicializar sistema de permisos
 require_once 'permisos.php';
@@ -95,6 +95,22 @@ try {
     <title>Factura <?= $factura['nro_factura'] ?></title>
     <link rel="stylesheet" href="css/ver_factura.css">
     <style>
+        /* Ajuste de estilos para el diseño compacto y sin menú */
+        body {
+            /* Restablecer margen izquierdo */
+            margin-left: 0 !important; 
+        }
+        .main-content {
+            /* Asegurar que el contenido principal ocupe todo el ancho */
+            margin-left: 0 !important;
+            padding: 20px; 
+        }
+        .content-wrapper {
+            /* Reducir el tamaño del contenedor para hacerlo más parecido a una factura */
+            max-width: 650px; /* Ajuste para el nuevo CSS */
+        }
+
+        /* Estilos existentes */
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .metodo-pago-detalle {
@@ -115,17 +131,32 @@ try {
             background-color: #d1ecf1;
             color: #0c5460;
         }
+
+        /* Ocultar el menú completamente para el caso de no incluir menu.php */
+        @media screen {
+            /* Asegura que no haya padding o margin extra del menú */
+            .main-container {
+                display: block;
+            }
+        }
+        
     </style>
 </head>
 <body>
-
+    
 <main class="main-content">
     <div class="content-wrapper">
         <div class="factura-detalle">
             <div class="encabezado-factura">
+                <div class="info-empresa">
+                    <h2>NEXUS SYSTEM</h2>
+                    <p>Rif: J-XXXXXXXXX</p>
+                    <p>Av. Principal, Ciudad</p>
+                    <p>Tel: (0000) 000-0000</p>
+                </div>
                 
                 <div class="info-factura-detalle">
-                    <div class="numero-factura">#<?= $factura['nro_factura'] ?></div>
+                    <div class="numero-factura">FACTURA #<?= $factura['nro_factura'] ?></div>
                     <p><strong>Fecha:</strong> <?= date('d/m/Y', strtotime($factura['fecha'])) ?></p>
                     <p><strong>Método de Pago:</strong> 
                         <span class="metodo-pago-detalle <?= strtolower(str_replace(' ', '-', $factura['metodo_pago'])) ?>">
@@ -145,7 +176,7 @@ try {
                             <span class="info-cliente-value"><?= htmlspecialchars($factura['cliente']) ?></span>
                         </div>
                         <div class="info-cliente-item">
-                            <span class="info-cliente-label">Cédula:</span>
+                            <span class="info-cliente-label">Cédula/RIF:</span>
                             <span class="info-cliente-value"><?= htmlspecialchars($factura['cedula'] ?? 'N/A') ?></span>
                         </div>
                         <div class="info-cliente-item">
@@ -161,17 +192,15 @@ try {
             </div>
             
             <div class="seccion-detalles">
-                <h3>Detalles de la Factura</h3>
+                <h3>Detalles de la Compra</h3>
                 <div class="tabla-detalles-container">
                     <table class="tabla-detalles">
                         <thead>
                             <tr>
-                                <th>Código</th>
+                                <th>Cód.</th>
                                 <th>Producto</th>
-                                <th class="text-center">Cantidad</th>
-                                <th class="text-right">Precio Unitario ($)</th>
-                                <th class="text-right">Precio Unitario (Bs)</th>
-                                <th class="text-right">Subtotal ($)</th>
+                                <th class="text-center">Cant.</th>
+                                <th class="text-right">P. Unit. ($)</th>
                                 <th class="text-right">Subtotal (Bs)</th>
                             </tr>
                         </thead>
@@ -181,13 +210,7 @@ try {
                                 <td><?= htmlspecialchars($detalle['codigo_producto']) ?></td>
                                 <td><?= htmlspecialchars($detalle['nombre_producto']) ?></td>
                                 <td class="text-center"><?= number_format($detalle['cantidad'], 0, ',', '.') ?></td> 
-                                
                                 <td class="text-right">$ <?= number_format($detalle['precio_unitario_usd'], 2, ',', '.') ?></td>
-                                
-                                <td class="text-right">Bs. <?= number_format($detalle['precio_unitario_bs'], 2, ',', '.') ?></td>
-                                
-                                <td class="text-right">$ <?= number_format($detalle['subtotal_usd'], 2, ',', '.') ?></td>
-                                
                                 <td class="text-right">Bs. <?= number_format($detalle['subtotal_bs'], 2, ',', '.') ?></td>
                             </tr>
                             <?php endforeach; ?>
@@ -208,7 +231,7 @@ try {
                     </div>
                     <?php if ($factura['metodo_pago'] === 'Efectivo'): ?>
                     <div class="total-fila">
-                        <span class="total-label-detalle">IGTF (<?= $igtf_porcentaje ?>% Efectivo):</span>
+                        <span class="total-label-detalle">IGTF (3% Efectivo):</span>
                         <span class="total-value-detalle">Bs. <?= number_format($igtf_bs, 2, ',', '.') ?></span>
                     </div>
                     <?php endif; ?>
@@ -225,8 +248,8 @@ try {
             </div>
             
             <div class="acciones-factura no-print">
-                <button class="btn-imprimir"">
-                    Imprimir Factura
+                <button class="btn-imprimir" onclick="window.print()">
+                    🖨 Imprimir / Generar PDF
                 </button>
                 <a href="facturas.php" class="btn-volver-factura">
                     ↩ Volver a Facturas
@@ -234,15 +257,16 @@ try {
             </div>
             
             <div class="pie-factura">
-                <p><strong>Gracias por su compra</strong></p>
-                <p>Esta factura es un documento legal. Conserve una copia.</p>
+                <p><strong>¡Gracias por su compra!</strong></p>
+                <p>Documento no fiscal. Conserve una copia.</p>
                 <p>Sistema generado automáticamente - <?= date('d/m/Y H:i:s') ?></p>
             </div>
         </div>
     </div>
 </main>
-
-
-
+<script>
+    // La función window.print() abre el diálogo de impresión del navegador.
+    // Esto permite al usuario seleccionar "Guardar como PDF".
+</script>
 </body>
 </html>

@@ -53,14 +53,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Iniciar transacción
             $pdo->beginTransaction();
             
-            // Eliminación lógica
+            // 1. Desactivación del Proveedor (USA 'inactivo')
             $stmt = $pdo->prepare("UPDATE proveedores SET estado = 'inactivo' WHERE id_proveedor = ?");
             $stmt->execute([$id_proveedor]);
             
-            // También desactivar productos del proveedor
+            // 2. Desactivar productos en INVENTARIO (USA 'inactive')
             $stmt = $pdo->prepare("UPDATE productos SET estado = 'inactive' WHERE proveedor_id = ?");
             $stmt->execute([$id_proveedor]);
             
+            // 3. Desactivar productos en el catálogo de PROVEEDOR (USA 'inactivo')
+            // ESTA ES LA LÍNEA QUE REQUIRIÓ LA MODIFICACIÓN DE LA BASE DE DATOS
             $stmt = $pdo->prepare("UPDATE productos_proveedor SET estado = 'inactivo' WHERE id_proveedor = ?");
             $stmt->execute([$id_proveedor]);
             
@@ -96,12 +98,8 @@ require_once 'menu.php';
 <body>
     <?php require_once 'menu.php'; ?>
     
-    <main class="main-container">
-        <div class="content-wrapper">
-            <div class="page-header">
-                <h1 class="page-title">🗑️ Eliminar Proveedor</h1>
-                <p>Confirmar eliminación del proveedor</p>
-            </div>
+    <main class="main-content"> <div class="content-wrapper">
+
 
             <?php if (isset($error)): ?>
                 <div class="alert alert-error">
@@ -110,7 +108,6 @@ require_once 'menu.php';
             <?php endif; ?>
 
             <div class="confirm-container">
-                <!-- Información del proveedor -->
                 <div class="proveedor-info">
                     <h3>📋 Información del Proveedor</h3>
                     <p><strong>Nombre Comercial:</strong> <?= htmlspecialchars($proveedor['nombre_comercial']) ?></p>
@@ -123,13 +120,11 @@ require_once 'menu.php';
                     </p>
                 </div>
 
-                <!-- Advertencia general -->
                 <div class="warning-box">
                     <h4>🚨 Advertencia Importante</h4>
                     <p>Esta acción <strong>NO se puede deshacer</strong>. El proveedor será marcado como inactivo.</p>
                 </div>
 
-                <!-- Confirmación -->
                 <form method="POST" action="" id="formEliminar">
                     <div class="danger-box">
                         <h4>🔒 Confirmación Requerida</h4>
@@ -155,7 +150,6 @@ require_once 'menu.php';
 
     <script src="js/eliminar_proveedor.js"></script>
     
-    <!-- Script de debug inline por si hay problemas -->
     <script>
         // Debug adicional
         console.log('Página de eliminación cargada');

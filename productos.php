@@ -1,4 +1,5 @@
 <?php
+// nexus/productos.php - Versión Consolidada y con Filtro Visual Final
 session_start();
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header('Location: login.php');
@@ -21,8 +22,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_stock'])) 
         $nuevo_stock = intval($_POST['stock']);
         
         if ($nuevo_stock < 0 || $nuevo_stock > 200) {
-            $_SESSION['error'] = "El stock debe estar entre 0 y 200 unidades";
+            $_SESSION['error'] = "El stock debe estar entre 0 y 200";
         } else {
+            // Se actualiza el stock del registro con el ID utilizado (id_unico del grupo)
             $stmt = $pdo->prepare("UPDATE productos SET cantidad = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
             $stmt->execute([$nuevo_stock, $id_producto]);
             $_SESSION['mensaje'] = "Stock actualizado exitosamente";
@@ -34,35 +36,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar_stock'])) 
     exit();
 }
 
-// Procesar eliminación de producto 
+// Procesar eliminación de producto (LÓGICA CORREGIDA: Elimina por CÓDIGO)
 if (isset($_GET['eliminar'])) {
     $id = $_GET['eliminar'];
-    $stmt = $pdo->prepare("DELETE FROM productos WHERE id = ?");
-    $stmt->execute([$id]);
-    $_SESSION['mensaje'] = "Producto eliminado correctamente";
+    
+    try {
+        // 1. Obtener el código del producto a partir del id_unico (que es MIN(p.id))
+        $stmt_codigo = $pdo->prepare("SELECT codigo FROM productos WHERE id = ?");
+        $stmt_codigo->execute([$id]);
+        $codigo = $stmt_codigo->fetchColumn();
+        
+        if ($codigo) {
+            // 2. Eliminar TODOS los registros que comparten ese código
+            $stmt = $pdo->prepare("DELETE FROM productos WHERE codigo = ?");
+            $stmt->execute([$codigo]);
+            $_SESSION['mensaje'] = "✅ Producto (código $codigo) y todos sus lotes asociados eliminados correctamente";
+        } else {
+            $_SESSION['error'] = "❌ No se encontró el producto para eliminar (ID: $id)";
+        }
+        
+    } catch (PDOException $e) {
+        $_SESSION['error'] = "❌ Error al eliminar el producto: " . $e->getMessage();
+    }
+
     header('Location: productos.php');
     exit();
 }
 
-// Obtener productos del inventario 
+// --- Lógica para Notificaciones (Tasa de Dólar) ---
+$dolar_subida = 0;
 try {
-    $query = "SELECT 
-                p.id,
-                p.codigo,
-                p.nombre,
-                p.id_producto_proveedor, 
-                pr.nombre_comercial as marca,
-                cp.nombre_categoria,
-                s.nombre_subcategoria,
-                p.cantidad,
-                p.precio_costo,
-                p.precio_venta,
-                p.fecha_vencimiento
-              FROM productos p
-              LEFT JOIN proveedores pr ON p.proveedor_id = pr.id_proveedor
-              LEFT JOIN categoria_prod cp ON p.categoria_id = cp.id
-              LEFT JOIN subcategorias s ON p.subcategoria_id = s.id
-              ORDER BY p.cantidad ASC, p.nombre ASC";
+    $stmt_tasas = $pdo->query("
+        SELECT tasa_usd 
+        FROM ventas 
+        WHERE tasa_usd > 0
+        ORDER BY fecha DESC, id_venta DESC 
+        LIMIT 2
+    ");
+    $tasas = $stmt_tasas->fetchAll(PDO::FETCH_COLUMN);
+
+    if (count($tasas) >= 2) {
+        $tasa_actual = floatval($tasas[0]);
+        $tasa_anterior = floatval($tasas[1]);
+        $dolar_subida = round($tasa_actual - $tasa_anterior, 4);
+    }
+} catch (PDOException $e) {
+    error_log("Error al obtener tasas: " . $e->getMessage());
+}
+
+
+// Obtener productos del inventario (Consulta CONSOLIDADA por CÓDIGO)
+try {
+    $query = "
+        SELECT 
+            MIN(p.id) AS id_unico, 
+            p.codigo,
+            MAX(p.nombre) AS nombre,
+            SUM(p.cantidad) AS cantidad,
+            MAX(p.precio_venta) AS precio_venta,
+            MAX(p.fecha_vencimiento) AS fecha_vencimiento,
+            MAX(pr.nombre_comercial) AS marca,
+            MAX(cp.nombre_categoria) AS nombre_categoria,
+            MAX(s.nombre_subcategoria) AS nombre_subcategoria
+        FROM productos p
+        LEFT JOIN proveedores pr ON p.proveedor_id = pr.id_proveedor
+        LEFT JOIN categoria_prod cp ON p.categoria_id = cp.id
+        LEFT JOIN subcategorias s ON p.subcategoria_id = s.id
+        WHERE p.estado = 'active'
+        GROUP BY p.codigo -- Agrupar por el código para consolidar el stock
+        ORDER BY p.codigo ASC
+    "; 
 
     $stmt = $pdo->query($query);
     if ($stmt) {
@@ -82,7 +125,8 @@ if (!isset($productos) || $productos === false) {
     $productos = [];
 }
 
-// Calcular productos con alertas
+
+// Calcular productos con alertas (usa la data AGRUPADA)
 $productos_stock_bajo = [];
 $productos_proximos_vencer = [];
 
@@ -90,9 +134,9 @@ $fecha_actual = date('Y-m-d');
 $fecha_limite = date('Y-m-d', strtotime('+30 days'));
 
 foreach ($productos as &$producto) {
-    // Si no existe precio_venta en la BD, calcularlo
+    // Fallback de precio de venta si es nulo 
     if (!isset($producto['precio_venta']) || $producto['precio_venta'] === null) {
-        $producto['precio_venta'] = $producto['precio_costo'] * 1.42;
+        $producto['precio_venta'] = 0; 
     }
     
     // Stock bajo (menos de 20 unidades)
@@ -106,7 +150,13 @@ foreach ($productos as &$producto) {
     }
 }
 
-// Mostrar mensajes
+// Contar notificaciones totales para el badge
+$total_notificaciones = count($productos_stock_bajo) + count($productos_proximos_vencer);
+if ($dolar_subida != 0) {
+    $total_notificaciones++;
+}
+
+// Mostrar mensajes de sesión
 if (isset($_SESSION['mensaje'])) {
     $mensaje = $_SESSION['mensaje'];
     unset($_SESSION['mensaje']);
@@ -117,22 +167,9 @@ if (isset($_SESSION['error'])) {
     unset($_SESSION['error']);
 }
 
-/*$productos_unicos = [];
- $codigos_vistos = [];
+// NUEVO: Array para rastrear códigos ya mostrados
+$productos_vistos = [];
 
-foreach ($productos as $producto) {
-    $codigo = $producto['codigo'];
-    if (!in_array($codigo, $codigos_vistos)) {
-        $codigos_vistos[] = $codigo;
-        $productos_unicos[] = $producto;
-    } else {
-        echo "El stock está desactualizado.";
-       error_log("Producto duplicado encontrado: " . $codigo . " - " . $producto['nombre']);
-   }
- }
-
- $productos = $productos_unicos;
-*/
 ?>
 
 <!DOCTYPE html>
@@ -142,48 +179,10 @@ foreach ($productos as $producto) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario de Productos - NEXUS</title>
     <link rel="stylesheet" href="css/productos.css">
-</head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> </head>
 <style>
-     .notificacion-lateral {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #fff3cd;
-        border: 1px solid #ffeaa7;
-        border-radius: 5px;
-        padding: 15px;
-        max-width: 300px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        z-index: 1000;
-    }
-    .notificacion-stock-bajo {
-        background: #f8d7da;
-        border-color: #f5c6cb;
-    }
-    .notificacion-vencimiento {
-        background: #fff3cd;
-        border-color: #ffeaa7;
-    }
-    .notificacion-lateral h4 {
-        margin: 0 0 10px 0;
-        color: #856404;
-    }
-    .notificacion-stock-bajo h4 {
-        color: #721c24;
-    }
-    .producto-notificacion {
-        padding: 5px;
-        border-bottom: 1px solid #ffeaa7;
-    }
-    .notificacion-stock-bajo .producto-notificacion {
-        border-bottom-color: #f5c6cb;
-    }
-    .close-notificacion {
-        float: right;
-        cursor: pointer;
-        font-weight: bold;
-    }
-    .cantidad-baja {
+     /* Estilos para Notificaciones de Stock/Vencimiento */
+     .cantidad-baja {
         color: #dc3545;
         font-weight: bold;
     }
@@ -195,48 +194,164 @@ foreach ($productos as $producto) {
         color: #dc3545;
         font-weight: bold;
     }
+
+    /* --- Estilos para la Campana de Notificación --- */
+    .notification-container {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+      
+    }
+
+    .notification-bell {
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #008B8B; /* Color del sistema Nexus para el icono */
+        position: relative;
+        padding: 10px;
+        border-radius: 50%;
+        transition: background-color 0.2s;
+    }
+
+    .notification-bell:hover {
+        background-color: rgba(0, 139, 139, 0.1);
+    }
+
+    .notification-count {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background-color: #dc3545;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 0.7rem;
+        line-height: 1;
+        font-weight: bold;
+    }
+
+    .notification-dropdown {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 50px;
+        width: 300px;
+        background-color: white;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        overflow: hidden;
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+    }
+
+    .dropdown-header {
+        background-color: #f8f9fa;
+        padding: 10px;
+        font-weight: bold;
+        border-bottom: 1px solid #eee;
+    }
+    .dropdown-header.item-stock-bajo {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .dropdown-header.item-vencimiento {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .dropdown-item {
+        padding: 10px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: default;
+    }
+
+    .dropdown-item:last-child {
+        border-bottom: none;
+    }
+
+    .item-stock-bajo {
+        color: #dc3545;
+    }
+    .item-vencimiento {
+        color: #ffc107;
+    }
+    .item-dolar-subida {
+        color: <?= $dolar_subida > 0 ? '#28a745' : ($dolar_subida < 0 ? '#dc3545' : '#6c757d') ?>;
+    }
 </style>
 <body>
     <?php require_once 'menu.php'; ?>
     
     <main class="main-content">
         <div class="content-wrapper">
-            <!-- Header de la página -->
             <div class="page-header">
                 <h1 class="page-title">Inventario de Productos</h1>
-            </div>
 
-            <!-- Notificaciones laterales -->
-            <?php if (!empty($productos_stock_bajo)): ?>
-            <div class="notificacion-lateral notificacion-stock-bajo" id="notificacion-stock">
-                <span class="close-notificacion" onclick="cerrarNotificacion('notificacion-stock')">&times;</span>
-                <h4>⚠ Stock Bajo</h4>
-                <?php foreach($productos_stock_bajo as $producto): ?>
-                    <div class="producto-notificacion">
-                        <strong><?php echo htmlspecialchars($producto['codigo']); ?></strong><br>
-                        <?php echo htmlspecialchars($producto['nombre']); ?><br>
-                        Stock: <?php echo $producto['cantidad']; ?> unidades
+                <div class="notification-container">
+                    <div class="notification-bell" onclick="toggleDropdown()">
+                        <i class="fas fa-bell"></i> <?php if ($total_notificaciones > 0): ?>
+                            <span class="notification-count"><?= $total_notificaciones ?></span>
+                        <?php endif; ?>
                     </div>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
 
-            <?php if (!empty($productos_proximos_vencer)): ?>
-            <div class="notificacion-lateral notificacion-vencimiento" id="notificacion-vencimiento">
-                <span class="close-notificacion" onclick="cerrarNotificacion('notificacion-vencimiento')">&times;</span>
-                <h4>📅 Productos Próximos a Vencer</h4>
-                <?php foreach($productos_proximos_vencer as $producto): ?>
-                    <div class="producto-notificacion">
-                        <strong><?php echo htmlspecialchars($producto['codigo']); ?></strong><br>
-                        <?php echo htmlspecialchars($producto['nombre']); ?><br>
-                        Vence: <?php echo date('d/m/Y', strtotime($producto['fecha_vencimiento'])); ?>
+                    <div class="notification-dropdown" id="notificationDropdown">
+                        <div class="dropdown-header">
+                            Notificaciones Importantes (<?= $total_notificaciones ?>)
+                        </div>
+                        
+                        <?php 
+                        // 1. Notificación de Dólar
+                        if ($dolar_subida != 0): ?>
+                            <div class="dropdown-item">
+                                <strong>Tasa USD:</strong>
+                                <?php if ($dolar_subida > 0): ?>
+                                    <span class="item-dolar-subida">▲ Subió $<?= number_format(abs($dolar_subida), 4) ?></span>
+                                <?php elseif ($dolar_subida < 0): ?>
+                                    <span class="item-dolar-subida">▼ Bajó $<?= number_format(abs($dolar_subida), 4) ?></span>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php 
+                        // 2. Notificación de Stock Bajo
+                        if (!empty($productos_stock_bajo)): ?>
+                            <div class="dropdown-header item-stock-bajo">
+                                ⚠ Stock Bajo (<?= count($productos_stock_bajo) ?> productos)
+                            </div>
+                            <?php foreach($productos_stock_bajo as $producto): ?>
+                                <div class="dropdown-item">
+                                    <strong><?= htmlspecialchars($producto['codigo']) ?></strong> - <?= htmlspecialchars($producto['nombre']) ?><br>
+                                    Stock: <span class="item-stock-bajo"><?= $producto['cantidad'] ?> unidades</span>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+
+                        <?php 
+                        // 3. Notificación de Vencimiento
+                        if (!empty($productos_proximos_vencer)): ?>
+                            <div class="dropdown-header item-vencimiento">
+                                📅 Próximos a Vencer (<?= count($productos_proximos_vencer) ?> productos)
+                            </div>
+                            <?php foreach($productos_proximos_vencer as $producto): ?>
+                                <div class="dropdown-item">
+                                    <strong><?= htmlspecialchars($producto['codigo']) ?></strong> - <?= htmlspecialchars($producto['nombre']) ?><br>
+                                    Vence: <span class="item-vencimiento"><?= date('d/m/Y', strtotime($producto['fecha_vencimiento'])) ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+
+                        <?php if ($total_notificaciones == 0): ?>
+                             <div class="dropdown-item" style="text-align: center; color: #6c757d;">
+                                 No hay notificaciones pendientes.
+                             </div>
+                        <?php endif; ?>
                     </div>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
+                </div>
+                </div>
 
-            <!-- Mensajes de éxito/error -->
-          <?php if (isset($mensaje)): ?>
+            <?php if (isset($mensaje)): ?>
             <div class="alert-success">✅ <?= htmlspecialchars($mensaje) ?></div>
             <?php endif; ?>
             
@@ -244,7 +359,6 @@ foreach ($productos as $producto) {
                 <div class="alert alert-error">❌ <?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
 
-            <!-- Tabla de productos -->
             <div class="users-table">
                 <div class="table-header">
                     <h3>Lista de Productos (<?= count($productos) ?> en inventario)</h3>
@@ -271,6 +385,15 @@ foreach ($productos as $producto) {
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($productos as $producto): ?>
+                                    <?php 
+                                    $codigo = $producto['codigo']; 
+                                    
+                                    // FILTRO FINAL VISUAL: Si ya se mostró este código, salta la fila
+                                    if (isset($productos_vistos[$codigo])) {
+                                        continue;
+                                    }
+                                    $productos_vistos[$codigo] = true;
+                                    ?>
                                 <tr>
                                     <td><code><?= htmlspecialchars($producto['codigo']) ?></code></td>
                                     <td><?= htmlspecialchars($producto['nombre']) ?></td>
@@ -324,10 +447,10 @@ foreach ($productos as $producto) {
                                     </td>
                                     <td>
                                         <div class="acciones-container">
-                                            <button class="btn-action btn-editar" onclick="abrirModalStock(<?= $producto['id'] ?>, '<?= addslashes($producto['nombre']) ?>', <?= $producto['cantidad'] ?>)">
+                                            <button class="btn-action btn-editar" onclick="abrirModalStock(<?= $producto['id_unico'] ?>, '<?= addslashes($producto['nombre']) ?>', <?= $producto['cantidad'] ?>)">
                                                 ✎ Editar Stock
                                             </button>
-                                            <button class="btn-action btn-eliminar" onclick="confirmarEliminar(<?= $producto['id'] ?>)">
+                                            <button class="btn-action btn-eliminar" onclick="confirmarEliminar(<?= $producto['id_unico'] ?>)">
                                                 Eliminar
                                             </button>
                                         </div>
@@ -342,7 +465,6 @@ foreach ($productos as $producto) {
         </div>
     </main>
 
-    <!-- Modal Editar Stock -->
     <div id="modalStock" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -383,6 +505,16 @@ foreach ($productos as $producto) {
     </div>
 
     <script>
+    // Función para alternar el dropdown de la campana
+    function toggleDropdown() {
+        const dropdown = document.getElementById('notificationDropdown');
+        if (dropdown.style.display === 'block') {
+            dropdown.style.display = 'none';
+        } else {
+            dropdown.style.display = 'block';
+        }
+    }
+
     // Funciones para modal de stock
     function abrirModalStock(id, nombre, stock) {
         document.getElementById('edit_id').value = id;
@@ -405,35 +537,30 @@ foreach ($productos as $producto) {
         }
     });
 
-    // Cerrar notificaciones
-    function cerrarNotificacion(id) {
-        document.getElementById(id).style.display = 'none';
-    }
-
     // Confirmar eliminación
     function confirmarEliminar(id) {
-        if (confirm('¿Estás seguro de que deseas eliminar este producto del inventario?')) {
-            window.location.href = 'productos.php?eliminar=' + id;
+        // Alerta al usuario sobre la nueva lógica
+        if (confirm('¿Estás seguro de que deseas eliminar este producto (y todos sus lotes) del inventario?')) {
+            // Se envía el ID del registro "maestro" (MIN(p.id)) y la lógica en PHP se encarga de buscar el código y eliminar todos los lotes.
+            window.location.href = 'productos.php?eliminar=' + id; 
         }
     }
 
-    // Cerrar modal al hacer clic fuera
+    // Cerrar modal y dropdown al hacer clic fuera
     window.onclick = function(event) {
         const modal = document.getElementById('modalStock');
+        const bell = document.querySelector('.notification-bell');
+        const dropdown = document.getElementById('notificationDropdown');
+
         if (event.target === modal) {
             cerrarModalStock();
         }
+        
+        // Si el clic no es en la campana ni dentro del dropdown, cerrarlo
+        if (dropdown && dropdown.style.display === 'block' && event.target !== bell && !bell.contains(event.target) && !dropdown.contains(event.target)) {
+            dropdown.style.display = 'none';
+        }
     }
-
-    // Auto-cerrar notificaciones después de 10 segundos
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(() => {
-            const notificaciones = document.querySelectorAll('.notificacion-lateral');
-            notificaciones.forEach(notif => {
-                notif.style.display = 'none';
-            });
-        }, 10000);
-    });
     </script>
 </body>
 </html>

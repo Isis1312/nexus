@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $ultimo_producto = $pdo->query("SELECT codigo_producto FROM productos_proveedor ORDER BY id_producto_proveedor DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
-$nuevo_codigo = 'PROD-001';
+$nuevo_codigo = '001';
 if ($ultimo_producto && isset($ultimo_producto['codigo_producto'])) {
     $matches = [];
     if (preg_match('/PROD-(\d+)/', $ultimo_producto['codigo_producto'], $matches)) {
