@@ -60,8 +60,10 @@ if ($id_proveedor > 0) {
 }
 
 if (!empty($busqueda)) {
-    $where_conditions[] = "(pp.nombre LIKE :busqueda OR pp.codigo_producto LIKE :busqueda OR pp.descripcion LIKE :busqueda)";
-    $params[':busqueda'] = '%' . $busqueda . '%';
+    $where_conditions[] = "(pp.nombre LIKE :busqueda_nombre OR pp.codigo_producto LIKE :busqueda_codigo OR pp.descripcion LIKE :busqueda_descripcion)";
+    $params[':busqueda_nombre'] = '%' . $busqueda . '%';
+    $params[':busqueda_codigo'] = '%' . $busqueda . '%';
+    $params[':busqueda_descripcion'] = '%' . $busqueda . '%';
 }
 
 if (count($where_conditions) > 0) {
