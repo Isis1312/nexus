@@ -1,7 +1,5 @@
-
-
 :root{
-    --accent: #008B8B;      /* color principal acorde a la página */
+    --accent: #008B8B;      
     --accent-dark: #006666;
     --panel-bg: #ffffff;
     --muted: #334155;
@@ -14,7 +12,6 @@
     background: linear-gradient(135deg, #f8fdff 0%, #ffffff 100%);
 }
 
-/* Estilos para Reportes */
 .content-wrapper {
     padding: 20px;
     color: #2b3139;
@@ -24,7 +21,6 @@
     -moz-osx-font-smoothing:grayscale;
 }
 
-/* Header */
 .page-header {
     display: flex;
     justify-content: space-between;
@@ -39,7 +35,6 @@
     font-size: 2em;
 }
 
-/* Filtros */
 .filtros-container {
     margin-bottom: 30px;
 }
@@ -66,8 +61,8 @@
 
 .form-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 40px;
     align-items: end;
 }
 
@@ -111,9 +106,6 @@
     box-shadow: 0 0 10px rgba(0, 139, 139, 0.12);
 }
 
-
-
-/* Contenedor de Reporte */
 .reporte-container {
     background: var(--panel-bg);
     border-radius: 12px;
@@ -123,7 +115,6 @@
     margin-bottom: 30px;
 }
 
-/* Reglas internas del header */
 .reporte-header {
     display: flex;
     justify-content: space-between;
@@ -146,7 +137,6 @@
     font-weight: 600;
 }
 
-/* Estadísticas */
 .estadisticas-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -154,8 +144,6 @@
     margin-bottom: 30px;
 }
 
-
-/* Tablas */
 .tabla-container {
     margin-bottom: 30px;
     background: var(--panel-bg);
@@ -217,7 +205,6 @@
     border-top: 2px solid rgba(0, 139, 139, 0.08);
 }
 
-/* Métodos de Pago */
 .metodos-pago-container {
     margin-top: 30px;
 }
@@ -259,7 +246,6 @@
     font-weight: 600;
 }
 
-/* Estados vacíos */
 .empty-state {
     text-align: center;
     padding: 28px;
@@ -268,7 +254,6 @@
     font-size: 1.02em;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .form-row {
         grid-template-columns: 1fr;
@@ -334,6 +319,7 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 15px rgba(0, 139, 139, 0.3);
 }
+
 .volver-button {
     border: none;
     border-radius: 8px; 
@@ -347,8 +333,6 @@
      background: #008B8B; 
     color: white; 
 }
-
-
 
 .volver-button:hover  {
     background: #006969; 
