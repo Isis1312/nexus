@@ -5,7 +5,11 @@
     "euro_anterior": "317.83",
     "porcentaje_dolar": 0,
     "porcentaje_euro": 0,
+<<<<<<< HEAD
     "fecha_actualizacion": "2025-12-15 03:41:10",
+=======
+    "fecha_actualizacion": "2025-12-15 02:03:11",
+>>>>>>> 3fd2ab9127bb3bab9c09f3cb962108f961d88b3b
     "fuente": "BCV",
     "tendencia_dolar": "sube",
     "tendencia_euro": "sube"

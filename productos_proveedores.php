@@ -60,8 +60,10 @@ if ($id_proveedor > 0) {
 }
 
 if (!empty($busqueda)) {
-    $where_conditions[] = "(pp.nombre LIKE :busqueda OR pp.codigo_producto LIKE :busqueda OR pp.descripcion LIKE :busqueda)";
-    $params[':busqueda'] = '%' . $busqueda . '%';
+    $where_conditions[] = "(pp.nombre LIKE :busqueda_nombre OR pp.codigo_producto LIKE :busqueda_codigo OR pp.descripcion LIKE :busqueda_descripcion)";
+    $params[':busqueda_nombre'] = '%' . $busqueda . '%';
+    $params[':busqueda_codigo'] = '%' . $busqueda . '%';
+    $params[':busqueda_descripcion'] = '%' . $busqueda . '%';
 }
 
 if (count($where_conditions) > 0) {
@@ -260,7 +262,7 @@ $fecha_hoy = date('Y-m-d');
                             <label><strong> Buscar Producto:</strong></label>
                             <input type="text" name="busqueda" class="search-input" style="width: 250px;"
                                    value="<?php echo htmlspecialchars($busqueda); ?>" 
-                                   placeholder="Buscar por nombre, código o descripción...">
+                                   placeholder="Buscar por nombre">
                             
                             <?php if ($id_proveedor > 0): ?>
                                 <input type="hidden" name="id_proveedor" value="<?php echo $id_proveedor; ?>">
