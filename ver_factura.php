@@ -115,8 +115,11 @@ try {
         <div class="factura-detalle">
             <div class="encabezado-factura">
                 
-                <div class="info-factura-detalle">
+                <div class="numero-factura-contenedor">
                     <div class="numero-factura">FACTURA #<?= $factura['nro_factura'] ?></div>
+                </div>
+                
+                <div class="info-factura-detalle">
                     <p><strong>Fecha:</strong> <?= date('d/m/Y', strtotime($factura['fecha'])) ?></p>
                     <p><strong>Método de Pago:</strong> 
                         <span class="metodo-pago-detalle <?= strtolower(str_replace(' ', '-', $factura['metodo_pago'])) ?>">
@@ -197,12 +200,12 @@ try {
                     <?php endif; ?>
                     
                     <div class="total-fila total-final-detalle">
-                        <span class="total-label-detalle">TOTAL (Bs):</span>
-                        <span class="total-value-detalle">Bs. <?= number_format($factura['total_bs'], 2, ',', '.') ?></span>
-                    </div>
-                    <div class="total-fila total-final-detalle">
                         <span class="total-label-detalle">TOTAL (USD):</span>
                         <span class="total-value-detalle">$ <?= number_format($factura['total_usd'], 2, ',', '.') ?></span>
+                    </div>
+                    <div class="total-fila total-final-detalle">
+                        <span class="total-label-detalle">TOTAL (Bs):</span>
+                        <span class="total-value-detalle">Bs. <?= number_format($factura['total_bs'], 2, ',', '.') ?></span>
                     </div>
                 </div>
             </div>
@@ -214,12 +217,6 @@ try {
                 <a href="facturas.php" class="btn-volver-factura">
                     ↩ Volver a Facturas
                 </a>
-            </div>
-            
-            <div class="pie-factura">
-                <p><strong>¡Gracias por su compra!</strong></p>
-                <p>Documento no fiscal. Conserve una copia.</p>
-                <p>Sistema generado automáticamente - <?= date('d/m/Y H:i:s') ?></p>
             </div>
         </div>
     </div>

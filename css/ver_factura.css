@@ -43,15 +43,23 @@
     font-size: 0.9em; /* Nuevo: Menor fuente para info de empresa */
 }
 
+/* Nuevo contenedor para el número de factura (izquierda) */
+.numero-factura-contenedor {
+    text-align: left;
+    display: flex; 
+    align-items: center;
+}
+
 .info-factura-detalle {
     text-align: right;
+    flex-shrink: 0;
 }
 
 .numero-factura {
-    font-size: 1.5em; /* Reducción: De 2em a 1.5em */
+    font-size: 1.8em; /* Aumento para darle más prominencia */
     color: #d35400;
     font-weight: 800;
-    margin-bottom: 10px; /* Reducción: De 15px a 10px */
+    margin-bottom: 0; /* Ajustado para el nuevo layout */
     text-shadow: 0 0 10px rgba(211, 84, 0, 0.2);
 }
 
@@ -314,14 +322,14 @@
     margin: 4px 0; /* Ajuste: De 5px a 4px */
 }
 
-/* Estilos para impresión */
+/* Estilos para impresión (AJUSTADOS PARA COMPACTAR EL DOCUMENTO) */
 @media print {
     .no-print {
         display: none !important;
     }
     
     body {
-        font-size: 11pt; /* Fuente más formal/compacta */
+        font-size: 10pt; /* Fuente más formal/compacta */
         margin: 0;
         padding: 0;
     }
@@ -329,19 +337,19 @@
     .main-content {
         padding: 0;
         background: none;
-        margin-left: 0 !important; /* Asegurar que no haya margen del menú */
+        margin-left: 0 !important; 
         width: 100% !important;
         max-width: none !important;
     }
     
     .content-wrapper {
-        max-width: none !important; /* Permitir que ocupe todo el ancho de la página */
+        max-width: none !important; 
     }
     
     .factura-detalle {
         box-shadow: none;
         border: 1px solid #000;
-        padding: 20px;
+        padding: 15px; /* Reducción */
         margin: 0;
         border-radius: 0;
     }
@@ -349,9 +357,54 @@
     .acciones-factura {
         display: none;
     }
+
+    /* Reducir espacio entre bloques */
+    .encabezado-factura,
+    .datos-cliente-detalle,
+    .seccion-detalles,
+    .seccion-totales-detalle {
+        margin-bottom: 10px; /* Más compacto */
+    }
     
+    /* Datos del cliente: Ajuste Grid */
+    .datos-cliente-detalle {
+        padding: 10px; /* Reducción */
+    }
+    .info-cliente-grid {
+        grid-template-columns: 1fr 1fr; /* Forzar 2 columnas */
+        gap: 5px; /* Reducción */
+    }
+    .info-cliente-value,
+    .info-cliente-label {
+        font-size: 0.9em;
+    }
+
+    /* Tabla: Ajuste de padding de celdas */
+    .tabla-detalles th,
+    .tabla-detalles td {
+        padding: 5px 8px; /* Más compacto */
+    }
+    
+    /* Totales: Ajuste de tamaño y padding */
+    .totales-detalle-container {
+        padding: 10px 15px; /* Reducción */
+        max-width: 350px; /* Reducción */
+    }
+    
+    .total-fila {
+        margin-bottom: 5px; /* Reducción */
+        padding-bottom: 5px; /* Reducción */
+    }
+    .total-final-detalle .total-label-detalle,
+    .total-final-detalle .total-value-detalle {
+        font-size: 1.1em; /* Más pequeño */
+    }
+    
+    /* Pie de página */
     .pie-factura {
-        margin-top: 20px;
+        margin-top: 10px;
+        padding-top: 5px;
+        font-size: 0.8em;
     }
     
     /* Ocultar columnas innecesarias para impresión compacta */
@@ -394,4 +447,3 @@
         justify-content: center;
     }
 }
-
