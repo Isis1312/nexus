@@ -339,3 +339,13 @@
     transform: translateY(-1px); 
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
+
+.up {
+    color: var(--accent); /* Color principal para tendencia al alza (verde azulado) */
+    font-weight: 700;
+}
+
+.down {
+    color: #dc3545; /* Rojo para tendencia a la baja */
+    font-weight: 700;
+}

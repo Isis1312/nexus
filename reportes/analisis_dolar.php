@@ -5,10 +5,9 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     exit();
 }
 
-require_once '../conexion.php'; 
+require_once '../conexion.php';
 
-// RUTA CORREGIDA: Usa el path '../js/tasas/historial_tasas.json'
-function getHistoricalRates($filePath = '../js/tasas/historial_tasas.json', $days = 30) {
+function getHistoricalRates($filePath = '../js/historial_tasas.json', $days = 30) {
     $historical_data = [];
     if (file_exists($filePath)) {
         $content = file_get_contents($filePath);
@@ -34,21 +33,15 @@ function procesarTasas($data) {
     if (empty($data)) {
         return [
             'historial' => [], 
-            'variacion' => [ 
-                'inicio' => 0,
-                'final' => 0,
-                'promedio' => 0,
-                'total_abs' => 0,
-                'total_pct' => 0,
-            ], 
+            'variacion' => [ 'inicio' => 0, 'final' => 0, 'promedio' => 0, 'total_abs' => 0, 'total_pct' => 0 ], 
             'chart_data' => ['labels' => [], 'values' => []]
         ];
     }
 
     $historial = [];
     $sum_tasas = 0;
-    $tasa_inicio = floatval($data[0]['dolar']);
-    $tasa_final = floatval(end($data)['dolar']);
+    $tasa_inicio = floatval($data[0]['dolar']); 
+    $tasa_final = floatval(end($data)['dolar']); 
 
     $chart_labels = [];
     $chart_values = [];
@@ -60,7 +53,8 @@ function procesarTasas($data) {
         
         $variacion_abs = 0;
         $variacion_pct = 0;
-        $tendencia = 'Inicial';
+        $tendencia = 'Estable';
+        $clase_tasa = ''; 
 
         if ($i > 0) {
             $tasa_anterior = floatval($data[$i-1]['dolar']);
@@ -72,10 +66,10 @@ function procesarTasas($data) {
             
             if ($variacion_abs > 0) {
                 $tendencia = 'Sube';
+                $clase_tasa = 'up'; // Resaltado verde/accent
             } elseif ($variacion_abs < 0) {
                 $tendencia = 'Baja';
-            } else {
-                $tendencia = 'Estable';
+                $clase_tasa = 'down'; // Resaltado rojo
             }
         }
 
@@ -84,7 +78,8 @@ function procesarTasas($data) {
             'tasa' => $tasa,
             'variacion_abs' => $variacion_abs,
             'variacion_pct' => $variacion_pct,
-            'tendencia' => $tendencia
+            'tendencia' => $tendencia,
+            'clase_tasa' => $clase_tasa 
         ];
 
         $chart_labels[] = date('d/M', strtotime($fecha));
@@ -109,8 +104,7 @@ function procesarTasas($data) {
     ];
 }
 
-// RUTA CORREGIDA: Usa el path '../js/tasas/tasas_cache.json'
-function getCurrentRateFromCache($filePath = '../js/tasas/tasas_cache.json') {
+function getCurrentRateFromCache($filePath = '../js/tasas_cache.json') {
     $cache = [];
     if (file_exists($filePath)) {
         $content = file_get_contents($filePath);
@@ -124,98 +118,80 @@ function getCurrentRateFromCache($filePath = '../js/tasas/tasas_cache.json') {
     ];
 }
 
-// Se llama a las funciones con las rutas corregidas
-$historialSemanaRaw = getHistoricalRates('../js/tasas/historial_tasas.json', 7);
-$historialMesRaw = getHistoricalRates('../js/tasas/historial_tasas.json', 30);
-$tasasActuales = getCurrentRateFromCache('../js/tasas/tasas_cache.json');
+$historialSemanaRaw = getHistoricalRates('../js/historial_tasas.json', 7);
+$historialMesRaw = getHistoricalRates('../js/historial_tasas.json', 30);
+$tasasActuales = getCurrentRateFromCache('../js/tasas_cache.json');
 
-$datosSemana = procesarTasas($historialSemanaRaw);
 $datosMes = procesarTasas($historialMesRaw);
 
+
 $tasa_actual = $tasasActuales['dolar'];
-$variacion_hoy = $tasasActuales['porcentaje_dolar'];
+$variacion_hoy = $tasasActuales['porcentaje_dolar']; 
+$tasa_anterior = $tasasActuales['dolar_anterior'];
+
+
+$tasa_inicio_mes = $datosMes['variacion']['inicio'] ?? 0; 
 $variacion_total_mes = $datosMes['variacion']['total_abs'] ?? 0;
 $variacion_pct_mes = $datosMes['variacion']['total_pct'] ?? 0;
 
 $tasa_actual_formateada = number_format($tasa_actual, 2, ',', '.');
+$tasa_inicio_mes_formateada = number_format($tasa_inicio_mes, 2, ',', '.');
 
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte de Tasas de Cambio</title>
+    <title>Reporte de Análisis del Dólar</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="../css/reportes/general_reportes.css"> 
-    <style>
-        /* Estilos agregados para el botón de actualizar */
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-actualizar {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 1em;
-            transition: background-color 0.3s;
-        }
-        .btn-actualizar:hover { background-color: #0056b3; }
-        /* Estilos existentes */
-        .estadisticas-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; }
-        .estadistica-card { padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #fff; }
-        .estadistica-value { font-size: 2em; font-weight: bold; margin-top: 5px; }
-        .up { color: green; }
-        .down { color: red; }
-        .chart-container { width: 100%; height: 400px; margin-bottom: 30px; }
-        .current-rate-card { background-color: #f0f8ff; border: 1px solid #cceeff; }
-    </style>
+
 </head>
 <body>
 <main class="main-content">
     <div class="content-wrapper">
         <div class="page-header">
-            <h1 class="page-title">Reporte: Historial y Variación de la Tasa del Dólar (USD)</h1>
-            <a href="../inicio.php?accion=actualizar_tasas" class="btn-actualizar">
-                🔄 Actualizar Tasas
+            <h1 class="page-title">Historial y variación de la tasa cambiaria (USD)</h1>
+            
+            <a href="analisis_dolar.php?accion=actualizar_tasas" class="volver-button">
+                Actualizar reporte
+            </a>
+             <a href="../reportes.php" class="volver-button">
+             Volver
             </a>
         </div>
 
         <div class="reporte-container">
             <div class="reporte-header">
-                <h2>Tasa de Referencia Actual</h2>
-                <div class="periodo-info">
-                    <span>Actualizado al: <?= date('d/m/Y', strtotime($tasasActuales['fecha'])) ?></span>
-                </div>
+                <h2>Tasa actual y variación diaria</h2>
             </div>
             <div class="estadisticas-grid">
                 <div class="estadistica-card current-rate-card">
-                    <div class="estadistica-label">Tasa Dólar Actual</div>
+                    <div class="estadistica-label">Tasa dólar actual</div>
                     <div class="estadistica-value">Bs. <?= $tasa_actual_formateada ?></div>
                 </div>
                 <div class="estadistica-card <?= $variacion_hoy >= 0 ? 'up' : 'down' ?>">
-                    <div class="estadistica-label">Variación desde Tasa Anterior</div>
+                    <div class="estadistica-label">Variación Diaria (%)</div>
                     <div class="estadistica-value">
                         <?= $variacion_hoy >= 0 ? '↗' : '↘' ?> 
                         <?= number_format(abs($variacion_hoy), 2, ',', '.') ?>%
                     </div>
                 </div>
                 <div class="estadistica-card">
-                    <div class="estadistica-label">Tasa Anterior</div>
-                    <div class="estadistica-value">Bs. <?= number_format($tasasActuales['dolar_anterior'], 2, ',', '.') ?></div>
+                    <div class="estadistica-label">Tasa anterior </div>
+                    <div class="estadistica-value">Bs. <?= number_format($tasa_anterior, 2, ',', '.') ?></div>
                 </div>
             </div>
         </div>
         
         <div class="reporte-container">
             <div class="reporte-header">
-                <h2>Resumen de Variación (Últimos 30 Días)</h2>
+                <h2>Resumen de variación mensual </h2>
             </div>
             <div class="estadisticas-grid">
                 <div class="estadistica-card">
-                    <div class="estadistica-label">Tasa Promedio del Mes</div>
-                    <div class="estadistica-value">Bs. <?= number_format($datosMes['variacion']['promedio'] ?? 0, 2, ',', '.') ?></div>
+                    <div class="estadistica-label">Tasa de inicio del periodo</div>
+                    <div class="estadistica-value">Bs. <?= $tasa_inicio_mes_formateada ?></div>
                 </div>
                 <div class="estadistica-card <?= $variacion_total_mes >= 0 ? 'up' : 'down' ?>">
                     <div class="estadistica-label">Variación Total Absoluta</div>
@@ -225,7 +201,7 @@ $tasa_actual_formateada = number_format($tasa_actual, 2, ',', '.');
                     </div>
                 </div>
                 <div class="estadistica-card <?= $variacion_pct_mes >= 0 ? 'up' : 'down' ?>">
-                    <div class="estadistica-label">Variación Total Porcentual</div>
+                    <div class="estadistica-label">Variación total porcentual</div>
                     <div class="estadistica-value">
                         <?= $variacion_pct_mes >= 0 ? '↗' : '↘' ?> 
                         <?= ($variacion_pct_mes >= 0 ? '+' : '') . number_format($variacion_pct_mes, 2, ',', '.') ?> %
@@ -236,17 +212,17 @@ $tasa_actual_formateada = number_format($tasa_actual, 2, ',', '.');
 
         <div class="reporte-container">
             <div class="reporte-header">
-                <h2>Gráfica de Tendencia (Últimos 30 Días)</h2>
+                <h2>Gráfica de tendencia (Últimos 30 Días)</h2>
             </div>
-            <div class="chart-container">
+            <div class="chart-container" style="width: 100%; height: 400px;">
                 <canvas id="dolarChartMes"></canvas>
             </div>
-             
+            
         </div>
 
         <div class="reporte-container">
             <div class="reporte-header">
-                <h2>Historial Detallado de la Última Semana (7 Días)</h2>
+                <h2>Historial detallado de la semana </h2>
             </div>
             <div class="tabla-container">
                 <div class="table-responsive">
@@ -261,13 +237,16 @@ $tasa_actual_formateada = number_format($tasa_actual, 2, ',', '.');
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if(empty($datosSemana['historial'])): ?>
-                                <tr><td colspan="5" class="empty-state">No hay datos históricos disponibles para la semana.</td></tr>
+                            <?php 
+                            $datosSemana = procesarTasas($historialSemanaRaw);
+                            if(empty($datosSemana['historial'])): ?>
+                                <tr><td colspan="5">No hay datos históricos disponibles.</td></tr>
                             <?php else: 
-                                foreach($datosSemana['historial'] as $h): ?>
+                                $historial_reverso = array_reverse($datosSemana['historial']);
+                                foreach($historial_reverso as $h): ?>
                                 <tr>
-                                    <td><?= date('d/m/Y', strtotime($h['fecha'])) ?></td>
-                                    <td class="rate-value">Bs. <?= number_format($h['tasa'], 4, ',', '.') ?></td>
+                                    <td><?= date('d/m/Y', strtotime($h['fecha'])) ?></td> <td class="<?= $h['clase_tasa'] ?>"> Bs. <?= number_format($h['tasa'], 4, ',', '.') ?>
+                                    </td>
                                     <td class="<?= $h['variacion_abs'] > 0 ? 'up' : ($h['variacion_abs'] < 0 ? 'down' : '') ?>">
                                         <?= ($h['variacion_abs'] >= 0 ? '+' : '') . number_format($h['variacion_abs'], 4, ',', '.') ?>
                                     </td>
@@ -276,9 +255,9 @@ $tasa_actual_formateada = number_format($tasa_actual, 2, ',', '.');
                                     </td>
                                     <td>
                                         <?php 
-                                            if ($h['tendencia'] == 'Sube') echo '📈 Sube';
-                                            elseif ($h['tendencia'] == 'Baja') echo '📉 Baja';
-                                            else echo '➖ Estable';
+                                            if ($h['tendencia'] == 'Sube') echo '📈';
+                                            elseif ($h['tendencia'] == 'Baja') echo '📉';
+                                            else echo '➖';
                                         ?>
                                     </td>
                                 </tr>
@@ -304,12 +283,11 @@ $tasa_actual_formateada = number_format($tasa_actual, 2, ',', '.');
             const minRate = Math.min(...allValues);
             const maxRate = Math.max(...allValues);
             
+            // Ajuste automático del eje Y
             if (maxRate > 0) {
-                // Rango normal para datos variables
                 suggestedMin = minRate * 0.995;
                 suggestedMax = maxRate * 1.005;
             } else if (minRate === maxRate && minRate !== 0) {
-                 // Caso de línea plana (ej: todos 270.79)
                 suggestedMin = minRate * 0.999; 
                 suggestedMax = maxRate * 1.001;
             }
@@ -327,7 +305,7 @@ $tasa_actual_formateada = number_format($tasa_actual, 2, ',', '.');
                     borderColor: 'rgba(54, 162, 235, 1)',
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderWidth: 2,
-                    pointRadius: 5,
+                    pointRadius: 3,
                     fill: false,
                     tension: 0.2
                 }]
