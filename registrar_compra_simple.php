@@ -9,7 +9,7 @@ require_once 'conexion.php';
 require_once 'permisos.php';
 
 $error = '';
-$usuario_id = $_SESSION['id_usuario'] ?? 1;
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'registrar_compra') {
     
@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'regis
         // --- 1. CREAR REGISTRO EN compras_proveedores (Registro Maestro) ---
         $stmt_compra = $pdo->prepare("
             INSERT INTO compras_proveedores 
-            (id_producto_proveedor, cantidad_empaques, unidades_empaque, fecha_compra, fecha_vencimiento, usuario_id, precio_costo_unitario, precio_total, precio_compra_total) 
+            (id_producto_proveedor, cantidad_empaques, unidades_empaque, fecha_compra, fecha_vencimiento, precio_costo_unitario, precio_total, precio_compra_total) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt_compra->execute([
@@ -69,7 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'regis
             $unidades_empaque,
             $fecha_compra,
             $fecha_vencimiento,
-            $usuario_id,
             $precio_costo_unitario,
             $precio_total,
             $precio_total 
@@ -81,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'regis
         $stmt_historial = $pdo->prepare("
             INSERT INTO historial_compras 
             (id_compra, id_producto_proveedor, cantidad_empaques, unidades_empaque, 
-             total_unidades, precio_total, fecha_compra, fecha_vencimiento, usuario_id) 
+             total_unidades, precio_total, fecha_compra, fecha_vencimiento) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt_historial->execute([
@@ -92,8 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'regis
             $total_unidades,
             $precio_total,
             $fecha_compra,
-            $fecha_vencimiento,
-            $usuario_id
+            $fecha_vencimiento
         ]);
         
         // --- 3. LÓGICA DE INVENTARIO (Anti-duplicación por id_producto_proveedor) ---

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 15-12-2025 a las 03:59:36
+-- Tiempo de generación: 15-12-2025 a las 14:09:08
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -218,8 +218,7 @@ INSERT INTO `categoria_prod` (`id`, `nombre_categoria`, `estado`, `created_at`) 
 (2, 'Enlatados', 'inactive', '2025-11-12 15:01:55'),
 (5, 'Salsas', 'active', '2025-11-12 15:01:55'),
 (7, 'Snack', 'active', '2025-11-12 15:01:55'),
-(18, 'Bebidas', 'active', '2025-12-05 03:01:41'),
-(19, 'embutidos', 'active', '2025-12-13 23:25:29');
+(18, 'Bebidas', 'active', '2025-12-05 03:01:41');
 
 -- --------------------------------------------------------
 
@@ -241,7 +240,9 @@ CREATE TABLE `clientes` (
 
 INSERT INTO `clientes` (`id`, `nombre`, `cedula`, `telefono`, `direccion`) VALUES
 (1, 'Isis Sofia', 29604083, '04160588684', 'Av. libertador con calle 57'),
-(5, 'jose pernalete', 30797057, '04122201285', 'avenida españa entre calle 6 y 7');
+(5, 'jose pernalete', 30797057, '04122201285', 'avenida españa entre calle 6 y 7'),
+(11, 'Daviana', 1111111, '2147483647', 'su casa'),
+(12, 'marco', 888888, '04160588684', 'su casa');
 
 -- --------------------------------------------------------
 
@@ -336,22 +337,8 @@ INSERT INTO `compras_proveedores` (`id_compra`, `fecha_compra`, `usuario_id`, `f
 (88, '2025-12-09', 5, '2025-12-09 14:40:37', 0.00),
 (89, '2025-12-09', 5, '2025-12-09 14:40:37', 0.00),
 (90, '2025-12-09', 5, '2025-12-09 14:40:37', 0.00),
-(91, '2025-12-13', 5, '2025-12-13 22:53:06', 1.00),
-(92, '2025-12-14', 5, '2025-12-14 02:30:12', 1.00),
-(93, '2025-12-14', 5, '2025-12-14 02:31:51', 1.00),
-(94, '2025-12-14', 5, '2025-12-14 02:32:09', 1.00),
-(95, '2025-12-14', 5, '2025-12-14 02:32:15', 11.00),
-(96, '2025-12-14', 5, '2025-12-14 02:44:54', 1.00),
-(97, '2025-12-14', 5, '2025-12-14 02:53:18', 1.00),
-(98, '2025-12-14', 5, '2025-12-14 03:37:26', 20.00),
-(99, '2025-12-14', 5, '2025-12-14 03:55:44', 0.10),
-(100, '2025-12-14', 5, '2025-12-14 04:07:58', 1.00),
-(101, '2025-12-14', 5, '2025-12-14 04:37:50', 1.00),
-(102, '2025-12-14', 5, '2025-12-14 17:04:25', 8.00),
-(104, '2025-12-14', 5, '2025-12-14 20:28:53', 8.00),
-(200, '2025-12-14', 5, '2025-12-14 21:43:30', 8.00),
-(201, '2025-12-14', 5, '2025-12-14 21:53:07', 8.00),
-(500, '2025-12-14', 4, '2025-12-14 22:44:32', 500.00);
+(100, '2025-12-15', 4, '2025-12-15 13:06:08', 500.00),
+(101, '2025-12-15', 4, '2025-12-15 13:07:53', 500.00);
 
 -- --------------------------------------------------------
 
@@ -366,6 +353,7 @@ CREATE TABLE `detalle_venta` (
   `codigo_producto` varchar(50) DEFAULT NULL,
   `nombre_producto` varchar(120) DEFAULT NULL,
   `cantidad` decimal(10,2) NOT NULL,
+  `precio_unitario_bs` decimal(12,2) NOT NULL,
   `precio_unitario_usd` decimal(10,2) NOT NULL,
   `subtotal_bs` decimal(12,2) NOT NULL,
   `subtotal_usd` decimal(10,2) NOT NULL,
@@ -376,17 +364,9 @@ CREATE TABLE `detalle_venta` (
 -- Volcado de datos para la tabla `detalle_venta`
 --
 
-INSERT INTO `detalle_venta` (`id_detalle`, `id_venta`, `id_producto`, `codigo_producto`, `nombre_producto`, `cantidad`, `precio_unitario_usd`, `subtotal_bs`, `subtotal_usd`, `fecha_registro`) VALUES
-(13, 11, 95, '001', 'Crema de Leche', 1.00, 1.30, 0.00, 1.30, '2025-12-14 20:48:50'),
-(14, 11, 97, '002', 'Leche Entera Pasteurizada', 1.00, 1.30, 0.00, 1.30, '2025-12-14 20:48:50'),
-(15, 11, 98, '003', 'Mantequilla con Sal', 2.00, 1.30, 0.00, 2.60, '2025-12-14 20:48:50'),
-(500, 500, 95, '001', 'Crema de Leche', 2.00, 1.30, 0.00, 2.60, '2025-12-14 22:01:21'),
-(501, 500, 97, '002', 'Leche Entera Pasteurizada', 2.00, 0.12, 0.00, 0.24, '2025-12-14 22:01:21'),
-(502, 500, 98, '003', 'Mantequilla con Sal', 2.00, 1.30, 0.00, 2.60, '2025-12-14 22:01:21'),
-(503, 500, 101, '004', 'Queso Blanco Fresco', 2.00, 0.12, 0.00, 0.24, '2025-12-14 22:01:21'),
-(504, 501, 97, '002', 'Leche Entera Pasteurizada', 2.00, 0.12, 0.00, 0.24, '2025-12-14 22:02:30'),
-(505, 502, 101, '004', 'Queso Blanco Fresco', 6.00, 0.12, 0.00, 0.72, '2025-12-14 22:46:00'),
-(506, 503, 96, '005', 'jamon cerrano', 2.00, 3.25, 0.00, 6.50, '2025-12-15 01:04:13');
+INSERT INTO `detalle_venta` (`id_detalle`, `id_venta`, `id_producto`, `codigo_producto`, `nombre_producto`, `cantidad`, `precio_unitario_bs`, `precio_unitario_usd`, `subtotal_bs`, `subtotal_usd`, `fecha_registro`) VALUES
+(9, 11, 71, '002', 'Leche Entera Pasteurizada', 2.00, 0.00, 3.25, 0.00, 6.50, '2025-12-15 13:08:15'),
+(10, 12, 70, '007', 'queso manchego', 2.00, 0.00, 6.50, 0.00, 13.00, '2025-12-15 13:08:36');
 
 -- --------------------------------------------------------
 
@@ -402,7 +382,9 @@ CREATE TABLE `historial_compras` (
   `unidades_empaque` int(11) NOT NULL,
   `total_unidades` int(11) NOT NULL,
   `precio_total` decimal(10,2) NOT NULL,
+  `fecha_compra` date NOT NULL,
   `fecha_vencimiento` date NOT NULL,
+  `usuario_id` int(11) NOT NULL,
   `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -410,133 +392,69 @@ CREATE TABLE `historial_compras` (
 -- Volcado de datos para la tabla `historial_compras`
 --
 
-INSERT INTO `historial_compras` (`id_historial`, `id_compra`, `id_producto_proveedor`, `cantidad_empaques`, `unidades_empaque`, `total_unidades`, `precio_total`, `fecha_vencimiento`, `fecha_registro`) VALUES
-(1, 15, 9, 11, 10, 110, 250.00, '2026-01-03', '2025-12-03 23:18:59'),
-(2, 16, 11, 6, 10, 60, 520.00, '2026-01-03', '2025-12-03 23:18:59'),
-(7, 23, 8, 2, 10, 20, 100.00, '2026-01-08', '2025-12-04 01:25:44'),
-(8, 29, 8, 1, 10, 10, 50.00, '2026-01-03', '2025-12-04 01:36:40'),
-(9, 30, 8, 1, 100, 100, 4.00, '2026-06-04', '2025-12-04 01:38:08'),
-(10, 31, 8, 25, 100, 2500, 10.00, '2026-01-03', '2025-12-04 01:39:08'),
-(11, 32, 9, 5, 40, 200, 100.00, '2026-04-30', '2025-12-04 03:48:16'),
-(12, 33, 11, 5, 40, 200, 80.00, '2026-04-30', '2025-12-04 03:48:16'),
-(13, 38, 10, 10, 20, 200, 600.00, '2026-07-29', '2025-12-04 06:26:35'),
-(14, 39, 9, 8, 15, 120, 500.00, '2026-07-29', '2025-12-04 06:26:35'),
-(15, 40, 11, 20, 10, 200, 500.00, '2026-07-29', '2025-12-04 06:26:35'),
-(16, 41, 1, 10, 10, 100, 600.00, '2026-05-29', '2025-12-04 15:29:27'),
-(17, 42, 9, 10, 50, 500, 200.00, '2025-12-25', '2025-12-04 15:37:56'),
-(18, 43, 11, 10, 10, 100, 500.00, '2025-12-25', '2025-12-04 15:37:56'),
-(19, 44, 1, 10, 20, 200, 400.00, '2025-12-25', '2025-12-04 15:37:56'),
-(20, 45, 10, 10, 20, 200, 500.00, '2025-12-25', '2025-12-04 15:37:56'),
-(21, 46, 4, 10, 10, 100, 20.00, '2026-01-03', '2025-12-04 15:39:27'),
-(22, 47, 9, 10, 20, 200, 200.00, '2026-01-03', '2025-12-04 15:39:27'),
-(23, 48, 3, 5, 10, 50, 100.00, '2026-01-03', '2025-12-04 15:39:27'),
-(24, 49, 9, 20, 10, 200, 500.00, '2025-12-31', '2025-12-04 17:59:29'),
-(25, 50, 9, 1, 2, 2, 50.00, '2025-12-26', '2025-12-04 18:05:39'),
-(26, 51, 5, 1, 1, 1, 1.00, '2026-01-07', '2025-12-08 14:54:03'),
-(28, 53, 5, 1, 1, 1, 1.00, '2026-01-07', '2025-12-08 15:03:12'),
-(29, 54, 1, 1, 1, 1, 1.00, '2026-01-07', '2025-12-08 15:03:12'),
-(30, 55, 6, 1, 1, 1, 1.00, '2026-01-07', '2025-12-08 15:06:03'),
-(31, 56, 8, 1, 1, 1, 1.00, '2026-01-07', '2025-12-08 15:06:03'),
-(32, 57, 7, 1, 1, 1, 1.00, '2026-01-07', '2025-12-08 15:06:03'),
-(33, 58, 5, 1, 1, 1, 1.00, '2026-01-07', '2025-12-08 15:21:18'),
-(34, 59, 4, 1, 1, 1, 1.00, '2026-01-07', '2025-12-08 15:21:18'),
-(35, 60, 6, 1, 1, 1, 1.00, '2026-01-07', '2025-12-08 15:21:18'),
-(36, 61, 2, 1, 1, 1, 1.00, '2026-01-07', '2025-12-08 15:21:18'),
-(37, 62, 1, 1, 1, 1, 11.00, '2026-01-07', '2025-12-08 15:21:18'),
-(38, 63, 5, 1, 1, 1, 14.00, '2026-01-31', '2025-12-08 15:45:20'),
-(39, 64, 6, 1, 1, 1, 1.00, '2026-01-31', '2025-12-08 15:45:20'),
-(40, 65, 1, 1, 1, 1, 1.00, '2026-01-31', '2025-12-08 15:45:20'),
-(41, 66, 5, 1, 1, 1, 1.00, '2026-02-28', '2025-12-09 13:36:50'),
-(42, 67, 1, 1, 1, 1, 1.00, '2026-02-28', '2025-12-09 13:36:50'),
-(43, 68, 4, 44, 2, 88, 12.00, '2026-02-28', '2025-12-09 13:36:50'),
-(44, 69, 6, 1, 1, 1, 1.00, '2026-02-28', '2025-12-09 13:36:50'),
-(45, 70, 5, 1, 1, 1, 1.00, '2026-04-08', '2025-12-09 14:18:03'),
-(46, 71, 4, 1, 1, 1, 1.00, '2026-04-08', '2025-12-09 14:18:03'),
-(47, 72, 8, 1, 1, 1, 1.00, '2026-04-08', '2025-12-09 14:18:03'),
-(48, 73, 6, 1, 1, 1, 1.00, '2026-04-08', '2025-12-09 14:18:03'),
-(49, 74, 1, 1, 1, 1, 1.00, '2026-04-08', '2025-12-09 14:18:03'),
-(50, 75, 2, 1, 1, 1, 1.00, '2026-04-08', '2025-12-09 14:18:03'),
-(51, 76, 7, 1, 1, 1, 1.00, '2026-04-08', '2025-12-09 14:18:03'),
-(52, 77, 5, 1, 1, 1, 1.00, '2026-02-08', '2025-12-09 14:39:35'),
-(53, 78, 1, 1, 1, 1, 1.00, '2026-02-08', '2025-12-09 14:39:35'),
-(54, 79, 4, 1, 1, 1, 1.00, '2026-02-08', '2025-12-09 14:39:35'),
-(55, 80, 6, 1, 1, 1, 1.00, '2026-02-08', '2025-12-09 14:39:35'),
-(56, 81, 8, 1, 1, 1, 1.00, '2026-02-08', '2025-12-09 14:39:35'),
-(57, 82, 2, 1, 1, 1, 1.00, '2026-02-08', '2025-12-09 14:39:35'),
-(58, 83, 7, 1, 1, 1, 1.00, '2026-02-08', '2025-12-09 14:39:35'),
-(59, 84, 5, 1, 1, 1, 1.00, '2026-01-08', '2025-12-09 14:40:37'),
-(60, 85, 1, 1, 1, 1, 1.00, '2026-01-08', '2025-12-09 14:40:37'),
-(61, 86, 6, 1, 1, 1, 1.00, '2026-01-08', '2025-12-09 14:40:37'),
-(62, 87, 4, 1, 1, 1, 1.00, '2026-01-08', '2025-12-09 14:40:37'),
-(63, 88, 8, 1, 1, 1, 1.00, '2026-01-08', '2025-12-09 14:40:37'),
-(64, 89, 2, 1, 1, 1, 1.00, '2026-01-08', '2025-12-09 14:40:37'),
-(65, 90, 7, 1, 1, 1, 1.00, '2026-01-08', '2025-12-09 14:40:37'),
-(66, 91, 5, 1, 1, 1, 1.00, '2026-01-12', '2025-12-13 22:53:06'),
-(67, 91, 1, 1, 1, 1, 1.00, '2026-01-12', '2025-12-13 22:53:06'),
-(68, 91, 4, 1, 1, 1, 1.00, '2026-01-12', '2025-12-13 22:53:06'),
-(69, 91, 6, 1, 1, 1, 1.00, '2026-01-12', '2025-12-13 22:53:06'),
-(70, 91, 8, 1, 1, 1, 1.00, '2026-01-12', '2025-12-13 22:53:06'),
-(71, 92, 5, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 02:30:12'),
-(72, 93, 5, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 02:31:51'),
-(73, 94, 12, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 02:32:09'),
-(74, 95, 1, 1, 1, 1, 11.00, '2026-01-13', '2025-12-14 02:32:15'),
-(75, 96, 5, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 02:44:54'),
-(76, 97, 5, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 02:53:18'),
-(77, 98, 5, 8, 8, 64, 20.00, '2026-02-08', '2025-12-14 03:37:26'),
-(78, 98, 12, 4, 15, 60, 25.00, '2026-02-08', '2025-12-14 03:37:26'),
-(79, 98, 1, 5, 5, 25, 20.00, '2026-02-08', '2025-12-14 03:37:26'),
-(80, 99, 5, 1, 1, 1, 0.10, '2026-02-08', '2025-12-14 03:55:44'),
-(81, 99, 12, 1, 1, 1, 10.00, '2026-02-08', '2025-12-14 03:55:44'),
-(82, 99, 1, 1, 11, 11, 1.00, '2026-02-08', '2025-12-14 03:55:44'),
-(83, 100, 5, 1, 1, 1, 1.00, '2026-02-08', '2025-12-14 04:07:58'),
-(84, 100, 12, 1, 1, 1, 1.00, '2026-02-08', '2025-12-14 04:07:58'),
-(85, 100, 1, 1, 1, 1, 1.00, '2026-02-08', '2025-12-14 04:07:58'),
-(86, 100, 4, 1, 1, 1, 1.00, '2026-02-08', '2025-12-14 04:07:58'),
-(87, 100, 6, 1, 1, 1, 1.00, '2026-02-08', '2025-12-14 04:07:58'),
-(88, 100, 8, 1, 1, 1, 1.00, '2026-02-08', '2025-12-14 04:07:58'),
-(89, 100, 2, 10, 1, 10, 1.00, '2026-02-08', '2025-12-14 04:07:58'),
-(90, 100, 7, 1, 1, 1, 1.00, '2026-02-08', '2025-12-14 04:07:58'),
-(91, 101, 5, 1, 1, 1, 1.00, '2026-02-06', '2025-12-14 04:37:50'),
-(92, 101, 12, 1, 1, 1, 1.00, '2026-02-06', '2025-12-14 04:37:50'),
-(93, 101, 1, 1, 1, 1, 1.00, '2026-02-06', '2025-12-14 04:37:50'),
-(94, 101, 4, 1, 1, 1, 1.00, '2026-02-06', '2025-12-14 04:37:50'),
-(95, 101, 6, 1, 1, 1, 1.00, '2026-02-06', '2025-12-14 04:37:50'),
-(96, 101, 8, 1, 1, 1, 1.00, '2026-02-06', '2025-12-14 04:37:50'),
-(97, 101, 2, 1, 1, 1, 1.00, '2026-02-06', '2025-12-14 04:37:50'),
-(98, 101, 7, 1, 1, 1, 1.00, '2026-02-06', '2025-12-14 04:37:50'),
-(99, 102, 5, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25'),
-(100, 102, 12, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25'),
-(101, 102, 1, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25'),
-(102, 102, 4, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25'),
-(103, 102, 6, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25'),
-(104, 102, 8, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25'),
-(105, 102, 2, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25'),
-(106, 102, 7, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 17:04:25'),
-(108, 104, 12, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
-(109, 104, 8, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
-(110, 104, 5, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
-(111, 104, 1, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
-(112, 104, 4, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
-(113, 104, 6, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
-(114, 104, 2, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
-(115, 104, 7, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 20:28:53'),
-(200, 200, 12, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:43:30'),
-(201, 200, 8, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:43:30'),
-(202, 200, 5, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:43:30'),
-(203, 200, 1, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:43:30'),
-(204, 200, 4, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:43:30'),
-(205, 200, 6, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:43:30'),
-(206, 200, 2, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:43:30'),
-(207, 200, 7, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:43:30'),
-(208, 201, 12, 10, 1, 10, 1.00, '2026-01-13', '2025-12-14 21:53:07'),
-(209, 201, 8, 1, 11, 11, 1.00, '2026-01-13', '2025-12-14 21:53:07'),
-(210, 201, 5, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:53:07'),
-(211, 201, 1, 11, 1, 11, 1.00, '2026-01-13', '2025-12-14 21:53:07'),
-(212, 201, 4, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:53:07'),
-(213, 201, 6, 11, 1, 11, 1.00, '2026-01-13', '2025-12-14 21:53:07'),
-(214, 201, 2, 1, 11, 11, 1.00, '2026-01-13', '2025-12-14 21:53:07'),
-(215, 201, 7, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:53:07'),
-(500, 500, 12, 20, 10, 200, 500.00, '2026-01-31', '2025-12-14 22:44:32');
+INSERT INTO `historial_compras` (`id_historial`, `id_compra`, `id_producto_proveedor`, `cantidad_empaques`, `unidades_empaque`, `total_unidades`, `precio_total`, `fecha_compra`, `fecha_vencimiento`, `usuario_id`, `fecha_registro`) VALUES
+(1, 15, 9, 11, 10, 110, 250.00, '2025-12-04', '2026-01-03', 5, '2025-12-03 23:18:59'),
+(2, 16, 11, 6, 10, 60, 520.00, '2025-12-04', '2026-01-03', 5, '2025-12-03 23:18:59'),
+(7, 23, 8, 2, 10, 20, 100.00, '2025-12-03', '2026-01-08', 4, '2025-12-04 01:25:44'),
+(8, 29, 8, 1, 10, 10, 50.00, '2025-12-04', '2026-01-03', 4, '2025-12-04 01:36:40'),
+(9, 30, 8, 1, 100, 100, 4.00, '2025-12-04', '2026-06-04', 4, '2025-12-04 01:38:08'),
+(10, 31, 8, 25, 100, 2500, 10.00, '2025-12-04', '2026-01-03', 4, '2025-12-04 01:39:08'),
+(11, 32, 9, 5, 40, 200, 100.00, '2025-12-04', '2026-04-30', 4, '2025-12-04 03:48:16'),
+(12, 33, 11, 5, 40, 200, 80.00, '2025-12-04', '2026-04-30', 4, '2025-12-04 03:48:16'),
+(13, 38, 10, 10, 20, 200, 600.00, '2025-12-04', '2026-07-29', 4, '2025-12-04 06:26:35'),
+(14, 39, 9, 8, 15, 120, 500.00, '2025-12-04', '2026-07-29', 4, '2025-12-04 06:26:35'),
+(15, 40, 11, 20, 10, 200, 500.00, '2025-12-04', '2026-07-29', 4, '2025-12-04 06:26:35'),
+(16, 41, 1, 10, 10, 100, 600.00, '2025-12-04', '2026-05-29', 4, '2025-12-04 15:29:27'),
+(17, 42, 9, 10, 50, 500, 200.00, '2025-12-04', '2025-12-25', 4, '2025-12-04 15:37:56'),
+(18, 43, 11, 10, 10, 100, 500.00, '2025-12-04', '2025-12-25', 4, '2025-12-04 15:37:56'),
+(19, 44, 1, 10, 20, 200, 400.00, '2025-12-04', '2025-12-25', 4, '2025-12-04 15:37:56'),
+(20, 45, 10, 10, 20, 200, 500.00, '2025-12-04', '2025-12-25', 4, '2025-12-04 15:37:56'),
+(21, 46, 4, 10, 10, 100, 20.00, '2025-12-04', '2026-01-03', 4, '2025-12-04 15:39:27'),
+(22, 47, 9, 10, 20, 200, 200.00, '2025-12-04', '2026-01-03', 4, '2025-12-04 15:39:27'),
+(23, 48, 3, 5, 10, 50, 100.00, '2025-12-04', '2026-01-03', 4, '2025-12-04 15:39:27'),
+(24, 49, 9, 20, 10, 200, 500.00, '2025-12-04', '2025-12-31', 4, '2025-12-04 17:59:29'),
+(25, 50, 9, 1, 2, 2, 50.00, '2025-12-04', '2025-12-26', 4, '2025-12-04 18:05:39'),
+(26, 51, 5, 1, 1, 1, 1.00, '2025-12-08', '2026-01-07', 5, '2025-12-08 14:54:03'),
+(28, 53, 5, 1, 1, 1, 1.00, '2025-12-08', '2026-01-07', 5, '2025-12-08 15:03:12'),
+(29, 54, 1, 1, 1, 1, 1.00, '2025-12-08', '2026-01-07', 5, '2025-12-08 15:03:12'),
+(30, 55, 6, 1, 1, 1, 1.00, '2025-12-08', '2026-01-07', 5, '2025-12-08 15:06:03'),
+(31, 56, 8, 1, 1, 1, 1.00, '2025-12-08', '2026-01-07', 5, '2025-12-08 15:06:03'),
+(32, 57, 7, 1, 1, 1, 1.00, '2025-12-08', '2026-01-07', 5, '2025-12-08 15:06:03'),
+(33, 58, 5, 1, 1, 1, 1.00, '2025-12-08', '2026-01-07', 5, '2025-12-08 15:21:18'),
+(34, 59, 4, 1, 1, 1, 1.00, '2025-12-08', '2026-01-07', 5, '2025-12-08 15:21:18'),
+(35, 60, 6, 1, 1, 1, 1.00, '2025-12-08', '2026-01-07', 5, '2025-12-08 15:21:18'),
+(36, 61, 2, 1, 1, 1, 1.00, '2025-12-08', '2026-01-07', 5, '2025-12-08 15:21:18'),
+(37, 62, 1, 1, 1, 1, 11.00, '2025-12-08', '2026-01-07', 5, '2025-12-08 15:21:18'),
+(38, 63, 5, 1, 1, 1, 14.00, '2025-12-08', '2026-01-31', 5, '2025-12-08 15:45:20'),
+(39, 64, 6, 1, 1, 1, 1.00, '2025-12-08', '2026-01-31', 5, '2025-12-08 15:45:20'),
+(40, 65, 1, 1, 1, 1, 1.00, '2025-12-08', '2026-01-31', 5, '2025-12-08 15:45:20'),
+(41, 66, 5, 1, 1, 1, 1.00, '2025-12-09', '2026-02-28', 5, '2025-12-09 13:36:50'),
+(42, 67, 1, 1, 1, 1, 1.00, '2025-12-09', '2026-02-28', 5, '2025-12-09 13:36:50'),
+(43, 68, 4, 44, 2, 88, 12.00, '2025-12-09', '2026-02-28', 5, '2025-12-09 13:36:50'),
+(44, 69, 6, 1, 1, 1, 1.00, '2025-12-09', '2026-02-28', 5, '2025-12-09 13:36:50'),
+(45, 70, 5, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(46, 71, 4, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(47, 72, 8, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(48, 73, 6, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(49, 74, 1, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(50, 75, 2, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(51, 76, 7, 1, 1, 1, 1.00, '2025-12-09', '2026-04-08', 5, '2025-12-09 14:18:03'),
+(52, 77, 5, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(53, 78, 1, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(54, 79, 4, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(55, 80, 6, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(56, 81, 8, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(57, 82, 2, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(58, 83, 7, 1, 1, 1, 1.00, '2025-12-09', '2026-02-08', 5, '2025-12-09 14:39:35'),
+(59, 84, 5, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(60, 85, 1, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(61, 86, 6, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(62, 87, 4, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(63, 88, 8, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(64, 89, 2, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(65, 90, 7, 1, 1, 1, 1.00, '2025-12-09', '2026-01-08', 5, '2025-12-09 14:40:37'),
+(71, 100, 8, 10, 20, 200, 500.00, '0000-00-00', '2026-01-14', 4, '2025-12-15 13:06:08'),
+(72, 101, 1, 20, 10, 200, 500.00, '0000-00-00', '2026-01-14', 4, '2025-12-15 13:07:53');
 
 -- --------------------------------------------------------
 
@@ -631,12 +549,12 @@ CREATE TABLE `productos` (
 --
 
 INSERT INTO `productos` (`id`, `codigo`, `nombre`, `descripcion`, `categoria_id`, `subcategoria_id`, `proveedor_id`, `id_producto_proveedor`, `fecha_vencimiento`, `cantidad`, `precio_costo`, `precio_venta`, `created_at`, `updated_at`, `estado`) VALUES
-(96, '005', 'jamon cerrano', '', 19, NULL, 2, 12, '2026-01-31', 211, 2.50, 3.25, '2025-12-14 17:04:25', '2025-12-15 01:04:13', 'active'),
-(97, '002', 'Leche Entera Pasteurizada', '', 1, 1, 1, 1, '2026-01-13', 9, 0.09, 0.12, '2025-12-14 17:04:25', '2025-12-14 22:02:30', 'active'),
-(99, '006', 'natilla', '', 1, NULL, 1, 6, '2026-01-13', 14, 0.09, 0.12, '2025-12-14 17:04:25', '2025-12-14 21:53:07', 'active'),
-(100, '008', 'Queso', '', 1, 2, 2, 8, '2026-01-13', 14, 0.09, 0.12, '2025-12-14 17:04:25', '2025-12-14 21:53:07', 'active'),
-(101, '004', 'Queso Blanco Fresco', '', 1, 2, 1, 2, '2026-01-13', 6, 0.09, 0.12, '2025-12-14 17:04:25', '2025-12-14 22:46:00', 'active'),
-(102, '007', 'queso manchego', '', 1, 2, 1, 7, '2026-01-13', 4, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 21:53:07', 'active');
+(66, '003', 'Mantequilla con Sal', NULL, 1, NULL, 1, 4, '2026-01-08', 2, 0.20, 0.26, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
+(67, '006', 'natilla', NULL, 1, NULL, 1, 6, '2026-01-08', 2, 1.50, 1.95, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
+(68, '008', 'Queso', NULL, 1, 2, 2, 8, '2026-01-14', 202, 2.50, 3.25, '2025-12-09 14:39:35', '2025-12-15 13:06:08', 'active'),
+(69, '004', 'Queso Blanco Fresco', NULL, 1, 2, 1, 2, '2026-01-08', 2, 2.50, 3.25, '2025-12-09 14:39:35', '2025-12-09 14:40:37', 'active'),
+(70, '007', 'queso manchego', NULL, 1, 2, 1, 7, '2026-01-08', 0, 5.00, 6.50, '2025-12-09 14:39:35', '2025-12-15 13:08:36', 'active'),
+(71, '002', 'Leche Entera Pasteurizada', '', 1, 1, 1, 1, '2026-01-14', 198, 2.50, 3.25, '2025-12-15 13:07:53', '2025-12-15 13:08:15', 'active');
 
 -- --------------------------------------------------------
 
@@ -657,27 +575,25 @@ CREATE TABLE `productos_proveedor` (
   `fecha_compra` date DEFAULT NULL,
   `es_perecedero` tinyint(1) DEFAULT 0,
   `registro` timestamp NOT NULL DEFAULT current_timestamp(),
-  `actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `estado` enum('activo','inactivo') DEFAULT 'activo'
+  `actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `productos_proveedor`
 --
 
-INSERT INTO `productos_proveedor` (`id_producto_proveedor`, `codigo_producto`, `nombre`, `descripcion`, `id_categoria`, `id_subcategoria`, `id_proveedor`, `precio_compra`, `unidad_medida`, `fecha_compra`, `es_perecedero`, `registro`, `actualizacion`, `estado`) VALUES
-(1, '002', 'Leche Entera Pasteurizada', NULL, 1, 1, 1, 0.09, 'litro', '2025-12-14', 1, '2025-10-29 21:55:16', '2025-12-14 21:53:07', 'activo'),
-(2, '004', 'Queso Blanco Fresco', NULL, 1, 2, 1, 0.09, 'kilo', '2025-12-14', 1, '2025-10-29 21:55:16', '2025-12-14 21:53:07', 'activo'),
-(3, '005', 'Yogurt Natural', NULL, 3, 3, 1, 2.00, 'litro', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30', 'activo'),
-(4, '003', 'Mantequilla con Sal', NULL, 1, NULL, 1, 1.00, 'unidad', '2025-12-14', 1, '2025-10-29 21:55:16', '2025-12-14 04:07:58', 'activo'),
-(5, '001', 'Crema de Leche', NULL, 1, 1, 1, 1.00, 'litro', '2025-12-14', 1, '2025-10-29 21:55:16', '2025-12-14 04:07:58', 'activo'),
-(6, '006', 'natilla', NULL, 1, NULL, 1, 0.09, 'paquete', '2025-12-14', 1, '2025-11-03 14:55:54', '2025-12-14 21:53:07', 'activo'),
-(7, '007', 'queso manchego', NULL, 1, 2, 1, 1.00, 'kilo', '2025-12-14', 1, '2025-11-03 15:02:03', '2025-12-14 04:07:58', 'activo'),
-(8, '008', 'Queso', NULL, 1, 2, 2, 0.09, 'kilo', '2025-12-14', 1, '2025-11-12 13:42:00', '2025-12-14 21:53:07', 'activo'),
-(9, '009', 'Choclate con Leche', NULL, 6, NULL, 3, 25.00, 'unidad', '2025-12-04', 1, '2025-11-12 20:27:03', '2025-12-09 14:11:30', 'activo'),
-(10, '010', 'Samba', NULL, 6, NULL, 3, 2.50, 'unidad', '2025-12-04', 1, '2025-11-12 21:36:37', '2025-12-09 14:11:30', 'activo'),
-(11, '011', 'Cocosette', NULL, 6, NULL, 3, 5.00, 'unidad', '2025-12-04', 1, '2025-11-12 21:37:50', '2025-12-09 14:11:30', 'activo'),
-(12, '005', 'jamon cerrano', NULL, 19, NULL, 2, 2.50, 'paquete', '2025-12-14', 0, '2025-12-13 23:27:05', '2025-12-14 22:44:32', 'activo');
+INSERT INTO `productos_proveedor` (`id_producto_proveedor`, `codigo_producto`, `nombre`, `descripcion`, `id_categoria`, `id_subcategoria`, `id_proveedor`, `precio_compra`, `unidad_medida`, `fecha_compra`, `es_perecedero`, `registro`, `actualizacion`) VALUES
+(1, '002', 'Leche Entera Pasteurizada', NULL, 1, 1, 1, 2.50, 'litro', '2025-12-15', 1, '2025-10-29 21:55:16', '2025-12-15 13:07:53'),
+(2, '004', 'Queso Blanco Fresco', NULL, 1, 2, 1, 2.50, 'kilo', NULL, 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
+(3, '005', 'Yogurt Natural', NULL, 3, 3, 1, 2.00, 'litro', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
+(4, '003', 'Mantequilla con Sal', NULL, 1, NULL, 1, 0.20, 'unidad', '2025-12-04', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
+(5, '001', 'Crema de Leche', NULL, 1, 1, 1, 0.95, 'litro', '2025-12-03', 1, '2025-10-29 21:55:16', '2025-12-09 14:11:30'),
+(6, '006', 'natilla', NULL, 1, NULL, 1, 1.50, 'paquete', NULL, 1, '2025-11-03 14:55:54', '2025-12-09 14:11:30'),
+(7, '007', 'queso manchego', NULL, 1, 2, 1, 5.00, 'kilo', NULL, 1, '2025-11-03 15:02:03', '2025-12-09 14:11:30'),
+(8, '008', 'Queso', NULL, 1, 2, 2, 2.50, 'kilo', '2025-12-15', 1, '2025-11-12 13:42:00', '2025-12-15 13:06:08'),
+(9, '009', 'Choclate con Leche', NULL, 6, NULL, 3, 25.00, 'unidad', '2025-12-04', 1, '2025-11-12 20:27:03', '2025-12-09 14:11:30'),
+(10, '010', 'Samba', NULL, 6, NULL, 3, 2.50, 'unidad', '2025-12-04', 1, '2025-11-12 21:36:37', '2025-12-09 14:11:30'),
+(11, '011', 'Cocosette', NULL, 6, NULL, 3, 5.00, 'unidad', '2025-12-04', 1, '2025-11-12 21:37:50', '2025-12-09 14:11:30');
 
 -- --------------------------------------------------------
 
@@ -705,8 +621,7 @@ CREATE TABLE `proveedores` (
 INSERT INTO `proveedores` (`id_proveedor`, `nombres`, `nombre_comercial`, `rif`, `telefono`, `email`, `direccion`, `estado`, `registro`, `actualizacion`) VALUES
 (1, 'jose andres pernalete', 'lacteos vaquita.C.A', 'J-307970578', '04122201285', 'jose00pg2@gmail.com', 'avenida españa entre calle 6 y 7', 'activo', '2022-10-19 19:39:05', '2025-11-03 03:37:45'),
 (2, 'Juan Perez', 'Lacteos Los Andes', 'J-123456789', '1234-5678', 'contacto@economia.com', 'Av. Principal #123', 'activo', '2025-10-30 00:16:41', '2025-11-03 03:37:54'),
-(3, 'juan jose rodriguez rivero', 'savoy', 'J-307970566', '04122201285', 'pernaletegimenezjose@gmail.com', 'avenida españa entre calle 6 y 7', 'activo', '2025-11-03 03:11:38', '2025-11-03 03:37:19'),
-(4, 'jose', 'cocacola', 'J-296653252', '0121201220', 'jjjjj@gmail.com', 'fvvvf', 'inactivo', '2025-12-13 23:59:02', '2025-12-14 00:12:42');
+(3, 'juan jose rodriguez rivero', 'savoy', 'J-307970566', '04122201285', 'pernaletegimenezjose@gmail.com', 'avenida españa entre calle 6 y 7', 'activo', '2025-11-03 03:11:38', '2025-11-03 03:37:19');
 
 -- --------------------------------------------------------
 
@@ -801,11 +716,10 @@ CREATE TABLE `ventas` (
 --
 
 INSERT INTO `ventas` (`id_venta`, `cliente`, `fecha`, `metodo_pago`, `total_bs`, `id_cliente`, `total_usd`, `tasa_usd`, `nro_factura`) VALUES
-(11, 'Isis Sofia', '2025-12-14', 'Pago Móvil', 1408.11, 1, 5.20, 270.7900, 'FAC-004540'),
-(500, 'jose pernalete', '2025-12-14', 'Efectivo', 1584.23, 5, 5.85, 270.7900, 'FAC-004541'),
-(501, 'Daviana', '2025-12-14', 'Pago Móvil', 64.99, 11, 0.24, 270.7900, 'FAC-004542'),
-(502, 'jose pernalete', '2025-12-14', 'Débito', 194.97, 5, 0.72, 270.7900, 'FAC-004543'),
-(503, 'Isis Sofia', '2025-12-15', 'Pago Móvil', 1760.14, 1, 6.50, 270.7900, 'FAC-004544');
+(9, 'Isis Sofia', '2025-12-05', 'Efectivo', 1349.12, 1, 5.36, 251.8900, 'FAC-004538'),
+(10, 'Isis Sofia', '2025-12-15', 'Pago Móvil', 2079.67, 1, 7.68, 270.7900, 'FAC-004539'),
+(11, 'Isis Sofia', '2025-12-15', 'Pago Móvil', 1760.14, 1, 6.50, 270.7900, 'FAC-004540'),
+(12, 'Isis Sofia', '2025-12-15', 'Efectivo', 3625.88, 1, 13.39, 270.7900, 'FAC-004541');
 
 -- --------------------------------------------------------
 
@@ -838,7 +752,7 @@ CREATE TABLE `vista_resumen_compras` (
 --
 DROP TABLE IF EXISTS `vista_resumen_compras`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vista_resumen_compras`  AS SELECT `hc`.`id_historial` AS `id_historial`, `hc`.`id_compra` AS `id_compra`, `hc`.`id_producto_proveedor` AS `id_producto_proveedor`, `hc`.`cantidad_empaques` AS `cantidad_empaques`, `hc`.`unidades_empaque` AS `unidades_empaque`, `hc`.`total_unidades` AS `total_unidades`, `hc`.`precio_total` AS `precio_total`, `cp`.`fecha_compra` AS `fecha_compra`, `hc`.`fecha_vencimiento` AS `fecha_vencimiento`, `cp`.`usuario_id` AS `usuario_id`, `hc`.`fecha_registro` AS `fecha_registro`, `pp`.`nombre` AS `producto_nombre`, `pp`.`codigo_producto` AS `codigo_producto`, `p`.`nombre_comercial` AS `proveedor_nombre`, `u`.`nombre` AS `usuario_nombre` FROM ((((`historial_compras` `hc` join `compras_proveedores` `cp` on(`hc`.`id_compra` = `cp`.`id_compra`)) join `productos_proveedor` `pp` on(`hc`.`id_producto_proveedor` = `pp`.`id_producto_proveedor`)) join `proveedores` `p` on(`pp`.`id_proveedor` = `p`.`id_proveedor`)) join `usuario` `u` on(`cp`.`usuario_id` = `u`.`id_usuario`)) ORDER BY `hc`.`fecha_registro` DESC ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vista_resumen_compras`  AS SELECT `hc`.`id_historial` AS `id_historial`, `hc`.`id_compra` AS `id_compra`, `hc`.`id_producto_proveedor` AS `id_producto_proveedor`, `hc`.`cantidad_empaques` AS `cantidad_empaques`, `hc`.`unidades_empaque` AS `unidades_empaque`, `hc`.`total_unidades` AS `total_unidades`, `hc`.`precio_total` AS `precio_total`, `hc`.`fecha_compra` AS `fecha_compra`, `hc`.`fecha_vencimiento` AS `fecha_vencimiento`, `hc`.`usuario_id` AS `usuario_id`, `hc`.`fecha_registro` AS `fecha_registro`, `pp`.`nombre` AS `producto_nombre`, `pp`.`codigo_producto` AS `codigo_producto`, `p`.`nombre_comercial` AS `proveedor_nombre`, `u`.`nombre` AS `usuario_nombre` FROM (((`historial_compras` `hc` join `productos_proveedor` `pp` on(`hc`.`id_producto_proveedor` = `pp`.`id_producto_proveedor`)) join `proveedores` `p` on(`pp`.`id_proveedor` = `p`.`id_proveedor`)) join `usuario` `u` on(`hc`.`usuario_id` = `u`.`id_usuario`)) ORDER BY `hc`.`fecha_registro` DESC ;
 
 --
 -- Índices para tablas volcadas
@@ -882,7 +796,8 @@ ALTER TABLE `detalle_venta`
 ALTER TABLE `historial_compras`
   ADD PRIMARY KEY (`id_historial`),
   ADD KEY `id_compra` (`id_compra`),
-  ADD KEY `id_producto_proveedor` (`id_producto_proveedor`);
+  ADD KEY `id_producto_proveedor` (`id_producto_proveedor`),
+  ADD KEY `usuario_id` (`usuario_id`);
 
 --
 -- Indices de la tabla `modulos`
@@ -955,47 +870,151 @@ ALTER TABLE `usuario`
 -- Indices de la tabla `ventas`
 --
 ALTER TABLE `ventas`
-  ADD PRIMARY KEY (`id_venta`);
+  ADD PRIMARY KEY (`id_venta`),
+  ADD KEY `fk_venta_cliente` (`id_cliente`),
+  ADD KEY `idx_ventas_fecha` (`fecha`),
+  ADD KEY `idx_ventas_nro_factura` (`nro_factura`),
+  ADD KEY `idx_ventas_cliente` (`id_cliente`);
 
 --
 -- AUTO_INCREMENT de las tablas volcadas
 --
 
 --
+-- AUTO_INCREMENT de la tabla `categoria_prod`
+--
+ALTER TABLE `categoria_prod`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+
+--
 -- AUTO_INCREMENT de la tabla `clientes`
 --
 ALTER TABLE `clientes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=500;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT de la tabla `compras_proveedores`
 --
 ALTER TABLE `compras_proveedores`
-  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=501;
+  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=102;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_venta`
 --
 ALTER TABLE `detalle_venta`
-  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=507;
+  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT de la tabla `historial_compras`
 --
 ALTER TABLE `historial_compras`
-  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=501;
+  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
+
+--
+-- AUTO_INCREMENT de la tabla `modulos`
+--
+ALTER TABLE `modulos`
+  MODIFY `id_modulo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT de la tabla `productos`
 --
 ALTER TABLE `productos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=200;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=72;
+
+--
+-- AUTO_INCREMENT de la tabla `productos_proveedor`
+--
+ALTER TABLE `productos_proveedor`
+  MODIFY `id_producto_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT de la tabla `proveedores`
+--
+ALTER TABLE `proveedores`
+  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT de la tabla `roles`
+--
+ALTER TABLE `roles`
+  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT de la tabla `subcategorias`
+--
+ALTER TABLE `subcategorias`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT de la tabla `usuario`
+--
+ALTER TABLE `usuario`
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT de la tabla `ventas`
 --
 ALTER TABLE `ventas`
-  MODIFY `id_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=504;
+  MODIFY `id_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `compras_proveedores`
+--
+ALTER TABLE `compras_proveedores`
+  ADD CONSTRAINT `compras_proveedores_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuario` (`id_usuario`);
+
+--
+-- Filtros para la tabla `detalle_venta`
+--
+ALTER TABLE `detalle_venta`
+  ADD CONSTRAINT `detalle_venta_ibfk_1` FOREIGN KEY (`id_venta`) REFERENCES `ventas` (`id_venta`),
+  ADD CONSTRAINT `detalle_venta_ibfk_2` FOREIGN KEY (`id_producto`) REFERENCES `productos` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `historial_compras`
+--
+ALTER TABLE `historial_compras`
+  ADD CONSTRAINT `historial_compras_ibfk_1` FOREIGN KEY (`id_compra`) REFERENCES `compras_proveedores` (`id_compra`),
+  ADD CONSTRAINT `historial_compras_ibfk_2` FOREIGN KEY (`id_producto_proveedor`) REFERENCES `productos_proveedor` (`id_producto_proveedor`),
+  ADD CONSTRAINT `historial_compras_ibfk_3` FOREIGN KEY (`usuario_id`) REFERENCES `usuario` (`id_usuario`);
+
+--
+-- Filtros para la tabla `permisos`
+--
+ALTER TABLE `permisos`
+  ADD CONSTRAINT `permisos_ibfk_1` FOREIGN KEY (`id_rol`) REFERENCES `roles` (`id_rol`),
+  ADD CONSTRAINT `permisos_ibfk_2` FOREIGN KEY (`id_modulo`) REFERENCES `modulos` (`id_modulo`);
+
+--
+-- Filtros para la tabla `productos`
+--
+ALTER TABLE `productos`
+  ADD CONSTRAINT `fk_productos_producto_proveedor` FOREIGN KEY (`id_producto_proveedor`) REFERENCES `productos_proveedor` (`id_producto_proveedor`),
+  ADD CONSTRAINT `productos_ibfk_2` FOREIGN KEY (`subcategoria_id`) REFERENCES `subcategorias` (`id`),
+  ADD CONSTRAINT `productos_ibfk_4` FOREIGN KEY (`proveedor_id`) REFERENCES `proveedores` (`id_proveedor`);
+
+--
+-- Filtros para la tabla `roles`
+--
+ALTER TABLE `roles`
+  ADD CONSTRAINT `roles_ibfk_1` FOREIGN KEY (`id_rol`) REFERENCES `usuario` (`id_rol`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `subcategorias`
+--
+ALTER TABLE `subcategorias`
+  ADD CONSTRAINT `subcategorias_ibfk_1` FOREIGN KEY (`categoria_id`) REFERENCES `categoria_prod` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `ventas`
+--
+ALTER TABLE `ventas`
+  ADD CONSTRAINT `fk_venta_cliente` FOREIGN KEY (`id_cliente`) REFERENCES `clientes` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

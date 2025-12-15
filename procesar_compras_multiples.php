@@ -1,5 +1,6 @@
 <?php
-// nexus/procesar_compras_multiples.php - Versión con sintaxis corregida y flujo de compra Maestro/Detalle
+// nexus/procesar_compras_multiples.php - Versión CORREGIDA
+
 session_start();
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header('Location: login.php');
@@ -16,7 +17,7 @@ if (!$sistemaPermisos->puedeVer('proveedores')) {
 }
 
 $error = '';
-$usuario_id = $_SESSION['id_usuario'] ?? 4; // Usar un ID de usuario por defecto
+
 $productos_a_procesar = $_POST['productos'] ?? [];
 $productos_seleccionados = 0;
 
@@ -56,7 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $pdo->beginTransaction();
         
+        // CORRECCIÓN: OBTENER EL ID DEL USUARIO DESDE LA SESIÓN
+        $usuario_id = $_SESSION['id_usuario'] ?? 0; 
+        if ($usuario_id === 0) {
+             throw new Exception("Error de sesión: ID de usuario no disponible.");
+        }
+        
         // --- 1. INSERCIÓN DEL REGISTRO MAESTRO (compras_proveedores) ---
+        // CORRECCIÓN: Añadir usuario_id a la consulta SQL y a los parámetros
         $stmt_compra_maestra = $pdo->prepare("
             INSERT INTO compras_proveedores 
             (fecha_compra, usuario_id, precio_compra_total) 
@@ -65,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $stmt_compra_maestra->execute([
             $fecha_compra,
-            $usuario_id,
+            $usuario_id, // Este campo es requerido por la clave foránea (FK)
             $total_monto_compra // Monto total de la compra
         ]);
         
@@ -92,11 +100,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $codigo_producto = $pp_data['codigo_producto'];
 
             // --- 2.1 Insertar en historial_compras (Detalle/Puntual) ---
+            // CORRECCIÓN APLICADA AQUÍ: Se añade 'usuario_id' a la consulta y a los parámetros
             $stmt_historial = $pdo->prepare("
                 INSERT INTO historial_compras 
                 (id_compra, id_producto_proveedor, cantidad_empaques, unidades_empaque, 
-                 total_unidades, precio_total, fecha_vencimiento) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                 total_unidades, precio_total, fecha_vencimiento, usuario_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt_historial->execute([
@@ -107,6 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $total_unidades,
                 $precio_total,
                 $fecha_vencimiento_base,
+                $usuario_id, // <--- CAMBIO: Se pasa el ID de usuario
             ]);
             
             // --- 2.2 Lógica de Inventario (UPSERT en productos) ---
