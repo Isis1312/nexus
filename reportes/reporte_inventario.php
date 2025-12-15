@@ -5,8 +5,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     exit();
 }
 
-require_once 'conexion.php';
-require_once 'menu.php';
+require_once '../conexion.php';
+
 
 $sql = "
     SELECT
@@ -44,7 +44,7 @@ $ganancia_bruta = floatval($resumen['ganancia_bruta_potencial']);
     <meta charset="UTF-8">
     <title>Reporte de Valorización de Inventario</title>
 
-    <link rel="stylesheet" href="css/reportes/repo_inventario.css">
+    <link rel="stylesheet" href="../css/reportes/repo_inventario.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -52,7 +52,7 @@ $ganancia_bruta = floatval($resumen['ganancia_bruta_potencial']);
         <div class="content-wrapper">
             <div class="page-header">
                     <h1 class="page-title">Resumen de valorización del inventario actual</h1>
-                    <a href="reportes.php" class="volver-button">
+                    <a href="../reportes.php" class="volver-button">
                     Volver
                     </a>
                 </div>

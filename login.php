@@ -49,6 +49,6 @@
         </div>
     </div>
 
-    <div class="version-badge">v1.1</div>
+    <div class="version-badge">v8.5</div>
 </body>
 </html>

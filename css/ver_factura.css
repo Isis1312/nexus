@@ -1,11 +1,9 @@
 /* Estilos específicos para ver factura */
 .main-content {
-    /* RESET: Eliminar margen y ajustar padding para modo sin menú */
-    min-height: 100vh; 
-    padding: 20px;
-    /* Remover margin-left si existiera en otro CSS */
-    margin-left: 0 !important; 
-    background: linear-gradient(135deg, rgba(0, 139, 139, 0.03), rgba(0, 102, 102, 0.03));
+    margin-left: 80px; 
+    min-height: 100vh;
+    padding: 100px;
+    background: linear-gradient(135deg, #f8fdff 0%, #ffffff 100%);
 }
 
 .content-wrapper {

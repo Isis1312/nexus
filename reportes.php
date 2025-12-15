@@ -39,39 +39,39 @@ if (!$sistemaPermisos->puedeVer('reportes')) {
             
            <div class="reportes-grid"> 
                 
-                <a href="reporte_inventario.php" class="reporte-button">
-                    Reporte inventario
+                <a href="reportes/reporte_inventario.php" class="reporte-button">
+                   Valor del inventario actual
                 </a>
 
-                <a href="reportes_ventas.php" class="reporte-button">
-                    Reporte de ventas
+                <a href="reportes/reportes_ventas.php" class="reporte-button">
+                    Ventas por período
                 </a>
 
-                <a href="reporte_rentabilidad.php" class="reporte-button">
-                    Reporte rentabilidad
+                <a href="reportes/reporte_rentabilidad.php" class="reporte-button">
+                    Analisís de rentabilidad
                 </a>
                 
-                <a href="reporte_rotacion_inventario.php" class="reporte-button">
-                    Reporte de rotacion de inventario
+                <a href="reportes/reporte_cliente.php" class="reporte-button">
+                    Top de clientes
                 </a>
                 
-                <a href="reportes.php" class="reporte-button">
-                    Reporte 5
+                <a href="reportes/reporte_utilidad_mensual.php" class="reporte-button">
+                    Utilidad mensual
                 </a>
                 
-                <a href="reportes.php" class="reporte-button">
-                    Reporte 6
+                <a href="reportes/reporte_utilidad_anual.php" class="reporte-button">
+                    Utilidad anual 
                 </a>
 
-                <a href="reportes.php" class="reporte-button">
-                    Reporte 7
+                <a href="reportes/reporte_rotacion_inventario.php" class="reporte-button">
+                    Rotación de inventario
                 </a>
 
-                <a href="reportes.php" class="reporte-button">
-                    Reporte 8
+                <a href="reportes/reporte_margen_prod.php" class="reporte-button">
+                    Margen por producto
                 </a>
                 
-                <a href="reportes.php" class="reporte-button">
+                <a href="reportes/reporte9.php" class="reporte-button">
                     Reporte 9
                 </a>
                 

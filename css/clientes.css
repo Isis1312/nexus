@@ -107,7 +107,7 @@
   box-shadow: 0 0 10px rgba(0, 139, 139, 0.2);
 }
 
-.btn-buscar {
+.btn {
   background: linear-gradient(135deg, #008B8B, #006666);
   color: #ffffff;
   border: none;
@@ -118,7 +118,7 @@
   transition: all 0.3s ease;
 }
 
-.btn-buscar:hover {
+.btn:hover {
   background: linear-gradient(135deg, #006666, #008B8B);
   transform: translateY(-1px);
 }

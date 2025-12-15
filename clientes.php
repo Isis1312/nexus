@@ -103,9 +103,9 @@ require_once 'menu.php';
         <form method="GET" class="filtros-form">
           <div class="search-container">
             <input type="text" name="busqueda" class="search-input" placeholder="Buscar por cédula..." value="<?= htmlspecialchars($busqueda) ?>">
-            <button type="submit" class="btn-buscar">Buscar</button>
+            <button type="submit" class="btn">Buscar</button>
             <?php if (!empty($busqueda)): ?>
-                <a href="clientes.php" class="clear-search">Limpiar</a>
+                <a href="clientes.php" class="btn">Limpiar</a>
             <?php endif; ?>
           </div>
         </form>

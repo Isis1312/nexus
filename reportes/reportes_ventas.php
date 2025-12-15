@@ -7,8 +7,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 
-require_once 'conexion.php'; 
-require_once 'menu.php'; 
+require_once '../conexion.php'; 
+
 
 // --- 1. Definición de Fechas 
 $current_date = date('Y-m-d');
@@ -88,7 +88,7 @@ $total_productos_rango = intval($resumen_rango['total_productos'] ?? 0);
 <head>
     <meta charset="UTF-8">
     <title>Reportes de Ventas por Rango</title>
-    <link rel="stylesheet" href="css/reportes/repo_ventas.css"> 
+    <link rel="stylesheet" href="../css/reportes/repo_ventas.css"> 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
@@ -96,7 +96,7 @@ $total_productos_rango = intval($resumen_rango['total_productos'] ?? 0);
     <div class="content-wrapper">
         <div class="page-header">
             <h1 class="page-title">Reporte de ventas</h1>
-            <a href="reportes.php" class="volver-button"> Volver</a>
+            <a href="../reportes.php" class="volver-button"> Volver</a>
         </div>
 
         <div class="filtros-container">

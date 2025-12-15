@@ -96,42 +96,6 @@ try {
     <link rel="stylesheet" href="css/ver_factura.css">
     
     <style>
-        /* Ajuste de estilos para el diseño compacto y sin menú */
-        body {
-            /* Restablecer margen izquierdo */
-            margin-left: 0 !important; 
-        }
-        .main-content {
-            /* Asegurar que el contenido principal ocupe todo el ancho */
-            margin-left: 0 !important;
-            padding: 20px; 
-        }
-        .content-wrapper {
-            /* Reducir el tamaño del contenedor para hacerlo más parecido a una factura */
-            max-width: 650px; /* Ajuste para el nuevo CSS */
-        }
-
-        /* Estilos existentes */
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .metodo-pago-detalle {
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 0.9em;
-            font-weight: 600;
-            display: inline-block;
-            background-color: #f0f0f0;
-            color: #333;
-        }
-        .metodo-pago-detalle.efectivo {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .metodo-pago-detalle.pago-móvil, 
-        .metodo-pago-detalle.transferencia {
-            background-color: #d1ecf1;
-            color: #0c5460;
-        }
 
         /* Ocultar el menú completamente para el caso de no incluir menu.php */
         @media screen {
@@ -150,12 +114,6 @@ try {
     <div class="content-wrapper">
         <div class="factura-detalle">
             <div class="encabezado-factura">
-                <div class="info-empresa">
-                    <h2>NEXUS SYSTEM</h2>
-                    <p>Rif: J-XXXXXXXXX</p>
-                    <p>Av. Principal, Ciudad</p>
-                    <p>Tel: (0000) 000-0000</p>
-                </div>
                 
                 <div class="info-factura-detalle">
                     <div class="numero-factura">FACTURA #<?= $factura['nro_factura'] ?></div>
@@ -266,9 +224,6 @@ try {
         </div>
     </div>
 </main>
-<script>
-    // La función window.print() abre el diálogo de impresión del navegador.
-    // Esto permite al usuario seleccionar "Guardar como PDF".
-</script>
+
 </body>
 </html>
