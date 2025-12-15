@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 14-12-2025 a las 23:03:03
+-- Tiempo de generación: 15-12-2025 a las 03:59:36
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -241,9 +241,7 @@ CREATE TABLE `clientes` (
 
 INSERT INTO `clientes` (`id`, `nombre`, `cedula`, `telefono`, `direccion`) VALUES
 (1, 'Isis Sofia', 29604083, '04160588684', 'Av. libertador con calle 57'),
-(5, 'jose pernalete', 30797057, '04122201285', 'avenida españa entre calle 6 y 7'),
-(11, 'Daviana', 1111111, '2147483647', 'su casa'),
-(12, 'marco', 888888, '04160588684', 'su casa');
+(5, 'jose pernalete', 30797057, '04122201285', 'avenida españa entre calle 6 y 7');
 
 -- --------------------------------------------------------
 
@@ -352,7 +350,8 @@ INSERT INTO `compras_proveedores` (`id_compra`, `fecha_compra`, `usuario_id`, `f
 (102, '2025-12-14', 5, '2025-12-14 17:04:25', 8.00),
 (104, '2025-12-14', 5, '2025-12-14 20:28:53', 8.00),
 (200, '2025-12-14', 5, '2025-12-14 21:43:30', 8.00),
-(201, '2025-12-14', 5, '2025-12-14 21:53:07', 8.00);
+(201, '2025-12-14', 5, '2025-12-14 21:53:07', 8.00),
+(500, '2025-12-14', 4, '2025-12-14 22:44:32', 500.00);
 
 -- --------------------------------------------------------
 
@@ -367,7 +366,6 @@ CREATE TABLE `detalle_venta` (
   `codigo_producto` varchar(50) DEFAULT NULL,
   `nombre_producto` varchar(120) DEFAULT NULL,
   `cantidad` decimal(10,2) NOT NULL,
-  `precio_unitario_bs` decimal(12,2) NOT NULL,
   `precio_unitario_usd` decimal(10,2) NOT NULL,
   `subtotal_bs` decimal(12,2) NOT NULL,
   `subtotal_usd` decimal(10,2) NOT NULL,
@@ -378,15 +376,17 @@ CREATE TABLE `detalle_venta` (
 -- Volcado de datos para la tabla `detalle_venta`
 --
 
-INSERT INTO `detalle_venta` (`id_detalle`, `id_venta`, `id_producto`, `codigo_producto`, `nombre_producto`, `cantidad`, `precio_unitario_bs`, `precio_unitario_usd`, `subtotal_bs`, `subtotal_usd`, `fecha_registro`) VALUES
-(13, 11, 95, '001', 'Crema de Leche', 1.00, 0.00, 1.30, 0.00, 1.30, '2025-12-14 20:48:50'),
-(14, 11, 97, '002', 'Leche Entera Pasteurizada', 1.00, 0.00, 1.30, 0.00, 1.30, '2025-12-14 20:48:50'),
-(15, 11, 98, '003', 'Mantequilla con Sal', 2.00, 0.00, 1.30, 0.00, 2.60, '2025-12-14 20:48:50'),
-(500, 500, 95, '001', 'Crema de Leche', 2.00, 0.00, 1.30, 0.00, 2.60, '2025-12-14 22:01:21'),
-(501, 500, 97, '002', 'Leche Entera Pasteurizada', 2.00, 0.00, 0.12, 0.00, 0.24, '2025-12-14 22:01:21'),
-(502, 500, 98, '003', 'Mantequilla con Sal', 2.00, 0.00, 1.30, 0.00, 2.60, '2025-12-14 22:01:21'),
-(503, 500, 101, '004', 'Queso Blanco Fresco', 2.00, 0.00, 0.12, 0.00, 0.24, '2025-12-14 22:01:21'),
-(504, 501, 97, '002', 'Leche Entera Pasteurizada', 2.00, 0.00, 0.12, 0.00, 0.24, '2025-12-14 22:02:30');
+INSERT INTO `detalle_venta` (`id_detalle`, `id_venta`, `id_producto`, `codigo_producto`, `nombre_producto`, `cantidad`, `precio_unitario_usd`, `subtotal_bs`, `subtotal_usd`, `fecha_registro`) VALUES
+(13, 11, 95, '001', 'Crema de Leche', 1.00, 1.30, 0.00, 1.30, '2025-12-14 20:48:50'),
+(14, 11, 97, '002', 'Leche Entera Pasteurizada', 1.00, 1.30, 0.00, 1.30, '2025-12-14 20:48:50'),
+(15, 11, 98, '003', 'Mantequilla con Sal', 2.00, 1.30, 0.00, 2.60, '2025-12-14 20:48:50'),
+(500, 500, 95, '001', 'Crema de Leche', 2.00, 1.30, 0.00, 2.60, '2025-12-14 22:01:21'),
+(501, 500, 97, '002', 'Leche Entera Pasteurizada', 2.00, 0.12, 0.00, 0.24, '2025-12-14 22:01:21'),
+(502, 500, 98, '003', 'Mantequilla con Sal', 2.00, 1.30, 0.00, 2.60, '2025-12-14 22:01:21'),
+(503, 500, 101, '004', 'Queso Blanco Fresco', 2.00, 0.12, 0.00, 0.24, '2025-12-14 22:01:21'),
+(504, 501, 97, '002', 'Leche Entera Pasteurizada', 2.00, 0.12, 0.00, 0.24, '2025-12-14 22:02:30'),
+(505, 502, 101, '004', 'Queso Blanco Fresco', 6.00, 0.12, 0.00, 0.72, '2025-12-14 22:46:00'),
+(506, 503, 96, '005', 'jamon cerrano', 2.00, 3.25, 0.00, 6.50, '2025-12-15 01:04:13');
 
 -- --------------------------------------------------------
 
@@ -535,7 +535,8 @@ INSERT INTO `historial_compras` (`id_historial`, `id_compra`, `id_producto_prove
 (212, 201, 4, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:53:07'),
 (213, 201, 6, 11, 1, 11, 1.00, '2026-01-13', '2025-12-14 21:53:07'),
 (214, 201, 2, 1, 11, 11, 1.00, '2026-01-13', '2025-12-14 21:53:07'),
-(215, 201, 7, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:53:07');
+(215, 201, 7, 1, 1, 1, 1.00, '2026-01-13', '2025-12-14 21:53:07'),
+(500, 500, 12, 20, 10, 200, 500.00, '2026-01-31', '2025-12-14 22:44:32');
 
 -- --------------------------------------------------------
 
@@ -630,13 +631,11 @@ CREATE TABLE `productos` (
 --
 
 INSERT INTO `productos` (`id`, `codigo`, `nombre`, `descripcion`, `categoria_id`, `subcategoria_id`, `proveedor_id`, `id_producto_proveedor`, `fecha_vencimiento`, `cantidad`, `precio_costo`, `precio_venta`, `created_at`, `updated_at`, `estado`) VALUES
-(95, '001', 'Crema de Leche', '', 1, 1, 1, 5, '2026-01-13', 0, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 22:01:21', 'active'),
-(96, '005', 'jamon cerrano', '', 19, NULL, 2, 12, '2026-01-13', 13, 0.10, 0.13, '2025-12-14 17:04:25', '2025-12-14 21:53:07', 'active'),
+(96, '005', 'jamon cerrano', '', 19, NULL, 2, 12, '2026-01-31', 211, 2.50, 3.25, '2025-12-14 17:04:25', '2025-12-15 01:04:13', 'active'),
 (97, '002', 'Leche Entera Pasteurizada', '', 1, 1, 1, 1, '2026-01-13', 9, 0.09, 0.12, '2025-12-14 17:04:25', '2025-12-14 22:02:30', 'active'),
-(98, '003', 'Mantequilla con Sal', '', 1, NULL, 1, 4, '2026-01-13', 0, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 22:01:21', 'active'),
 (99, '006', 'natilla', '', 1, NULL, 1, 6, '2026-01-13', 14, 0.09, 0.12, '2025-12-14 17:04:25', '2025-12-14 21:53:07', 'active'),
 (100, '008', 'Queso', '', 1, 2, 2, 8, '2026-01-13', 14, 0.09, 0.12, '2025-12-14 17:04:25', '2025-12-14 21:53:07', 'active'),
-(101, '004', 'Queso Blanco Fresco', '', 1, 2, 1, 2, '2026-01-13', 12, 0.09, 0.12, '2025-12-14 17:04:25', '2025-12-14 22:01:21', 'active'),
+(101, '004', 'Queso Blanco Fresco', '', 1, 2, 1, 2, '2026-01-13', 6, 0.09, 0.12, '2025-12-14 17:04:25', '2025-12-14 22:46:00', 'active'),
 (102, '007', 'queso manchego', '', 1, 2, 1, 7, '2026-01-13', 4, 1.00, 1.30, '2025-12-14 17:04:25', '2025-12-14 21:53:07', 'active');
 
 -- --------------------------------------------------------
@@ -678,7 +677,7 @@ INSERT INTO `productos_proveedor` (`id_producto_proveedor`, `codigo_producto`, `
 (9, '009', 'Choclate con Leche', NULL, 6, NULL, 3, 25.00, 'unidad', '2025-12-04', 1, '2025-11-12 20:27:03', '2025-12-09 14:11:30', 'activo'),
 (10, '010', 'Samba', NULL, 6, NULL, 3, 2.50, 'unidad', '2025-12-04', 1, '2025-11-12 21:36:37', '2025-12-09 14:11:30', 'activo'),
 (11, '011', 'Cocosette', NULL, 6, NULL, 3, 5.00, 'unidad', '2025-12-04', 1, '2025-11-12 21:37:50', '2025-12-09 14:11:30', 'activo'),
-(12, '005', 'jamon cerrano', NULL, 19, NULL, 2, 0.10, 'paquete', '2025-12-14', 0, '2025-12-13 23:27:05', '2025-12-14 21:53:07', 'activo');
+(12, '005', 'jamon cerrano', NULL, 19, NULL, 2, 2.50, 'paquete', '2025-12-14', 0, '2025-12-13 23:27:05', '2025-12-14 22:44:32', 'activo');
 
 -- --------------------------------------------------------
 
@@ -793,9 +792,7 @@ CREATE TABLE `ventas` (
   `total_bs` decimal(12,2) DEFAULT 0.00,
   `id_cliente` int(11) DEFAULT NULL,
   `total_usd` decimal(12,2) DEFAULT 0.00,
-  `total_eur` decimal(12,2) DEFAULT NULL,
   `tasa_usd` decimal(12,4) DEFAULT 0.0000,
-  `tasa_eur` decimal(12,4) DEFAULT 0.0000,
   `nro_factura` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -803,12 +800,12 @@ CREATE TABLE `ventas` (
 -- Volcado de datos para la tabla `ventas`
 --
 
-INSERT INTO `ventas` (`id_venta`, `cliente`, `fecha`, `metodo_pago`, `total_bs`, `id_cliente`, `total_usd`, `total_eur`, `tasa_usd`, `tasa_eur`, `nro_factura`) VALUES
-(9, 'Isis Sofia', '2025-12-05', 'Efectivo', 1349.12, 1, 5.36, NULL, 251.8900, 0.0000, 'FAC-004538'),
-(10, 'jose pernalete', '2025-12-14', 'Pago Móvil', 2112.16, 5, 7.80, NULL, 270.7900, 0.0000, 'FAC-004539'),
-(11, 'Isis Sofia', '2025-12-14', 'Pago Móvil', 1408.11, 1, 5.20, NULL, 270.7900, 0.0000, 'FAC-004540'),
-(500, 'jose pernalete', '2025-12-14', 'Efectivo', 1584.23, 5, 5.85, NULL, 270.7900, 0.0000, 'FAC-004541'),
-(501, 'Daviana', '2025-12-14', 'Pago Móvil', 64.99, 11, 0.24, NULL, 270.7900, 0.0000, 'FAC-004542');
+INSERT INTO `ventas` (`id_venta`, `cliente`, `fecha`, `metodo_pago`, `total_bs`, `id_cliente`, `total_usd`, `tasa_usd`, `nro_factura`) VALUES
+(11, 'Isis Sofia', '2025-12-14', 'Pago Móvil', 1408.11, 1, 5.20, 270.7900, 'FAC-004540'),
+(500, 'jose pernalete', '2025-12-14', 'Efectivo', 1584.23, 5, 5.85, 270.7900, 'FAC-004541'),
+(501, 'Daviana', '2025-12-14', 'Pago Móvil', 64.99, 11, 0.24, 270.7900, 'FAC-004542'),
+(502, 'jose pernalete', '2025-12-14', 'Débito', 194.97, 5, 0.72, 270.7900, 'FAC-004543'),
+(503, 'Isis Sofia', '2025-12-15', 'Pago Móvil', 1760.14, 1, 6.50, 270.7900, 'FAC-004544');
 
 -- --------------------------------------------------------
 
@@ -974,19 +971,19 @@ ALTER TABLE `clientes`
 -- AUTO_INCREMENT de la tabla `compras_proveedores`
 --
 ALTER TABLE `compras_proveedores`
-  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=500;
+  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=501;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_venta`
 --
 ALTER TABLE `detalle_venta`
-  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=505;
+  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=507;
 
 --
 -- AUTO_INCREMENT de la tabla `historial_compras`
 --
 ALTER TABLE `historial_compras`
-  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=500;
+  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=501;
 
 --
 -- AUTO_INCREMENT de la tabla `productos`
@@ -998,7 +995,7 @@ ALTER TABLE `productos`
 -- AUTO_INCREMENT de la tabla `ventas`
 --
 ALTER TABLE `ventas`
-  MODIFY `id_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=502;
+  MODIFY `id_venta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=504;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

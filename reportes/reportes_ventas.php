@@ -105,13 +105,13 @@ $total_productos_rango = intval($resumen_rango['total_productos'] ?? 0);
                 <form method="GET" class="filtros-form">
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Fecha de Inicio:</label>
-                            <input type="date" name="start_date" class="form-input" value="<?= htmlspecialchars($start_date) ?>" required>
+                            <label for="start_date">Fecha de Inicio:</label>
+                            <input type="date" name="start_date" id="start_date" class="form-input" value="<?= htmlspecialchars($start_date) ?>" required>
                         </div>
                         
                         <div class="form-group">
-                            <label>Fecha de Fin:</label>
-                            <input type="date" name="end_date" class="form-input" value="<?= htmlspecialchars($end_date) ?>" required>
+                            <label for="end_date">Fecha de Fin:</label>
+                            <input type="date" name="end_date" id="end_date" class="form-input" value="<?= htmlspecialchars($end_date) ?>" required>
                         </div>
                         
                         <div class="form-group">

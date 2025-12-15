@@ -7,9 +7,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 require_once '../conexion.php';
 
-
-
-// Primero, verificar la estructura de la tabla productos
 function verificarEstructuraProductos($pdo) {
     $query = "SHOW COLUMNS FROM productos";
     $stmt = $pdo->prepare($query);
@@ -40,8 +37,7 @@ function verificarEstructuraProductos($pdo) {
 
 $estructura = verificarEstructuraProductos($pdo);
 
-// Determinar qué columnas usar para costos
-$columna_costo = 'precio_costo'; // Valor por defecto
+$columna_costo = 'precio_costo';
 if (in_array('costo_promedio_bs', $estructura['costo'])) {
     $columna_costo = 'costo_promedio_bs';
 } elseif (in_array('costo_bs', $estructura['costo'])) {
@@ -54,8 +50,7 @@ if (in_array('costo_promedio_bs', $estructura['costo'])) {
     $columna_costo = 'precio_compra_bs';
 }
 
-// Determinar qué columnas usar para precios de venta
-$columna_precio_venta = 'precio_venta_bs'; // Valor por defecto
+$columna_precio_venta = 'precio_venta_bs';
 if (in_array('precio_venta_bs', $estructura['precio'])) {
     $columna_precio_venta = 'precio_venta_bs';
 } elseif (in_array('precio_bs', $estructura['precio'])) {
@@ -64,12 +59,10 @@ if (in_array('precio_venta_bs', $estructura['precio'])) {
     $columna_precio_venta = 'precio';
 }
 
-// Obtener fecha actual para valores por defecto
 $current_year = date('Y');
 $current_month = date('m');
 $current_day = date('Y-m-d');
 
-// Procesar filtros si se enviaron
 $year = isset($_GET['year']) ? intval($_GET['year']) : $current_year;
 $month = isset($_GET['month']) ? intval($_GET['month']) : $current_month;
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
@@ -77,16 +70,13 @@ $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
 $cliente_id = isset($_GET['cliente_id']) ? intval($_GET['cliente_id']) : 0;
 $tipo_analisis = isset($_GET['tipo_analisis']) ? $_GET['tipo_analisis'] : 'por_factura';
 
-// Función para obtener el costo promedio de productos
 function getCostoPromedioProductos($pdo, $columna_costo, $columna_precio_venta) {
-    // Primero verificar si las columnas existen
     $query_check = "SHOW COLUMNS FROM productos WHERE Field = ? OR Field = ?";
     $stmt_check = $pdo->prepare($query_check);
     $stmt_check->execute([$columna_costo, $columna_precio_venta]);
     $existen = $stmt_check->fetchAll(PDO::FETCH_COLUMN);
     
     if (count($existen) < 2) {
-        // Si no existen ambas columnas, usar valores por defecto
         $query = "SELECT 
                     id,
                     codigo,
@@ -123,7 +113,6 @@ function getCostoPromedioProductos($pdo, $columna_costo, $columna_precio_venta) 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Función para obtener rentabilidad por factura
 function getRentabilidadPorFactura($pdo, $start_date, $end_date, $cliente_id = 0, $columna_costo) {
     $params = ['start_date' => $start_date . ' 00:00:00', 'end_date' => $end_date . ' 23:59:59'];
     $cliente_where = '';
@@ -133,17 +122,15 @@ function getRentabilidadPorFactura($pdo, $start_date, $end_date, $cliente_id = 0
         $params['cliente_id'] = $cliente_id;
     }
     
-    // Verificar si la columna de costo existe
     $query_check = "SHOW COLUMNS FROM productos WHERE Field = ?";
     $stmt_check = $pdo->prepare($query_check);
     $stmt_check->execute([$columna_costo]);
     $columna_existe = $stmt_check->fetch();
     
     if (!$columna_existe) {
-        // Si no existe la columna, usar valor por defecto
-        $columna_costo_sql = "dv.precio_unitario_bs * 0.7";
+        $columna_costo_sql = "(dv.subtotal_bs / dv.cantidad) * 0.7";
     } else {
-        $columna_costo_sql = "COALESCE(p.$columna_costo, dv.precio_unitario_bs * 0.7)";
+        $columna_costo_sql = "COALESCE(p.$columna_costo, (dv.subtotal_bs / dv.cantidad) * 0.7)";
     }
     
     $query = "SELECT 
@@ -157,19 +144,14 @@ function getRentabilidadPorFactura($pdo, $start_date, $end_date, $cliente_id = 0
                 COUNT(DISTINCT dv.id_detalle) as cantidad_productos,
                 SUM(dv.cantidad) as total_unidades,
                 
-                -- Calcular costos totales
                 ROUND(SUM(dv.cantidad * $columna_costo_sql), 2) as costos_totales,
                 
-                -- Calcular ganancia
                 ROUND(v.total_bs - SUM(dv.cantidad * $columna_costo_sql), 2) as ganancia_bruta,
                 
-                -- Calcular márgenes
                 ROUND(((v.total_bs - SUM(dv.cantidad * $columna_costo_sql)) / v.total_bs * 100), 2) as margen_porcentaje,
                 
-                -- Calcular rentabilidad por unidad
                 ROUND(((v.total_bs - SUM(dv.cantidad * $columna_costo_sql)) / SUM(dv.cantidad)), 2) as ganancia_por_unidad,
                 
-                -- Clasificación de rentabilidad
                 CASE 
                     WHEN ((v.total_bs - SUM(dv.cantidad * $columna_costo_sql)) / v.total_bs * 100) >= 40 THEN 'ALTA'
                     WHEN ((v.total_bs - SUM(dv.cantidad * $columna_costo_sql)) / v.total_bs * 100) >= 20 THEN 'MEDIA'
@@ -189,16 +171,13 @@ function getRentabilidadPorFactura($pdo, $start_date, $end_date, $cliente_id = 0
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Función para obtener rentabilidad por producto
 function getRentabilidadPorProducto($pdo, $start_date, $end_date, $columna_costo, $columna_precio_venta) {
-    // Verificar si la columna de costo existe
     $query_check = "SHOW COLUMNS FROM productos WHERE Field = ?";
     $stmt_check = $pdo->prepare($query_check);
     $stmt_check->execute([$columna_costo]);
     $columna_existe = $stmt_check->fetch();
     
     if (!$columna_existe) {
-        // Si no existe la columna, devolver array vacío
         return [];
     }
     
@@ -208,7 +187,7 @@ function getRentabilidadPorProducto($pdo, $start_date, $end_date, $columna_costo
                 p.nombre,
                 cp.nombre_categoria as categoria,
                 p.$columna_costo as costo_promedio_bs,
-                ROUND(AVG(dv.precio_unitario_bs), 2) as precio_venta_promedio,
+                ROUND(AVG(dv.subtotal_bs / dv.cantidad), 2) as precio_venta_promedio,
                 SUM(dv.cantidad) as total_vendido,
                 SUM(dv.subtotal_bs) as ingresos_totales,
                 ROUND(SUM(dv.cantidad * p.$columna_costo), 2) as costos_totales,
@@ -218,7 +197,6 @@ function getRentabilidadPorProducto($pdo, $start_date, $end_date, $columna_costo
                 COUNT(DISTINCT v.id_venta) as facturas_con_producto,
                 MAX(v.fecha) as ultima_venta,
                 
-                -- Clasificación
                 CASE 
                     WHEN ((SUM(dv.subtotal_bs) - SUM(dv.cantidad * p.$columna_costo)) / SUM(dv.subtotal_bs) * 100) >= 40 THEN 'ALTA'
                     WHEN ((SUM(dv.subtotal_bs) - SUM(dv.cantidad * p.$columna_costo)) / SUM(dv.subtotal_bs) * 100) >= 20 THEN 'MEDIA'
@@ -245,9 +223,7 @@ function getRentabilidadPorProducto($pdo, $start_date, $end_date, $columna_costo
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Función para obtener resumen general de rentabilidad - VERSIÓN SIMPLIFICADA Y CORREGIDA
 function getResumenRentabilidad($pdo, $start_date, $end_date, $columna_costo) {
-    // Primero, obtener datos básicos de ventas sin costos
     $query = "SELECT 
                 COUNT(DISTINCT v.id_venta) as total_facturas,
                 SUM(v.total_bs) as ingresos_totales,
@@ -266,7 +242,6 @@ function getResumenRentabilidad($pdo, $start_date, $end_date, $columna_costo) {
     
     $resumen = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    // Ahora calcular costos y ganancias usando subconsulta segura
     $query_costos = "SELECT 
                         SUM(costos.costo_total) as costos_totales,
                         SUM(costos.ganancia) as ganancia_total,
@@ -282,12 +257,12 @@ function getResumenRentabilidad($pdo, $start_date, $end_date, $columna_costo) {
                             CASE 
                                 WHEN p.precio_costo IS NOT NULL AND p.precio_costo > 0
                                 THEN ROUND(dv.cantidad * p.precio_costo, 2)
-                                ELSE ROUND(dv.cantidad * dv.precio_unitario_bs * 0.7, 2)
+                                ELSE ROUND(dv.cantidad * (dv.subtotal_bs / dv.cantidad) * 0.7, 2)
                             END as costo_total,
                             CASE 
                                 WHEN p.precio_costo IS NOT NULL AND p.precio_costo > 0
                                 THEN ROUND(dv.subtotal_bs - (dv.cantidad * p.precio_costo), 2)
-                                ELSE ROUND(dv.subtotal_bs - (dv.cantidad * dv.precio_unitario_bs * 0.7), 2)
+                                ELSE ROUND(dv.subtotal_bs - (dv.cantidad * (dv.subtotal_bs / dv.cantidad) * 0.7), 2)
                             END as ganancia
                         FROM ventas v
                         INNER JOIN detalle_venta dv ON v.id_venta = dv.id_venta
@@ -303,11 +278,9 @@ function getResumenRentabilidad($pdo, $start_date, $end_date, $columna_costo) {
     
     $costos_data = $stmt_costos->fetch(PDO::FETCH_ASSOC);
     
-    // Combinar resultados
     if ($resumen && $costos_data) {
         $resumen_completo = array_merge($resumen, $costos_data);
         
-        // Calcular ganancia por unidad
         if ($resumen_completo['total_unidades'] > 0) {
             $resumen_completo['ganancia_por_unidad'] = 
                 round($resumen_completo['ganancia_total'] / $resumen_completo['total_unidades'], 2);
@@ -315,7 +288,6 @@ function getResumenRentabilidad($pdo, $start_date, $end_date, $columna_costo) {
             $resumen_completo['ganancia_por_unidad'] = 0;
         }
         
-        // Obtener distribución de facturas por nivel de rentabilidad
         $query_distribucion = "SELECT 
                     SUM(CASE WHEN rentabilidad.margen >= 40 THEN 1 ELSE 0 END) as facturas_alta_rentabilidad,
                     SUM(CASE WHEN rentabilidad.margen BETWEEN 20 AND 39.99 THEN 1 ELSE 0 END) as facturas_media_rentabilidad,
@@ -327,12 +299,12 @@ function getResumenRentabilidad($pdo, $start_date, $end_date, $columna_costo) {
                               WHEN SUM(CASE 
                                         WHEN p.precio_costo IS NOT NULL AND p.precio_costo > 0
                                         THEN dv.cantidad * p.precio_costo
-                                        ELSE dv.cantidad * dv.precio_unitario_bs * 0.7
+                                        ELSE dv.cantidad * (dv.subtotal_bs / dv.cantidad) * 0.7
                                        END) > 0
                               THEN ROUND(((v.total_bs - SUM(CASE 
                                                           WHEN p.precio_costo IS NOT NULL AND p.precio_costo > 0
                                                           THEN dv.cantidad * p.precio_costo
-                                                          ELSE dv.cantidad * dv.precio_unitario_bs * 0.7
+                                                          ELSE dv.cantidad * (dv.subtotal_bs / dv.cantidad) * 0.7
                                                          END)) / v.total_bs * 100), 2)
                               ELSE 0
                           END as margen
@@ -365,19 +337,16 @@ function getResumenRentabilidad($pdo, $start_date, $end_date, $columna_costo) {
 return null;
 }
 
-// Función para obtener rentabilidad por cliente
 function getRentabilidadPorCliente($pdo, $start_date, $end_date, $columna_costo) {
-    // Verificar si la columna de costo existe
     $query_check = "SHOW COLUMNS FROM productos WHERE Field = ?";
     $stmt_check = $pdo->prepare($query_check);
     $stmt_check->execute([$columna_costo]);
     $columna_existe = $stmt_check->fetch();
     
     if (!$columna_existe) {
-        // Si no existe la columna, usar valor por defecto
-        $columna_costo_sql = "dv.precio_unitario_bs * 0.7";
+        $columna_costo_sql = "(dv.subtotal_bs / dv.cantidad) * 0.7";
     } else {
-        $columna_costo_sql = "COALESCE(p.$columna_costo, dv.precio_unitario_bs * 0.7)";
+        $columna_costo_sql = "COALESCE(p.$columna_costo, (dv.subtotal_bs / dv.cantidad) * 0.7)";
     }
     
     $query = "SELECT 
@@ -392,14 +361,12 @@ function getRentabilidadPorCliente($pdo, $start_date, $end_date, $columna_costo)
                 ROUND(AVG(v.total_bs), 2) as ticket_promedio,
                 MAX(v.fecha) as ultima_compra,
                 
-                -- Clasificación de cliente
                 CASE 
                     WHEN ((SUM(v.total_bs) - SUM(dv.cantidad * $columna_costo_sql)) / SUM(v.total_bs) * 100) >= 35 THEN 'ALTA RENTABILIDAD'
                     WHEN ((SUM(v.total_bs) - SUM(dv.cantidad * $columna_costo_sql)) / SUM(v.total_bs) * 100) >= 25 THEN 'MEDIA RENTABILIDAD'
                     ELSE 'BAJA RENTABILIDAD'
                 END as clasificacion_cliente,
                 
-                -- Valor del cliente
                 CASE 
                     WHEN SUM(v.total_bs) > 10000 THEN 'CLIENTE PREMIUM'
                     WHEN SUM(v.total_bs) > 5000 THEN 'CLIENTE MEDIO'
@@ -425,7 +392,6 @@ function getRentabilidadPorCliente($pdo, $start_date, $end_date, $columna_costo)
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Función para obtener clientes (para el select)
 function getClientes($pdo) {
     $query = "SELECT DISTINCT id_cliente, cliente 
               FROM ventas 
@@ -438,7 +404,6 @@ function getClientes($pdo) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Obtener datos según el tipo de análisis
 $rentabilidad_por_factura = [];
 $rentabilidad_por_producto = [];
 $rentabilidad_por_cliente = [];
@@ -446,13 +411,11 @@ $resumen_rentabilidad = [];
 $costo_promedio_productos = [];
 $clientes = getClientes($pdo);
 
-// Inicializar variables para estadísticas de márgenes (CORRECCIÓN APLICADA AQUÍ)
 $productos_alto_margen = 0;
 $productos_medio_margen = 0;
 $productos_bajo_margen = 0;
 $productos_sin_costo = 0;
 
-// Información de depuración (puedes eliminar esto después)
 $debug_info = [
     'columna_costo_detectada' => $columna_costo,
     'columna_precio_venta_detectada' => $columna_precio_venta,
@@ -472,7 +435,6 @@ if ($tipo_analisis === 'por_factura') {
     $costo_promedio_productos = getCostoPromedioProductos($pdo, $columna_costo, $columna_precio_venta);
 }
 
-// Meses en español
 $meses_espanol = [
     1 => 'Enero',
     2 => 'Febrero',
@@ -493,13 +455,11 @@ $meses_espanol = [
 <head>
     <meta charset="UTF-8">
     <title>Reporte de Rentabilidad</title>
-    <!-- CONEXIÓN CORRECTA DE CSS -->
     <link rel="stylesheet" href="../css/reportes/repo_rentabilidad.css">
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Estilos inline adicionales */
         .debug-info {
             background: #f8f9fa;
             border-left: 4px solid #007bff;
@@ -527,7 +487,6 @@ $meses_espanol = [
 <body>
 <main class="main-content">
     <div class="content-wrapper">
-        <!-- Header -->
         <div class="page-header">
             <h1 class="page-title">Reporte de rentabilidad</h1>
             <a href="../reportes.php" class="volver-button">
@@ -535,7 +494,6 @@ $meses_espanol = [
                     </a>
         </div>
 
-        <!-- Información de depuración (opcional, puede eliminar) -->
         <?php if(isset($_GET['debug'])): ?>
         <div class="debug-info">
             <h4>Información de depuración:</h4>
@@ -547,13 +505,11 @@ $meses_espanol = [
         </div>
         <?php endif; ?>
 
-        <!-- Información sobre costos -->
         <div class="info-alert">
             <strong>Información:</strong> El sistema está usando la columna <strong>"<?= $columna_costo ?>"</strong> para calcular costos. 
             Si necesitas usar otra columna, verifica la estructura de tu tabla productos.
         </div>
 
-        <!-- Filtros -->
         <div class="filtros-container">
             <div class="filtros-card">
                 <h3>Filtrar Reporte de Rentabilidad</h3>
@@ -601,7 +557,6 @@ $meses_espanol = [
             </div>
         </div>
 
-        <!-- Resumen General -->
         <?php if($resumen_rentabilidad && in_array($tipo_analisis, ['por_factura', 'por_producto', 'por_cliente'])): ?>
         <div class="reporte-container">
             <div class="reporte-header">
@@ -614,13 +569,13 @@ $meses_espanol = [
             <div class="estadisticas-grid">
                 <div class="estadistica-card">
                     <div class="estadistica-label">Ingresos Totales</div>
-                    <div class="estadistica-value">Bs. <?= number_format($resumen_rentabilidad['ingresos_totales'] ?? 0, 2, ',', '.') ?></div>
+                    <div class="estadistica-value">$. <?= number_format($resumen_rentabilidad['ingresos_totales'] ?? 0, 2, ',', '.') ?></div>
                 </div>
                 
                 <div class="estadistica-card">
                     <div class="estadistica-label">Ganancia Bruta</div>
                     <div class="estadistica-value" style="color: #28a745;">
-                        Bs. <?= number_format($resumen_rentabilidad['ganancia_total'] ?? 0, 2, ',', '.') ?>
+                        $. <?= number_format($resumen_rentabilidad['ganancia_total'] ?? 0, 2, ',', '.') ?>
                     </div>
                 </div>
                 
@@ -637,7 +592,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Distribución de Rentabilidad -->
             <?php if(isset($resumen_rentabilidad['facturas_alta_rentabilidad'])): ?>
             <div class="tabla-container">
                 <h3>Distribución de Facturas por Nivel de Rentabilidad</h3>
@@ -671,7 +625,6 @@ $meses_espanol = [
         </div>
         <?php endif; ?>
         
-        <!-- Reporte por Factura -->
         <?php if($tipo_analisis === 'por_factura'): ?>
         <div class="reporte-container">
             <div class="reporte-header">
@@ -681,7 +634,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Tabla de Facturas -->
             <div class="tabla-container">
                 <div class="table-responsive">
                     <table class="tabla-reporte">
@@ -691,9 +643,9 @@ $meses_espanol = [
                                 <th>Fecha</th>
                                 <th>Cliente</th>
                                 <th>Método Pago</th>
-                                <th>Ingresos (Bs)</th>
-                                <th>Costos (Bs)</th>
-                                <th>Ganancia (Bs)</th>
+                                <th>Ingresos ($)</th>
+                                <th>Costos ($)</th>
+                                <th>Ganancia ($)</th>
                                 <th>Margen %</th>
                                 <th>Unidades</th>
                                 <th>Ganancia/Unidad</th>
@@ -727,16 +679,16 @@ $meses_espanol = [
                                     <td><?= date('d/m/Y', strtotime($factura['fecha'])) ?></td>
                                     <td><?= htmlspecialchars($factura['cliente'] ?? 'Sin cliente') ?></td>
                                     <td><?= $factura['metodo_pago'] ?? 'N/A' ?></td>
-                                    <td>Bs. <?= number_format($factura['ingresos_totales'] ?? 0, 2, ',', '.') ?></td>
-                                    <td>Bs. <?= number_format($factura['costos_totales'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($factura['ingresos_totales'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($factura['costos_totales'] ?? 0, 2, ',', '.') ?></td>
                                     <td style="color: <?= ($factura['ganancia_bruta'] ?? 0) >= 0 ? '#28a745' : '#dc3545' ?>;">
-                                        Bs. <?= number_format($factura['ganancia_bruta'] ?? 0, 2, ',', '.') ?>
+                                        $. <?= number_format($factura['ganancia_bruta'] ?? 0, 2, ',', '.') ?>
                                     </td>
                                     <td style="color: <?= $color_nivel ?>; font-weight: bold;">
                                         <?= number_format($factura['margen_porcentaje'] ?? 0, 2, ',', '.') ?>%
                                     </td>
                                     <td><?= $factura['total_unidades'] ?? 0 ?></td>
-                                    <td>Bs. <?= number_format($factura['ganancia_por_unidad'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($factura['ganancia_por_unidad'] ?? 0, 2, ',', '.') ?></td>
                                     <td>
                                         <span class="nivel-badge" style="background: <?= $color_nivel ?>20; color: <?= $color_nivel ?>; border-color: <?= $color_nivel ?>;">
                                             <?= $factura['nivel_rentabilidad'] ?>
@@ -750,9 +702,9 @@ $meses_espanol = [
                         <tfoot>
                             <tr class="total-row">
                                 <td colspan="4"><strong>TOTALES</strong></td>
-                                <td><strong>Bs. <?= number_format($total_ingresos, 2, ',', '.') ?></strong></td>
-                                <td><strong>Bs. <?= number_format($total_costos, 2, ',', '.') ?></strong></td>
-                                <td><strong>Bs. <?= number_format($total_ganancia, 2, ',', '.') ?></strong></td>
+                                <td><strong>$. <?= number_format($total_ingresos, 2, ',', '.') ?></strong></td>
+                                <td><strong>$. <?= number_format($total_costos, 2, ',', '.') ?></strong></td>
+                                <td><strong>$. <?= number_format($total_ganancia, 2, ',', '.') ?></strong></td>
                                 <td><strong><?= $total_ingresos > 0 ? number_format(($total_ganancia / $total_ingresos * 100), 2, ',', '.') : '0,00' ?>%</strong></td>
                                 <td colspan="3"></td>
                             </tr>
@@ -762,7 +714,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Gráfico de distribución -->
             <div class="tabla-container">
                 <h3>Distribución de Rentabilidad por Factura</h3>
                 <div class="grafico-container">
@@ -772,7 +723,6 @@ $meses_espanol = [
         </div>
         <?php endif; ?>
         
-        <!-- Reporte por Producto -->
         <?php if($tipo_analisis === 'por_producto'): ?>
         <div class="reporte-container">
             <div class="reporte-header">
@@ -782,7 +732,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Tabla de Productos -->
             <div class="tabla-container">
                 <div class="table-responsive">
                     <table class="tabla-reporte">
@@ -791,12 +740,12 @@ $meses_espanol = [
                                 <th>Producto</th>
                                 <th>Código</th>
                                 <th>Categoría</th>
-                                <th>Costo Prom. (Bs)</th>
-                                <th>Precio Prom. (Bs)</th>
+                                <th>Costo Prom. ($)</th>
+                                <th>Precio Prom. ($)</th>
                                 <th>Unidades Vend.</th>
-                                <th>Ingresos (Bs)</th>
-                                <th>Costos (Bs)</th>
-                                <th>Ganancia (Bs)</th>
+                                <th>Ingresos ($)</th>
+                                <th>Costos ($)</th>
+                                <th>Ganancia ($)</th>
                                 <th>Margen %</th>
                                 <th>Ganancia/Unidad</th>
                                 <th>Nivel</th>
@@ -830,18 +779,18 @@ $meses_espanol = [
                                     <td><?= htmlspecialchars($producto['nombre'] ?? '') ?></td>
                                     <td><?= $producto['codigo'] ?? '' ?></td>
                                     <td><?= $producto['categoria'] ?? '' ?></td>
-                                    <td>Bs. <?= number_format($producto['costo_promedio_bs'] ?? 0, 2, ',', '.') ?></td>
-                                    <td>Bs. <?= number_format($producto['precio_venta_promedio'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($producto['costo_promedio_bs'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($producto['precio_venta_promedio'] ?? 0, 2, ',', '.') ?></td>
                                     <td><?= $producto['total_vendido'] ?? 0 ?></td>
-                                    <td>Bs. <?= number_format($producto['ingresos_totales'] ?? 0, 2, ',', '.') ?></td>
-                                    <td>Bs. <?= number_format($producto['costos_totales'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($producto['ingresos_totales'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($producto['costos_totales'] ?? 0, 2, ',', '.') ?></td>
                                     <td style="color: <?= ($producto['ganancia_total'] ?? 0) >= 0 ? '#28a745' : '#dc3545' ?>;">
-                                        Bs. <?= number_format($producto['ganancia_total'] ?? 0, 2, ',', '.') ?>
+                                        $. <?= number_format($producto['ganancia_total'] ?? 0, 2, ',', '.') ?>
                                     </td>
                                     <td style="color: <?= $color_nivel ?>; font-weight: bold;">
                                         <?= number_format($producto['margen_porcentaje'] ?? 0, 2, ',', '.') ?>%
                                     </td>
-                                    <td>Bs. <?= number_format($producto['ganancia_por_unidad'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($producto['ganancia_por_unidad'] ?? 0, 2, ',', '.') ?></td>
                                     <td>
                                         <span class="nivel-badge" style="background: <?= $color_nivel ?>20; color: <?= $color_nivel ?>; border-color: <?= $color_nivel ?>;">
                                             <?= $producto['nivel_rentabilidad'] ?>
@@ -856,11 +805,11 @@ $meses_espanol = [
                             <tr class="total-row">
                                 <td colspan="5"><strong>TOTALES</strong></td>
                                 <td><strong><?= $total_unidades ?></strong></td>
-                                <td><strong>Bs. <?= number_format($total_ingresos, 2, ',', '.') ?></strong></td>
-                                <td><strong>Bs. <?= number_format($total_costos, 2, ',', '.') ?></strong></td>
-                                <td><strong>Bs. <?= number_format($total_ganancia, 2, ',', '.') ?></strong></td>
+                                <td><strong>$. <?= number_format($total_ingresos, 2, ',', '.') ?></strong></td>
+                                <td><strong>$. <?= number_format($total_costos, 2, ',', '.') ?></strong></td>
+                                <td><strong>$. <?= number_format($total_ganancia, 2, ',', '.') ?></strong></td>
                                 <td><strong><?= $total_ingresos > 0 ? number_format(($total_ganancia / $total_ingresos * 100), 2, ',', '.') : '0,00' ?>%</strong></td>
-                                <td><strong>Bs. <?= $total_unidades > 0 ? number_format(($total_ganancia / $total_unidades), 2, ',', '.') : '0,00' ?></strong></td>
+                                <td><strong>$. <?= $total_unidades > 0 ? number_format(($total_ganancia / $total_unidades), 2, ',', '.') : '0,00' ?></strong></td>
                                 <td></td>
                             </tr>
                         </tfoot>
@@ -869,7 +818,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Gráfico de productos más rentables -->
             <div class="tabla-container">
                 <h3>Top 10 Productos Más Rentables</h3>
                 <div class="grafico-container">
@@ -879,7 +827,6 @@ $meses_espanol = [
         </div>
         <?php endif; ?>
         
-        <!-- Reporte por Cliente -->
         <?php if($tipo_analisis === 'por_cliente'): ?>
         <div class="reporte-container">
             <div class="reporte-header">
@@ -889,7 +836,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Tabla de Clientes -->
             <div class="tabla-container">
                 <div class="table-responsive">
                     <table class="tabla-reporte">
@@ -897,9 +843,9 @@ $meses_espanol = [
                             <tr>
                                 <th>Cliente</th>
                                 <th>Facturas</th>
-                                <th>Ingresos (Bs)</th>
-                                <th>Costos (Bs)</th>
-                                <th>Ganancia (Bs)</th>
+                                <th>Ingresos ($)</th>
+                                <th>Costos ($)</th>
+                                <th>Ganancia ($)</th>
                                 <th>Margen %</th>
                                 <th>Ticket Promedio</th>
                                 <th>Última Compra</th>
@@ -940,15 +886,15 @@ $meses_espanol = [
                                 <tr>
                                     <td><?= htmlspecialchars($cliente['cliente'] ?? 'Cliente no identificado') ?></td>
                                     <td><?= $cliente['total_facturas'] ?? 0 ?></td>
-                                    <td>Bs. <?= number_format($cliente['ingresos_totales'] ?? 0, 2, ',', '.') ?></td>
-                                    <td>Bs. <?= number_format($cliente['costos_totales'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($cliente['ingresos_totales'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($cliente['costos_totales'] ?? 0, 2, ',', '.') ?></td>
                                     <td style="color: <?= ($cliente['ganancia_total'] ?? 0) >= 0 ? '#28a745' : '#dc3545' ?>;">
-                                        Bs. <?= number_format($cliente['ganancia_total'] ?? 0, 2, ',', '.') ?>
+                                        $. <?= number_format($cliente['ganancia_total'] ?? 0, 2, ',', '.') ?>
                                     </td>
                                     <td style="color: <?= $color_clasificacion ?>; font-weight: bold;">
                                         <?= number_format($cliente['margen_promedio'] ?? 0, 2, ',', '.') ?>%
                                     </td>
-                                    <td>Bs. <?= number_format($cliente['ticket_promedio'] ?? 0, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($cliente['ticket_promedio'] ?? 0, 2, ',', '.') ?></td>
                                     <td><?= date('d/m/Y', strtotime($cliente['ultima_compra'])) ?></td>
                                     <td>
                                         <span class="nivel-badge" style="background: <?= $color_clasificacion ?>20; color: <?= $color_clasificacion ?>; border-color: <?= $color_clasificacion ?>;">
@@ -969,9 +915,9 @@ $meses_espanol = [
                             <tr class="total-row">
                                 <td><strong>TOTALES</strong></td>
                                 <td><strong><?= $total_facturas ?></strong></td>
-                                <td><strong>Bs. <?= number_format($total_ingresos, 2, ',', '.') ?></strong></td>
-                                <td><strong>Bs. <?= number_format($total_costos, 2, ',', '.') ?></strong></td>
-                                <td><strong>Bs. <?= number_format($total_ganancia, 2, ',', '.') ?></strong></td>
+                                <td><strong>$. <?= number_format($total_ingresos, 2, ',', '.') ?></strong></td>
+                                <td><strong>$. <?= number_format($total_costos, 2, ',', '.') ?></strong></td>
+                                <td><strong>$. <?= number_format($total_ganancia, 2, ',', '.') ?></strong></td>
                                 <td><strong><?= $total_ingresos > 0 ? number_format(($total_ganancia / $total_ingresos * 100), 2, ',', '.') : '0,00' ?>%</strong></td>
                                 <td colspan="4"></td>
                             </tr>
@@ -981,7 +927,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Gráfico de clientes -->
             <div class="tabla-container">
                 <h3>Distribución de Clientes por Rentabilidad</h3>
                 <div class="grafico-container">
@@ -991,7 +936,6 @@ $meses_espanol = [
         </div>
         <?php endif; ?>
         
-        <!-- Costos y Margenes de Productos -->
         <?php if($tipo_analisis === 'costos_productos'): ?>
         <div class="reporte-container">
             <div class="reporte-header">
@@ -1001,7 +945,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Tabla de Costos -->
             <div class="tabla-container">
                 <div class="table-responsive">
                     <table class="tabla-reporte">
@@ -1009,9 +952,9 @@ $meses_espanol = [
                             <tr>
                                 <th>Producto</th>
                                 <th>Código</th>
-                                <th>Costo Prom. (Bs)</th>
-                                <th>Precio Venta (Bs)</th>
-                                <th>Margen Bs</th>
+                                <th>Costo Prom. ($)</th>
+                                <th>Precio Venta ($)</th>
+                                <th>Margen $</th>
                                 <th>Margen %</th>
                                 <th>Relación Precio/Costo</th>
                                 <th>Recomendación</th>
@@ -1024,7 +967,6 @@ $meses_espanol = [
                                 </tr>
                             <?php else: ?>
                                 <?php 
-                                // Reinicializar contadores para esta sección
                                 $productos_alto_margen = 0;
                                 $productos_medio_margen = 0;
                                 $productos_bajo_margen = 0;
@@ -1061,10 +1003,10 @@ $meses_espanol = [
                                 <tr>
                                     <td><?= htmlspecialchars($producto['nombre'] ?? '') ?></td>
                                     <td><?= $producto['codigo'] ?? '' ?></td>
-                                    <td>Bs. <?= number_format($costo, 2, ',', '.') ?></td>
-                                    <td>Bs. <?= number_format($precio, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($costo, 2, ',', '.') ?></td>
+                                    <td>$. <?= number_format($precio, 2, ',', '.') ?></td>
                                     <td style="color: <?= $color_margen ?>;">
-                                        Bs. <?= number_format($producto['margen_bs'] ?? 0, 2, ',', '.') ?>
+                                        $. <?= number_format($producto['margen_bs'] ?? 0, 2, ',', '.') ?>
                                     </td>
                                     <td style="color: <?= $color_margen ?>; font-weight: bold;">
                                         <?= number_format($margen_porcentaje, 2, ',', '.') ?>%
@@ -1083,7 +1025,6 @@ $meses_espanol = [
                 </div>
             </div>
             
-            <!-- Estadísticas de márgenes -->
             <?php if($productos_alto_margen + $productos_medio_margen + $productos_bajo_margen > 0): ?>
             <div class="tabla-container">
                 <h3>Distribución de Márgenes por Producto</h3>
@@ -1125,7 +1066,6 @@ $meses_espanol = [
 </main>
 
 <script>
-// Mostrar/ocultar filtro de cliente según tipo de análisis
 $(document).ready(function() {
     $('#tipo-analisis').change(function() {
         if ($(this).val() === 'por_factura') {
@@ -1135,18 +1075,15 @@ $(document).ready(function() {
         }
     });
     
-    // Inicializar estado
     if ($('#tipo-analisis').val() !== 'por_factura') {
         $('#filtro-cliente').hide();
     }
     
-    // Generar gráficos si existen
     generarGraficos();
 });
 
 function generarGraficos() {
     <?php if($tipo_analisis === 'por_factura' && !empty($rentabilidad_por_factura)): ?>
-    // Gráfico para rentabilidad por factura
     const ctx1 = document.getElementById('graficoRentabilidadFacturas').getContext('2d');
     const facturasData = <?= json_encode(array_slice($rentabilidad_por_factura, 0, 20)) ?>;
     
@@ -1185,8 +1122,8 @@ function generarGraficos() {
                             const factura = facturasData[context.dataIndex];
                             return [
                                 `Cliente: ${factura.cliente}`,
-                                `Ingresos: Bs. ${parseFloat(factura.ingresos_totales).toLocaleString('es-ES', {minimumFractionDigits: 2})}`,
-                                `Ganancia: Bs. ${parseFloat(factura.ganancia_bruta).toLocaleString('es-ES', {minimumFractionDigits: 2})}`,
+                                `Ingresos: $. ${parseFloat(factura.ingresos_totales).toLocaleString('es-ES', {minimumFractionDigits: 2})}`,
+                                `Ganancia: $. ${parseFloat(factura.ganancia_bruta).toLocaleString('es-ES', {minimumFractionDigits: 2})}`,
                                 `Margen: ${parseFloat(factura.margen_porcentaje).toLocaleString('es-ES', {minimumFractionDigits: 2})}%`
                             ];
                         }
@@ -1213,7 +1150,6 @@ function generarGraficos() {
     <?php endif; ?>
     
     <?php if($tipo_analisis === 'por_producto' && !empty($rentabilidad_por_producto)): ?>
-    // Gráfico para rentabilidad por producto
     const ctx2 = document.getElementById('graficoTopProductos').getContext('2d');
     const productosData = <?= json_encode(array_slice($rentabilidad_por_producto, 0, 10)) ?>;
     
@@ -1223,7 +1159,7 @@ function generarGraficos() {
             labels: productosData.map(p => p.nombre.substring(0, 20) + (p.nombre.length > 20 ? '...' : '')),
             datasets: [
                 {
-                    label: 'Ingresos (Bs)',
+                    label: 'Ingresos ($)',
                     data: productosData.map(p => parseFloat(p.ingresos_totales)),
                     backgroundColor: 'rgba(0, 139, 139, 0.7)',
                     borderColor: '#008B8B',
@@ -1266,7 +1202,7 @@ function generarGraficos() {
                     position: 'left',
                     title: {
                         display: true,
-                        text: 'Ingresos (Bs)'
+                        text: 'Ingresos ($)'
                     }
                 },
                 y1: {
@@ -1287,10 +1223,8 @@ function generarGraficos() {
     <?php endif; ?>
     
     <?php if($tipo_analisis === 'por_cliente' && !empty($rentabilidad_por_cliente)): ?>
-    // Gráfico para rentabilidad por cliente
     const ctx3 = document.getElementById('graficoClientes').getContext('2d');
     
-    // Contar clientes por clasificación
     const clasificaciones = {};
     <?php foreach($rentabilidad_por_cliente as $cliente): ?>
         const clasif = '<?= $cliente["clasificacion_cliente"] ?>';

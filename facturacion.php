@@ -663,7 +663,7 @@ $('#formAgregarCliente').submit(function(e) {
     const formData = $(this).serialize();
     
     $.ajax({
-        url: 'guardar_cliente.php', // Asumiendo que existe este script para guardar clientes
+        url: 'guardar_cliente.php', 
         type: 'POST',
         data: formData,
         dataType: 'json',

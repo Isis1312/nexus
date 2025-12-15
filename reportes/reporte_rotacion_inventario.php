@@ -7,12 +7,17 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 require_once '../conexion.php';
 
+$fecha_inicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : date('Y-m-d', strtotime('-90 days'));
+$fecha_fin = isset($_GET['fecha_fin']) ? $_GET['fecha_fin'] : date('Y-m-d');
 
-$dias_lookback = isset($_GET['dias']) ? intval($_GET['dias']) : 90;
-$dias_lookback = max(1, $dias_lookback);
 
-function getRotacionInventario($pdo, $dias_lookback = 90) {
-    $dias = max(1, intval($dias_lookback));
+function getRotacionInventario($pdo, $fecha_inicio, $fecha_fin) {
+    $inicio = date('Y-m-d', strtotime($fecha_inicio));
+    $fin = date('Y-m-d', strtotime($fecha_fin));
+
+    $dias_timestamp = strtotime($fin) - strtotime($inicio);
+    $dias_periodo = floor($dias_timestamp / (60 * 60 * 24)) + 1;
+
 
     try {
         $colsStmt = $pdo->query("SHOW COLUMNS FROM productos");
@@ -27,10 +32,8 @@ function getRotacionInventario($pdo, $dias_lookback = 90) {
 
     if ($stockCol) {
         $stockSelect = "COALESCE(p.$stockCol, 0) AS stock";
-        $valorStockRef = "COALESCE(p.$stockCol, 0)";
     } else {
         $stockSelect = "0 AS stock";
-        $valorStockRef = "0";
     }
 
     $sql = "SELECT
@@ -41,29 +44,29 @@ function getRotacionInventario($pdo, $dias_lookback = 90) {
                         FROM detalle_venta dv
                         JOIN ventas v ON dv.id_venta = v.id_venta
                         WHERE dv.id_producto = p.id
-                          AND v.fecha >= DATE_SUB(CURDATE(), INTERVAL $dias DAY)
+                          AND v.fecha BETWEEN :fecha_inicio AND :fecha_fin
                        ), 0) AS vendidos_periodo
             FROM productos p
             ORDER BY vendidos_periodo DESC";
 
     $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':fecha_inicio', $inicio);
+    $stmt->bindParam(':fecha_fin', $fin);
     $stmt->execute();
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($rows as &$r) {
         $vendidos = floatval($r['vendidos_periodo']);
         $stock = floatval($r['stock']);
-        $promedio_diario = $vendidos > 0 ? ($vendidos / $dias) : 0;
+        $promedio_diario = $vendidos > 0 && $dias_periodo > 0 ? ($vendidos / $dias_periodo) : 0;
         
         $r['rotacion'] = $stock > 0 ? round($vendidos / $stock, 2) : null;
-        
-        $r['dias_inventario'] = $promedio_diario > 0 ? intval(round($stock / $promedio_diario)) : null;
     }
     unset($r);
     return $rows;
 }
 
-$rotacion = getRotacionInventario($pdo, $dias_lookback);
+$rotacion = getRotacionInventario($pdo, $fecha_inicio, $fecha_fin);
 
 ?>
 <!DOCTYPE html>
@@ -89,8 +92,12 @@ $rotacion = getRotacionInventario($pdo, $dias_lookback);
                 <form method="GET" class="filtros-form">
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Días de análisis:</label>
-                            <input type="number" name="dias" class="form-input" value="<?= $dias_lookback ?>" min="1" style="width: 100px;">
+                            <label for="fecha_inicio">Fecha Inicio:</label>
+                            <input type="date" name="fecha_inicio" id="fecha_inicio" class="form-input" value="<?= $fecha_inicio ?>">
+                        </div>
+                        <div class="form-group">
+                            <label for="fecha_fin">Fecha Fin:</label>
+                            <input type="date" name="fecha_fin" id="fecha_fin" class="form-input" value="<?= $fecha_fin ?>">
                         </div>
                         <div class="form-group">
                             <button type="submit" class="btn-generar">Generar Reporte</button>
@@ -103,10 +110,7 @@ $rotacion = getRotacionInventario($pdo, $dias_lookback);
         <div class="reporte-container">
             <div class="reporte-header">
                 <h2>Métricas de Inventario</h2>
-                <div class="periodo-info">
-                    <span>Análisis basado en los últimos <?= $dias_lookback ?> días</span>
                 </div>
-            </div>
 
             <div class="tabla-container">
                 <div class="table-responsive">
@@ -115,34 +119,20 @@ $rotacion = getRotacionInventario($pdo, $dias_lookback);
                             <tr>
                                 <th>Producto</th>
                                 <th>Stock Actual</th>
-                                <th>Vendidos (<?= $dias_lookback ?> días)</th>
+                                <th>Vendidos (Período)</th>
                                 <th>Rotación</th>
-                                <th>Días de Inventario Restantes</th>
-                            </tr>
+                                </tr>
                         </thead>
                         <tbody>
                             <?php if(empty($rotacion)): ?>
-                                <tr><td colspan="5" class="empty-state">No hay datos de inventario o ventas recientes</td></tr>
+                                <tr><td colspan="4" class="empty-state">No hay datos de inventario o ventas en el periodo seleccionado</td></tr>
                             <?php else: foreach($rotacion as $r): ?>
                                 <tr>
                                     <td><?= htmlspecialchars($r['nombre']) ?></td>
                                     <td><?= intval($r['stock']) ?></td>
                                     <td><?= intval($r['vendidos_periodo']) ?></td>
-                                    <td><?= $r['rotacion'] !== null ? $r['rotacion'] . 'x' : '-' ?></td>
-                                    <td>
-                                        <?php
-                                            if ($r['dias_inventario'] === null) {
-                                                if (intval($r['vendidos_periodo']) > 0) {
-                                                    echo '∞ (Stock insuficiente)';
-                                                } else {
-                                                    echo 'N/A (Sin ventas)';
-                                                }
-                                            } else {
-                                                echo $r['dias_inventario'] . ' días';
-                                            }
-                                        ?>
-                                    </td>
-                                </tr>
+                                    <td><?= $r['rotacion'] !== null ? number_format($r['rotacion'], 2) . '%' : '-' ?></td>
+                                    </tr>
                             <?php endforeach; endif; ?>
                         </tbody>
                     </table>

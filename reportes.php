@@ -67,12 +67,12 @@ if (!$sistemaPermisos->puedeVer('reportes')) {
                     Rotación de inventario
                 </a>
 
-                <a href="reportes/reporte_margen_prod.php" class="reporte-button">
-                    Margen por producto
+                <a href="reportes/reporte_top_prod.php" class="reporte-button">
+                   Top de productos
                 </a>
                 
-                <a href="reportes/reporte9.php" class="reporte-button">
-                    Reporte 9
+                <a href="reportes/analisis_dolar.php" class="reporte-button">
+                    Análisis del dólar
                 </a>
                 
            </div> </div>
