@@ -260,7 +260,7 @@ $fecha_hoy = date('Y-m-d');
                             <label><strong> Buscar Producto:</strong></label>
                             <input type="text" name="busqueda" class="search-input" style="width: 250px;"
                                    value="<?php echo htmlspecialchars($busqueda); ?>" 
-                                   placeholder="Buscar por nombre, código o descripción...">
+                                   placeholder="Buscar por nombre">
                             
                             <?php if ($id_proveedor > 0): ?>
                                 <input type="hidden" name="id_proveedor" value="<?php echo $id_proveedor; ?>">
